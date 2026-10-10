@@ -1,0 +1,162 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "github-collector"
+version = "2.2.0"
+description = "ETL Pipeline for collecting GitHub repository data with geographic focus"
+requires-python = ">=3.9"
+authors = [
+    {name = "Maik Müller"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+
+dependencies = [
+    "SQLAlchemy>=2.0.23",
+    "mysql-connector-python>=8.2.0",
+    # PYSEC-2026-2275 is only fixed in >=2.33.0, which requires Python >=3.10
+    # (this project supports >=3.9) -- pinned to the latest compatible release instead.
+    "requests>=2.32.5",
+    "gql[requests]>=3.4.1",
+    "geopy>=2.5.0",
+    "pycountry>=22.3.5",
+    # PYSEC-2026-2270 is only fixed in >=1.2.2, which requires Python >=3.10
+    # (this project supports >=3.9) -- pinned to the latest compatible release instead.
+    "python-dotenv>=1.2.1",
+    "prometheus-client>=0.19.0",
+    "keyring>=24.3.0",
+    "cryptography>=50.0.0",
+    "tqdm>=4.66.1",
+    "PyYAML>=6.0.1",
+    "python-dateutil>=2.8.2",
+    "pydantic>=2.0.0",
+    "Unidecode>=1.3.0",
+    "oracledb>=2.0.0",
+]
+
+[project.urls]
+Repository = "https://github.com/maiklovenotwar/ISI-Github-Collector"
+Issues = "https://github.com/maiklovenotwar/ISI-Github-Collector/issues"
+Changelog = "https://github.com/maiklovenotwar/ISI-Github-Collector/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["github_collector*"]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.11.0",
+    "ruff>=0.1.5",
+    "mypy>=1.7.0",
+    "pytest>=7.4.3",
+    "pytest-cov>=4.1.0",
+    "types-requests>=2.31.0.10",
+    "types-setuptools>=68.2.0.1",
+    "sqlalchemy[mypy]>=2.0.23",
+    "pre-commit>=3.5.0",
+    "ipython>=8.17.2",
+    "ipdb>=0.13.13",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+# A regex preceded with ^/ will apply only to files and directories
+# in the root of the project.
+^/(build|workstreams)/
+'''
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_optional = true
+
+[[tool.mypy.overrides]]
+module = [
+    "sqlalchemy.*",
+    "gql.*",
+    "geopy.*",
+    "prometheus_client.*",
+    "oracledb.*"
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    # One-off research scripts, see workstreams/*/README.md
+    "workstreams",
+]
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "N",  # pep8-naming
+]
+ignore = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**.py" = ["E501"]
+# E402: scripts put src/ on sys.path before importing the package
+"scripts/**.py" = ["E501", "E402"]
+"src/github_collector/repository_collector.py" = ["E501"]
+"src/github_collector/owners/owner_processor.py" = ["E501"]
+
+[tool.ruff.lint.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ["github_collector"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-m 'not orbis_integration and not external'"
+markers = [
+    "smoke: kurz laufende End-to-End- oder Integrations-Szenarien",
+    "external: Tests, die externe Dienste wie die GitHub API verwenden",
+    "slow: lang laufende Tests (z.B. Rate-Limit-Tests mit echten API-Calls)",
+    "integration: breitere Integrations-Tests (z.B. CLI + DB mit gemockter API)",
+    "orbis_integration: Tests requiring live Oracle/Orbis connection (VPN needed)",
+]

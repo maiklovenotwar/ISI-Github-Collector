@@ -1,0 +1,135 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite3
+
+# Cache
+.github_cache/
+
+# Environments
+.env
+.venv
+env/
+
+# Misc
+.DS_Store
+
+# Generated files and directories
+exports/
+geocoding_cache.json
+/data/
+
+# Downloaded external datasets (large, re-downloadable -- see workstream README for source URL)
+workstreams/entity_classification/ror/
+
+# Orbis/Bureau van Dijk exports and other generated workstream data -- commercially
+# licensed/sensitive, must never be committed (see security review 2026-10-05)
+workstreams/*/data/
+workstreams/orbis_matching/recovered_docs/
+workstreams/orbis_matching/docs/
+
+# Workstreams kept locally only: an internal side study and a one-off task for another project
+workstreams/alt_source_bias_check/
+workstreams/github_micro_network_data/
+workstreams/patstat_orbis_bvdid_enrichment/
+
+# Orbis-derived goldstandard data -- was already committed to git history;
+# removed from the tree 2026-10-06, see security review notes. History itself
+# still needs a decision before publishing.
+external/patstat_orbis_goldstandard/
+
+# Retired prototypes (removed from the repository 2026-10-09) and their local data
+# output, which may contain real Orbis/BvD matches.
+archive/
+
+# Manual validation samples -- contain real Orbis/BvD matches (BvD IDs, company names).
+/results/
+
+# Claude Code tooling config -- not for the public repo
+CLAUDE.md
+.claude/
+.agents/
+skills-lock.json
+.superpowers/
+docs/superpowers/
+
+# Internal deliverables and personal transfer files -- not for the public repo
+maik_transfer/
+
+# Personal onboarding/learning notes (MISSION.md, lessons/, learning-records/) --
+# not product documentation, not for the public repo
+docs/codebase-understanding/
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Progress/State files
+*_geocoding_progress.txt
+*_progress.txt
+collection_state.json
+
+# Failed repo IDs (generated during enrichment)
+failed_repo_ids_*.txt
+
+# Ad-hoc CSV export dumps from manual CLI runs
+test_export_*.csv
+
+# Test databases
+verify_bulk_ops.db
+*.test.db
+
+# IDE/Editor
+*.sublime-*
+.project
+.pydevproject
+
+# Coverage
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# mypy
+.mypy_cache/
+
+# pytest
+.pytest_cache/
+
+# ruff
+.ruff_cache/

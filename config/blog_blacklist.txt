@@ -1,0 +1,84 @@
+# Blog-Domain Blacklist für ORBIS Combined Matching
+# Domains die vom Blog-Matching ausgeschlossen werden
+# Eine Domain pro Zeile, ohne Protokoll
+
+# Hosting-Plattformen
+# Wildcard-Muster ("*.domain") decken die eigentliche Realform ab (z.B.
+# "nightswatchgames.github.io" statt der nie vorkommenden nackten Apex-Domain)
+# - siehe workstreams/orbis_matching/docs/pilot_findings.md Pattern 4.
+# Gegen echte DB-Daten geprüft (2026-08-16, organizations.blog, ~735k Zeilen):
+# jede Plattform unten mit Wildcard hat mind. 1 reale Subdomain-Blog-Org, die
+# sonst unblacklisted durchrutschen würde (github.io allein: 1, s. Pattern 4;
+# alle Plattformen zusammen: ~2578 betroffene Orgs). firebase.app und dev.to
+# haben KEINE Subdomain-Treffer in der DB und bleiben deshalb ohne Wildcard.
+*.github.io
+github.io
+github.com
+*.gitlab.io
+gitlab.io
+gitlab.com
+*.bitbucket.org
+bitbucket.org
+*.sourceforge.net
+sourceforge.net
+*.codeplex.com
+codeplex.com
+
+# Cloud-Hosting
+*.herokuapp.com
+herokuapp.com
+*.netlify.app
+netlify.app
+*.vercel.app
+vercel.app
+firebase.app
+*.appspot.com
+appspot.com
+*.azurewebsites.net
+azurewebsites.net
+*.amazonaws.com
+amazonaws.com
+
+# Generische Domains
+*.wordpress.com
+wordpress.com
+*.blogspot.com
+blogspot.com
+*.tumblr.com
+tumblr.com
+*.medium.com
+medium.com
+dev.to
+*.hashnode.dev
+hashnode.dev
+
+# Social Media
+twitter.com
+linkedin.com
+facebook.com
+instagram.com
+
+# Bewertungs-/Event-/Verzeichnis-Plattformen: Firmen (v.a. kleine, lokale)
+# werden manchmal mit ihrer Profilseite auf einer solchen Plattform statt
+# ihrer echten Website erfasst. Fund aus Charge 11 (workstreams/
+# orbis_matching/docs/batches/batch11_review.md): "yelp.com" via
+# Root-Domain-Fallback lieferte 1105 komplett unbeteiligte Kandidaten für
+# YelpArchive; "meetup.com" lieferte 10 unbeteiligte Kandidaten für
+# swcraftlyon (ein Software-Craftsmanship-Meetup, dessen GH-Blog nur eine
+# generische Meetup-Eventseite ist). "*.yelp.com" ergänzt den ursprünglichen
+# Charge-11-Fall selbst (engineeringblog.yelp.com), der bis heute nur über den
+# root_domain_blacklist-Umweg abgefangen wurde, nicht direkt hier. meetup.com
+# hat keine Subdomain-Treffer in der DB, bleibt deshalb ohne Wildcard.
+*.yelp.com
+yelp.com
+meetup.com
+
+# Weitere generische Hosting-Services
+*.pages.dev
+pages.dev
+*.surge.sh
+surge.sh
+*.now.sh
+now.sh
+*.glitch.me
+glitch.me

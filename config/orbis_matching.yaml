@@ -1,0 +1,183 @@
+# ORBIS Combined Matching Configuration
+# Alle konfigurierbaren Werte für das Combined Matching System
+
+scoring:
+  # Mindest-Score für Matches
+  min_score: 30
+
+  # Eigener, niedrigerer Mindest-Score für Namens-Fallback-Kandidaten
+  # (match_type_input="name_only", kein Blog-Signal). Grund: blog_score und
+  # combination_bonus sind für diesen Pfad strukturell immer 0, wodurch der
+  # normale min_score=30 für jeden Namen unter 11 Zeichen (name_weights.long)
+  # unerreichbar ist - der Namens-Fallback (Charge 10, studec-Fund) fand
+  # zwar den richtigen Kandidaten, verwarf ihn aber danach immer als
+  # NO_MATCH. Bewusst auf name_weights.short (10) gesetzt, den niedrigsten
+  # möglichen Name-Score - für name_only-Kandidaten übernimmt effektiv der
+  # Namens-Plausibilitätsfilter (Mindest-Ähnlichkeit) plus der Match-Status
+  # (UNIQUE/CONSENSUS vs. PENDING) die eigentliche Vertrauens-Einordnung,
+  # nicht der Score-Schwellwert. Restrisiko bewusst in Kauf genommen: ein
+  # generischer Vorname wie "Tamas" kann so ebenfalls den Score erreichen,
+  # landet aber mangels Domain-/Länder-Konsens sehr wahrscheinlich auf
+  # PENDING (ehrliche niedrige Konfidenz) statt auf UNIQUE/CONSENSUS.
+  name_only_min_score: 10
+
+
+  # Blog-Domain Score
+  blog_score: 20
+  
+  # Kombinations-Bonus (Name + Blog)
+  combination_bonus: 10
+  
+  # Name-Gewichte nach Länge
+  name_weights:
+    very_long: 40    # >= 15 Zeichen
+    long: 30         # >= 11 Zeichen  
+    medium: 20       # >= 7 Zeichen
+    short: 10        # < 7 Zeichen
+  
+  # Längen-Schwellwerte
+  length_thresholds:
+    very_long: 15
+    long: 11
+    medium: 7
+
+# Namens-Plausibilität: läuft VOR jedem Scoring/HQ-Signal (siehe
+# filter_implausible_candidates() in orbis_matching_logic.py). Grund:
+# selbst das höchstpriorisierte HQ-Signal (HQ_TABLE) kann bei domain-
+# mehrfachgenutzten Firmen auf Rauschen zeigen, siehe
+# workstreams/orbis_matching/docs/validation_batch2_baseline.md.
+plausibility:
+  # Mindest-Ähnlichkeit (difflib SequenceMatcher, 0.0-1.0) zwischen Orbis-Name
+  # und GitHub Name/Login, damit ein Kandidat überhaupt in Betracht kommt.
+  name_similarity_min_score: 0.5
+
+  # Namen kürzer als dieser Schwellwert gelten ohne Blog-Bestätigung als
+  # generisch/nicht vertrauenswürdig (Fund: "FALS", "F3X" liefern über
+  # Präfixsuche nur zufällige, unbeteiligte Treffer).
+  generic_name_length_threshold: 5
+
+  # Score-Abzug für generische Namen ohne Blog-Bestätigung.
+  generic_name_malus: 15
+
+  # Score-Abzug für Kandidaten, deren Namens-Ähnlichkeit NUR über
+  # Teilstring-Enthaltensein zustande kam (siehe calculate_name_similarity())
+  # UND die keine weitere Bestätigung (Blog-Match oder Länder-
+  # Übereinstimmung) haben. Fund aus Charge 11 (workstreams/
+  # orbis_matching/docs/batches/batch11_review.md): "Studecorators"
+  # (unbeteiligte UK-Malerfirma) erreicht über puren Zeichenketten-Zufall
+  # ("studec" sind die ersten 6 Buchstaben von "Stu"+"Decorators") 0.838
+  # Ähnlichkeit zu "STUDEC" - höher als der 0.75-Schwellwert für
+  # has_name_match. Die Formel selbst wurde bewusst NICHT verändert, weil
+  # jede geprüfte Alternative echte Abkürzungsfälle wie "Airbus" vs. "Airbus
+  # Defence and Space SAS" riskiert hätte (dort sackt die reine
+  # SequenceMatcher-Ratio auf 0.40, unter die Plausibilitäts-Schwelle).
+  containment_only_malus: 15
+
+validation:
+  # Drei-Säulen-Validierung Schwellwerte
+  manual_sample_threshold: 0.85      # 85% korrekt
+  consistency_threshold: 0.90        # 90% konsistent
+  score_distribution_threshold: 0.30 # 30% mit Score >= 50
+  
+  # Testlauf Abbruchkriterien
+  testrun_consistency_min: 0.80      # 80% interne Konsistenz
+  testrun_manual_min: 0.75           # 75% manuelle Stichprobe
+  
+  # Stichproben-Größe
+  sample_size: 100
+
+processing:
+  # Batch-Größen
+  export_batch_size: 10000
+  oracle_batch_size: 1000
+  mysql_batch_size: 1000
+  
+  # Testlauf-Konfiguration
+  testrun_size: 10000
+  testrun_with_cc_ratio: 0.5  # 50% mit bestehendem Country Code
+  
+  # Dry-run Modus (Standard)
+  dry_run: true
+
+# Phase-Konfiguration
+phases:
+  # Phase 1: Eindeutige und Konsens-Matches
+  phase1:
+    enabled: true
+    handle_unique: true      # hit_count = 1
+    handle_consensus: true   # alle Treffer gleiches Land
+    mark_pending: true       # Multi-Hits ohne Konsens
+  
+  # Phase 2: Hauptsitzerkennung
+  phase2:
+    enabled: false  # Nur nach Phase-1-Freigabe
+
+    # DEPRECATED / NICHT AKTIV GELESEN: Die tatsächliche HQ-Kaskade ist in
+    # src/github_collector/enrichment/hq_detection.py als HQ_METHOD_PRIORITY
+    # hardcoded (9 Signale: HQ_TABLE, CONSOLIDATING_ENTITY, ROOT_DOMAIN_PRESENCE,
+    # OLDEST_FOUNDING, HIGHEST_REVENUE, GUO_SELF, LARGE_CORP_HQ, IS_PARENT,
+    # BVDID_FALLBACK) - hq_detection.py liest diesen YAML-Abschnitt NICHT.
+    # Die untenstehende 4-Signal-Liste ist ein historischer Entwurfsstand aus
+    # der ursprünglichen SQL-Pipeline-Planung und driftet vom echten Code ab.
+    # Coverage-Werte bleiben als Referenz erhalten, aber nicht als Steuerung
+    # verwenden - siehe hq_detection.py für die aktuell gültige Kaskade.
+    headquarters_signals:
+      founding_date:
+        enabled: true
+        priority: 1
+        coverage: 0.712  # 71.2%
+        table: "LEGAL_INFO"
+        
+      revenue:
+        enabled: true
+        priority: 2
+        coverage: 0.345  # 34.5%
+        table: "KEY_FINANCIALS_EUR"
+        
+      hq_table:
+        enabled: true
+        priority: 3
+        coverage: 0.083  # 8.3%
+        table: "HQ"
+        
+      hierarchy:
+        enabled: true
+        priority: 4
+        coverage: 0.025  # 2.5%
+        table: "ALL_SUBSIDIARIES_L1"
+
+# Externe Dateien
+blog_blacklist_file: "config/blog_blacklist.txt"
+
+# Oracle-Tabellennamen (überschreibbar via Umgebungsvariablen)
+oracle:
+  schema: "ORBIS_23J"
+  input_table: "GITHUB_COMBINED_INPUT"
+  results_table: "GITHUB_COMBINED_RESULTS"
+  
+  # Temp-Tabellen für Phasen
+  phase1_table: "GITHUB_COMBINED_PHASE1"
+  phase2_table: "GITHUB_COMBINED_PHASE2"
+
+# MySQL-Schema
+mysql:
+  organizations_table: "organizations"
+  enrichments_table: "orbis_enrichments"
+
+# Match-Type Definitionen
+match_types:
+  combined_high: 
+    min_score: 60
+    description: "Name + Blog Match, Score >= 60"
+  combined_medium:
+    min_score: 40
+    description: "Name + Blog Match, Score 40-59"
+  combined_low:
+    min_score: 30
+    description: "Name oder Blog Match, Score 30-39"
+  name_only:
+    description: "Nur Name-Match (kein Blog)"
+  login_fallback:
+    description: "Login-Match (kein Name vorhanden)"
+  pending:
+    description: "Multi-Hit ohne Konsens (Phase 2 erforderlich)"

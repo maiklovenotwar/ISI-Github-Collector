@@ -1,0 +1,22 @@
+# Prometheus Konfiguration für GitHub Data Collector
+# Phase 4.2: Lokales Monitoring-Testing
+
+global:
+  scrape_interval: 5s      # Schnelles Feedback beim Testen
+  evaluation_interval: 5s
+
+scrape_configs:
+  # GitHub Data Collector Metriken
+  - job_name: 'github-collector'
+    static_configs:
+      # host.docker.internal erlaubt Zugriff auf Host-Services vom Container
+      # Funktioniert auf Docker Desktop (Windows/Mac)
+      # Für Linux: siehe extra_hosts in docker-compose.yml
+      - targets: ['host.docker.internal:8000']
+    metrics_path: /metrics
+    scheme: http
+
+  # Prometheus Self-Monitoring (optional, aber nützlich)
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

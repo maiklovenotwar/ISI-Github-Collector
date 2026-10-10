@@ -1,0 +1,17 @@
+Total organizations: 735242
+Have blog field set: 296426 (40.3%)
+Have bio or name set: 630414 (85.7%)
+Processing time: 210s
+
+=== Bucket distribution ===
+Unbestimmt: 694875 (94.51%)
+Forschung: 31843 (4.33%)
+NGO: 6088 (0.83%)
+Behoerde: 2436 (0.33%)
+
+=== Signal source breakdown (for classified orgs) ===
+ROR-domain: 27441
+keyword-heuristic: 7896
+ngo-heuristic: 3727
+gov-heuristic: 788
+ROR-name: 515

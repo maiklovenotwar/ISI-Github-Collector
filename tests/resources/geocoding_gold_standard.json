@@ -1,0 +1,4274 @@
+[
+  {
+    "location": "India",
+    "expected": "IN"
+  },
+  {
+    "location": "Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "China",
+    "expected": "CN"
+  },
+  {
+    "location": "France",
+    "expected": "FR"
+  },
+  {
+    "location": "London",
+    "expected": "GB"
+  },
+  {
+    "location": "United States",
+    "expected": "US"
+  },
+  {
+    "location": "Bangalore",
+    "expected": "IN"
+  },
+  {
+    "location": "Beijing",
+    "expected": "CN"
+  },
+  {
+    "location": "Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Shanghai",
+    "expected": "CN"
+  },
+  {
+    "location": "United Kingdom",
+    "expected": "GB"
+  },
+  {
+    "location": "Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Singapore",
+    "expected": "SG"
+  },
+  {
+    "location": "Pune",
+    "expected": "IN"
+  },
+  {
+    "location": "Paris",
+    "expected": "FR"
+  },
+  {
+    "location": "New York",
+    "expected": "US"
+  },
+  {
+    "location": "Seattle, WA",
+    "expected": "US"
+  },
+  {
+    "location": "Berlin",
+    "expected": "DE"
+  },
+  {
+    "location": "United States of America",
+    "expected": "US"
+  },
+  {
+    "location": "Poland",
+    "expected": "PL"
+  },
+  {
+    "location": "Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Hyderabad",
+    "expected": "IN"
+  },
+  {
+    "location": "São Paulo",
+    "expected": "BR"
+  },
+  {
+    "location": "San Francisco, CA",
+    "expected": "US"
+  },
+  {
+    "location": "San Francisco",
+    "expected": "US"
+  },
+  {
+    "location": "Italy",
+    "expected": "IT"
+  },
+  {
+    "location": "USA",
+    "expected": "US"
+  },
+  {
+    "location": "London, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Moscow",
+    "expected": "RU"
+  },
+  {
+    "location": "New York, NY",
+    "expected": "US"
+  },
+  {
+    "location": "Turkey",
+    "expected": "TR"
+  },
+  {
+    "location": "Mumbai",
+    "expected": "IN"
+  },
+  {
+    "location": "Ukraine",
+    "expected": "UA"
+  },
+  {
+    "location": "Chennai",
+    "expected": "IN"
+  },
+  {
+    "location": "Spain",
+    "expected": "ES"
+  },
+  {
+    "location": "Istanbul",
+    "expected": "TR"
+  },
+  {
+    "location": "Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Mons, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Zug",
+    "expected": "CH"
+  },
+  {
+    "location": "Baden, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Ghent, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "NL",
+    "expected": "NL"
+  },
+  {
+    "location": "Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Netherlands, Zoetermeer",
+    "expected": "NL"
+  },
+  {
+    "location": "Haarlem, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Melbourne AUS / Lexington VA USA",
+    "expected": "AU"
+  },
+  {
+    "location": "Amsterdam, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Eindhoven - The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Heerhugowaard",
+    "expected": "NL"
+  },
+  {
+    "location": "Vienna Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Linz, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Hulst, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Central Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Italy / Switzerland",
+    "expected": "IT"
+  },
+  {
+    "location": "Zürich, Schweiz",
+    "expected": "CH"
+  },
+  {
+    "location": "Amsterdam, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Lausanne, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Leuven",
+    "expected": "BE"
+  },
+  {
+    "location": "Groningen, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Gent, BE",
+    "expected": "BE"
+  },
+  {
+    "location": "Son en Breugel, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Edegem, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Jakarta",
+    "expected": "ID"
+  },
+  {
+    "location": "Eindhoven, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Ubud, Bali",
+    "expected": "ID"
+  },
+  {
+    "location": "Beilen, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Johannesburg South Africa",
+    "expected": "ZA"
+  },
+  {
+    "location": "Ghana-Accra",
+    "expected": "GH"
+  },
+  {
+    "location": "World traveler, currently in Savannah, GA",
+    "expected": "US"
+  },
+  {
+    "location": "Buckinghamshire, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Les Roches de Condrieu",
+    "expected": "FR"
+  },
+  {
+    "location": "Scarborough",
+    "expected": "GB"
+  },
+  {
+    "location": "Kladno, Czech Republic",
+    "expected": "CZ"
+  },
+  {
+    "location": "Carignan, Quebec",
+    "expected": "CA"
+  },
+  {
+    "location": "Summit Park, UT",
+    "expected": "US"
+  },
+  {
+    "location": "PA. USA",
+    "expected": "US"
+  },
+  {
+    "location": "Avda. Europa, 26. Pozuelo de Alarcón. Madrid",
+    "expected": "ES"
+  },
+  {
+    "location": "Parker, Colorado, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Winnipeg, Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "Moscow, Chelyabinsk",
+    "expected": "RU"
+  },
+  {
+    "location": "Cagliari, Italy",
+    "expected": "IT"
+  },
+  {
+    "location": "Londrina - Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "London UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Ohio",
+    "expected": "US"
+  },
+  {
+    "location": "Seattle, Washington USA",
+    "expected": "US"
+  },
+  {
+    "location": "Heggedal, Norway",
+    "expected": "NO"
+  },
+  {
+    "location": "Ålesund",
+    "expected": "NO"
+  },
+  {
+    "location": "Redmond, WA, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Inverell NSW Australia",
+    "expected": "AU"
+  },
+  {
+    "location": "Ashland, OR/San Francisco, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Hawke's Bay / Wellington, New Zealand",
+    "expected": "NZ"
+  },
+  {
+    "location": "Waverly, IA, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Mumbai, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Digital Nomad",
+    "expected": null
+  },
+  {
+    "location": "\"><s>",
+    "expected": null
+  },
+  {
+    "location": "Mid-Earth",
+    "expected": null
+  },
+  {
+    "location": "127.0.0.1",
+    "expected": null
+  },
+  {
+    "location": "Bengaluru",
+    "expected": "IN"
+  },
+  {
+    "location": "Dhaka, Bangladesh",
+    "expected": "BD"
+  },
+  {
+    "location": "Sweden",
+    "expected": "SE"
+  },
+  {
+    "location": "Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Argentina",
+    "expected": "AR"
+  },
+  {
+    "location": "Australia",
+    "expected": "AU"
+  },
+  {
+    "location": "Berlin, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Earth",
+    "expected": null
+  },
+  {
+    "location": "México",
+    "expected": "MX"
+  },
+  {
+    "location": "Tokyo, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Tokyo",
+    "expected": "JP"
+  },
+  {
+    "location": "Toronto",
+    "expected": "CA"
+  },
+  {
+    "location": "Beijing, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Nigeria",
+    "expected": "NG"
+  },
+  {
+    "location": "Taiwan",
+    "expected": "TW"
+  },
+  {
+    "location": "Seoul",
+    "expected": "KR"
+  },
+  {
+    "location": "Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Colombia",
+    "expected": "CO"
+  },
+  {
+    "location": "Egypt",
+    "expected": "EG"
+  },
+  {
+    "location": "Paris, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Austin, TX",
+    "expected": "US"
+  },
+  {
+    "location": "Boston, MA",
+    "expected": "US"
+  },
+  {
+    "location": "Barcelona",
+    "expected": "ES"
+  },
+  {
+    "location": "Pakistan",
+    "expected": "PK"
+  },
+  {
+    "location": "New Delhi",
+    "expected": "IN"
+  },
+  {
+    "location": "Chicago, IL",
+    "expected": "US"
+  },
+  {
+    "location": "Seattle",
+    "expected": "US"
+  },
+  {
+    "location": "Shenzhen",
+    "expected": "CN"
+  },
+  {
+    "location": "Shanghai, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Bangladesh",
+    "expected": "BD"
+  },
+  {
+    "location": "Delhi",
+    "expected": "IN"
+  },
+  {
+    "location": "California",
+    "expected": "US"
+  },
+  {
+    "location": "Philippines",
+    "expected": "PH"
+  },
+  {
+    "location": "Hong Kong",
+    "expected": "HK"
+  },
+  {
+    "location": "Portugal",
+    "expected": "PT"
+  },
+  {
+    "location": "Los Angeles, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Madrid",
+    "expected": "ES"
+  },
+  {
+    "location": "Amsterdam",
+    "expected": "NL"
+  },
+  {
+    "location": "Los Angeles",
+    "expected": "US"
+  },
+  {
+    "location": "Huizen, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Amsterdam, North Holland",
+    "expected": "NL"
+  },
+  {
+    "location": "Innsbruck",
+    "expected": "AT"
+  },
+  {
+    "location": "Ede, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Zug, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Yverdoom CH",
+    "expected": "CH"
+  },
+  {
+    "location": "Fribourg Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Helium, Barsoom",
+    "expected": null
+  },
+  {
+    "location": "Hinterland",
+    "expected": "CH"
+  },
+  {
+    "location": "Amersfoort, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Paradiso",
+    "expected": "CH"
+  },
+  {
+    "location": "'s-Hertogenbosch, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "BDL",
+    "expected": null
+  },
+  {
+    "location": "World Wide Trash",
+    "expected": null
+  },
+  {
+    "location": "Brussels, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Wizard Tower floating above SoMA",
+    "expected": null
+  },
+  {
+    "location": "Utrecht, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Geneva, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Lugano",
+    "expected": "CH"
+  },
+  {
+    "location": "Zwettl",
+    "expected": "AT"
+  },
+  {
+    "location": "DC-ish",
+    "expected": null
+  },
+  {
+    "location": "Alkmaar",
+    "expected": "NL"
+  },
+  {
+    "location": "Alkmaar, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Vienna, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Tangier, Morocco",
+    "expected": "MA"
+  },
+  {
+    "location": "Netherlands, Amsterdam",
+    "expected": "NL"
+  },
+  {
+    "location": "Slovakia, Pri Vinohradoch 82, 83106 Bratislava",
+    "expected": "SK"
+  },
+  {
+    "location": "Altenberg bei Linz, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Leuven, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Groningen",
+    "expected": "NL"
+  },
+  {
+    "location": "Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Almere, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Antwerp, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Basel, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Amsterdam, The Netherlands.",
+    "expected": "NL"
+  },
+  {
+    "location": "Roeselare, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Southeast Asia",
+    "expected": null
+  },
+  {
+    "location": "Luzern, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Den Haag, NL",
+    "expected": "NL"
+  },
+  {
+    "location": "Zürich, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Rotterdam, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Gent",
+    "expected": "BE"
+  },
+  {
+    "location": "Teyvat",
+    "expected": null
+  },
+  {
+    "location": "Brussels",
+    "expected": "BE"
+  },
+  {
+    "location": "Jakarta, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Uster, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Essen, Antwerp, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Almere, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "The Hague, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "The Hague, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Steinhausen, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Cambodia",
+    "expected": "KH"
+  },
+  {
+    "location": "Bari, Puglia, Italy",
+    "expected": "IT"
+  },
+  {
+    "location": "Hongo,Bunkyo,Tokyo",
+    "expected": "JP"
+  },
+  {
+    "location": "Curitiba - Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Half Moon Bay, CA & Bandera, TX",
+    "expected": "US"
+  },
+  {
+    "location": "Orem, UT",
+    "expected": "US"
+  },
+  {
+    "location": "Mountain View, California, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Morgan, Utah",
+    "expected": "US"
+  },
+  {
+    "location": "New Windsor, NY ",
+    "expected": "US"
+  },
+  {
+    "location": "nowhere now here.",
+    "expected": null
+  },
+  {
+    "location": "Munich Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "The Interwebs",
+    "expected": null
+  },
+  {
+    "location": "Cachoeira Paulista, SP, BR",
+    "expected": "BR"
+  },
+  {
+    "location": "Sutton's Bay, Michigan",
+    "expected": "US"
+  },
+  {
+    "location": "London (UK)",
+    "expected": "GB"
+  },
+  {
+    "location": "Urbana, Illinois",
+    "expected": "US"
+  },
+  {
+    "location": "Somewhere, CO",
+    "expected": "CO"
+  },
+  {
+    "location": "North Yorkshire, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Biesterberg",
+    "expected": "DE"
+  },
+  {
+    "location": "México, Tenochtitlan",
+    "expected": "MX"
+  },
+  {
+    "location": "Pleasanton CA",
+    "expected": "US"
+  },
+  {
+    "location": "Austin, TX USA",
+    "expected": "US"
+  },
+  {
+    "location": "Bergen, Norway",
+    "expected": "NO"
+  },
+  {
+    "location": "Wirral",
+    "expected": "GB"
+  },
+  {
+    "location": "Sweden, Göteborg",
+    "expected": "SE"
+  },
+  {
+    "location": "Portimão, Portugal",
+    "expected": "PT"
+  },
+  {
+    "location": "Brazil, Campina Grande - PB",
+    "expected": "BR"
+  },
+  {
+    "location": "San Francisco, CA  USA",
+    "expected": "US"
+  },
+  {
+    "location": "sanya",
+    "expected": "CN"
+  },
+  {
+    "location": "Воронеж, Россия",
+    "expected": "RU"
+  },
+  {
+    "location": "Phoenix, AZ.",
+    "expected": "US"
+  },
+  {
+    "location": "Arlington, MA, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Tbilisi, Georgia",
+    "expected": "GE"
+  },
+  {
+    "location": "MA",
+    "expected": "MA"
+  },
+  {
+    "location": "Diablo, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Shenyang. China",
+    "expected": "CN"
+  },
+  {
+    "location": "SF Bay Area, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Manchester, England",
+    "expected": "GB"
+  },
+  {
+    "location": "Sundown, NY",
+    "expected": "US"
+  },
+  {
+    "location": "Fort Smith Area",
+    "expected": "US"
+  },
+  {
+    "location": "Edmonton, AB, Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "610 yo",
+    "expected": null
+  },
+  {
+    "location": "Brussels / Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Concord, NH",
+    "expected": "US"
+  },
+  {
+    "location": "mo",
+    "expected": null
+  },
+  {
+    "location": "Sylva, Nc",
+    "expected": "US"
+  },
+  {
+    "location": "Banbury, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "san Jose,CA",
+    "expected": "US"
+  },
+  {
+    "location": "Durham, NC, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Swansea, Wales, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Lancaster, OH",
+    "expected": "US"
+  },
+  {
+    "location": "Bex",
+    "expected": "CH"
+  },
+  {
+    "location": "Greater Boston Area ",
+    "expected": "US"
+  },
+  {
+    "location": "New Hill, NC",
+    "expected": "US"
+  },
+  {
+    "location": "Severna Park, MD",
+    "expected": "US"
+  },
+  {
+    "location": "Cremona (IT)",
+    "expected": "IT"
+  },
+  {
+    "location": "Pey, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Bay Area",
+    "expected": "US"
+  },
+  {
+    "location": "Isle of Wight, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "GTA, Ontario",
+    "expected": "CA"
+  },
+  {
+    "location": "chengdu.china",
+    "expected": "CN"
+  },
+  {
+    "location": "Southern Oregon",
+    "expected": "US"
+  },
+  {
+    "location": "Pune,India",
+    "expected": "IN"
+  },
+  {
+    "location": "Würselen, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Rio de Janeiro",
+    "expected": "BR"
+  },
+  {
+    "location": "England",
+    "expected": "GB"
+  },
+  {
+    "location": "Cesson-Sévigné, France",
+    "expected": "FR"
+  },
+  {
+    "location": "St. Petersburg, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Cimahi, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Nagano, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Went bear hunting",
+    "expected": null
+  },
+  {
+    "location": "Vienna / Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Millstatt, Carinthia, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Haid, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Salzburg, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "vienna, at",
+    "expected": "AT"
+  },
+  {
+    "location": "vienna",
+    "expected": "AT"
+  },
+  {
+    "location": "Austria (mostly)",
+    "expected": "AT"
+  },
+  {
+    "location": "Aracaju / SE",
+    "expected": "BR"
+  },
+  {
+    "location": "Corona Del Mar, CA",
+    "expected": "US"
+  },
+  {
+    "location": "SH, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Falls Church, VA",
+    "expected": "US"
+  },
+  {
+    "location": "Perú",
+    "expected": "PE"
+  },
+  {
+    "location": "Hamilton, ON, Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "Seattle/Portland/Sydney",
+    "expected": "US"
+  },
+  {
+    "location": "Culiacán, Sinaloa, México",
+    "expected": "MX"
+  },
+  {
+    "location": "Catalonia",
+    "expected": "ES"
+  },
+  {
+    "location": "Carlsbad",
+    "expected": "US"
+  },
+  {
+    "location": "Witten",
+    "expected": "DE"
+  },
+  {
+    "location": "Leesburg, VA",
+    "expected": "US"
+  },
+  {
+    "location": "Chichester, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Stockholm (Sweden)",
+    "expected": "SE"
+  },
+  {
+    "location": "Israel",
+    "expected": "IL"
+  },
+  {
+    "location": "Bangalore, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Vietnam",
+    "expected": "VN"
+  },
+  {
+    "location": "Hangzhou",
+    "expected": "CN"
+  },
+  {
+    "location": "Seoul, Korea",
+    "expected": "KR"
+  },
+  {
+    "location": "Melbourne, Australia",
+    "expected": "AU"
+  },
+  {
+    "location": "kolkata",
+    "expected": "IN"
+  },
+  {
+    "location": "Sydney, Australia",
+    "expected": "AU"
+  },
+  {
+    "location": "Toronto, Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "Lagos, Nigeria",
+    "expected": "NG"
+  },
+  {
+    "location": "IRAN",
+    "expected": "IR"
+  },
+  {
+    "location": "Atlanta, GA",
+    "expected": "US"
+  },
+  {
+    "location": "Denmark",
+    "expected": "DK"
+  },
+  {
+    "location": "São Paulo, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Remote",
+    "expected": null
+  },
+  {
+    "location": "Buenos Aires, Argentina",
+    "expected": "AR"
+  },
+  {
+    "location": "The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Sri Lanka",
+    "expected": "LK"
+  },
+  {
+    "location": "Finland",
+    "expected": "FI"
+  },
+  {
+    "location": "Sydney",
+    "expected": "AU"
+  },
+  {
+    "location": "Stockholm, Sweden",
+    "expected": "SE"
+  },
+  {
+    "location": "New York City",
+    "expected": "US"
+  },
+  {
+    "location": "Montreal",
+    "expected": "CA"
+  },
+  {
+    "location": "NYC",
+    "expected": "US"
+  },
+  {
+    "location": "noida",
+    "expected": "IN"
+  },
+  {
+    "location": "Denver, CO",
+    "expected": "US"
+  },
+  {
+    "location": "Chicago",
+    "expected": "US"
+  },
+  {
+    "location": "Portland, OR",
+    "expected": "US"
+  },
+  {
+    "location": "Munich, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Nairobi, Kenya",
+    "expected": "KE"
+  },
+  {
+    "location": "Munich",
+    "expected": "DE"
+  },
+  {
+    "location": "Norway",
+    "expected": "NO"
+  },
+  {
+    "location": "Stockholm",
+    "expected": "SE"
+  },
+  {
+    "location": "Seoul, South Korea",
+    "expected": "KR"
+  },
+  {
+    "location": "Chile",
+    "expected": "CL"
+  },
+  {
+    "location": "Việt Nam",
+    "expected": "VN"
+  },
+  {
+    "location": "Moscow, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Nairobi",
+    "expected": "KE"
+  },
+  {
+    "location": "Boston",
+    "expected": "US"
+  },
+  {
+    "location": "北京",
+    "expected": "CN"
+  },
+  {
+    "location": "London, United Kingdom",
+    "expected": "GB"
+  },
+  {
+    "location": "Ireland",
+    "expected": "IE"
+  },
+  {
+    "location": "South Korea",
+    "expected": "KR"
+  },
+  {
+    "location": "Madrid, Spain",
+    "expected": "ES"
+  },
+  {
+    "location": "Warsaw",
+    "expected": "PL"
+  },
+  {
+    "location": "Guangzhou",
+    "expected": "CN"
+  },
+  {
+    "location": "Warsaw, Poland",
+    "expected": "PL"
+  },
+  {
+    "location": "New Zealand",
+    "expected": "NZ"
+  },
+  {
+    "location": "Dublin, Ireland",
+    "expected": "IE"
+  },
+  {
+    "location": "Melbourne",
+    "expected": "AU"
+  },
+  {
+    "location": "Thailand",
+    "expected": "TH"
+  },
+  {
+    "location": "San Diego, CA",
+    "expected": "US"
+  },
+  {
+    "location": "south africa",
+    "expected": "ZA"
+  },
+  {
+    "location": "San Francisco Bay Area",
+    "expected": "US"
+  },
+  {
+    "location": "Malaysia",
+    "expected": "MY"
+  },
+  {
+    "location": "Dhaka",
+    "expected": "BD"
+  },
+  {
+    "location": "Morocco",
+    "expected": "MA"
+  },
+  {
+    "location": "New Delhi, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Toronto, ON",
+    "expected": "CA"
+  },
+  {
+    "location": "Korea",
+    "expected": "KR"
+  },
+  {
+    "location": "Vancouver, BC",
+    "expected": "CA"
+  },
+  {
+    "location": "Czech republic",
+    "expected": "CZ"
+  },
+  {
+    "location": "Zurich",
+    "expected": "CH"
+  },
+  {
+    "location": "São Paulo, Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Cairo, Egypt",
+    "expected": "EG"
+  },
+  {
+    "location": "HangZhou,China",
+    "expected": "CN"
+  },
+  {
+    "location": "wenzhou china",
+    "expected": "CN"
+  },
+  {
+    "location": "Tianjin, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Hangzhou, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Hohhot, China",
+    "expected": "CN"
+  },
+  {
+    "location": "上海",
+    "expected": "CN"
+  },
+  {
+    "location": "suzhou jiangsu china",
+    "expected": "CN"
+  },
+  {
+    "location": "Sailing",
+    "expected": null
+  },
+  {
+    "location": "Shenzhen,China",
+    "expected": "CN"
+  },
+  {
+    "location": "Nanjing, China",
+    "expected": "CN"
+  },
+  {
+    "location": "China,Liaoning,ShenYang",
+    "expected": "CN"
+  },
+  {
+    "location": "Shenzhen China",
+    "expected": "CN"
+  },
+  {
+    "location": "Hefei,China",
+    "expected": "CN"
+  },
+  {
+    "location": "Bend, OR",
+    "expected": "US"
+  },
+  {
+    "location": "San Fransico, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Portland, Oregon USA",
+    "expected": "US"
+  },
+  {
+    "location": "Fuquay Varina, NC, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Greenville, SC",
+    "expected": "US"
+  },
+  {
+    "location": "Boulder, CO",
+    "expected": "US"
+  },
+  {
+    "location": "Seattle, WA ☔️",
+    "expected": "US"
+  },
+  {
+    "location": "Fort Collins, CO",
+    "expected": "US"
+  },
+  {
+    "location": "Perrysburg, OH",
+    "expected": "US"
+  },
+  {
+    "location": "WA, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Saint Louis, MO",
+    "expected": "US"
+  },
+  {
+    "location": "Salt Lake City, UT, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Austin",
+    "expected": "US"
+  },
+  {
+    "location": "nmi",
+    "expected": null
+  },
+  {
+    "location": "Kakinada",
+    "expected": "IN"
+  },
+  {
+    "location": "Thiruvananthapuram, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Allahabad",
+    "expected": "IN"
+  },
+  {
+    "location": "Agra",
+    "expected": "IN"
+  },
+  {
+    "location": "Ahmedabad , India",
+    "expected": "IN"
+  },
+  {
+    "location": "Maa",
+    "expected": null
+  },
+  {
+    "location": "Gandhi Nagar",
+    "expected": "IN"
+  },
+  {
+    "location": "Chennai, TN, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Chennai, Coimbatore",
+    "expected": "IN"
+  },
+  {
+    "location": "Gandhinagar",
+    "expected": "IN"
+  },
+  {
+    "location": "Chennai, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Stuttgart/Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "München",
+    "expected": "DE"
+  },
+  {
+    "location": "Regensburg, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Nürnberg, Deutschland",
+    "expected": "DE"
+  },
+  {
+    "location": "Schlangen, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Berlin, Deutschland",
+    "expected": "DE"
+  },
+  {
+    "location": "Hamburg N 53° 33.283 E 010° 02.623",
+    "expected": "DE"
+  },
+  {
+    "location": "Berlin, DE",
+    "expected": "DE"
+  },
+  {
+    "location": "Nuremberg, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Wiesbaden",
+    "expected": "DE"
+  },
+  {
+    "location": "Mr. Wordwide",
+    "expected": null
+  },
+  {
+    "location": "Berlin Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Bonn / Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Jaraguá do Sul, SC, Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Campinas, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Rio de Janeiro/RJ",
+    "expected": "BR"
+  },
+  {
+    "location": "Rio de Janeiro, Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Ribeirao Preto, SP Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Amarante | PI | Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Belém",
+    "expected": "BR"
+  },
+  {
+    "location": "Barretos, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Aracaju, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Rio de Janeiro/RJ/Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "São Caetano do Sul, SP, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Belo Horizonte, MG, Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Maringá/PR/Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Manchester",
+    "expected": "GB"
+  },
+  {
+    "location": "Brighton, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "South Wales, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Hinckley, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Tunbridge Wells, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Glasgow, Scotland, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Newcastle-upon-Tyne, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Harrogate, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Exeter, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Doncaster, England",
+    "expected": "GB"
+  },
+  {
+    "location": "Colchester, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Horsham, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Ile de la Réunion",
+    "expected": "FR"
+  },
+  {
+    "location": "Chamonix, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Yutz, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Nouméa",
+    "expected": "FR"
+  },
+  {
+    "location": "Nice, France",
+    "expected": "FR"
+  },
+  {
+    "location": "paris france",
+    "expected": "FR"
+  },
+  {
+    "location": "Angers, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Montbéliard, Doubs, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Hyères, France",
+    "expected": "FR"
+  },
+  {
+    "location": "JAX",
+    "expected": null
+  },
+  {
+    "location": "Nancy, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Rennes, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Nantes, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Cherepovets, Russian Federation",
+    "expected": "RU"
+  },
+  {
+    "location": "Russia, Moscow",
+    "expected": "RU"
+  },
+  {
+    "location": "Moscow/Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Russia Federation / Krasnodar",
+    "expected": "RU"
+  },
+  {
+    "location": "Russian Federation, SPb",
+    "expected": "RU"
+  },
+  {
+    "location": "Saint Petersburg, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Saint-Petersburg, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Sayanogorsk",
+    "expected": "RU"
+  },
+  {
+    "location": "Nizhny Novgorod",
+    "expected": "RU"
+  },
+  {
+    "location": "Mozhaysk, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "RUSSIA, Yekaterinburg",
+    "expected": "RU"
+  },
+  {
+    "location": "Russia; Krasnoyarsk",
+    "expected": "RU"
+  },
+  {
+    "location": "Krasnodar, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Blitar, East Java, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Cirebon, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Yogyakarta",
+    "expected": "ID"
+  },
+  {
+    "location": "DKI Jakarta",
+    "expected": "ID"
+  },
+  {
+    "location": "ASEAN",
+    "expected": null
+  },
+  {
+    "location": "Bandung",
+    "expected": "ID"
+  },
+  {
+    "location": "Bandung, Jawa Barat. Indonesia.",
+    "expected": "ID"
+  },
+  {
+    "location": "Makassar, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Bandung ",
+    "expected": "ID"
+  },
+  {
+    "location": "Depok, Jawa Barat, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Depok, Jawa Barat",
+    "expected": "ID"
+  },
+  {
+    "location": "Bogor, ID",
+    "expected": "ID"
+  },
+  {
+    "location": "Jawa Timur, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Shibuya, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Sapporo, Hokkaido, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Tokyo, Japon",
+    "expected": "JP"
+  },
+  {
+    "location": "Oita, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Kanazawa, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "saitama",
+    "expected": "JP"
+  },
+  {
+    "location": "Chiba, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Japan, Kyoto",
+    "expected": "JP"
+  },
+  {
+    "location": "大",
+    "expected": null
+  },
+  {
+    "location": "Kawasaki",
+    "expected": "JP"
+  },
+  {
+    "location": "Sakura, Chiba, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "日本",
+    "expected": "JP"
+  },
+  {
+    "location": "Nagoya, JP",
+    "expected": "JP"
+  },
+  {
+    "location": "AREA UNKNOWN",
+    "expected": null
+  },
+  {
+    "location": "Ithaca & Beijing",
+    "expected": "US"
+  },
+  {
+    "location": "Nomading",
+    "expected": "ES"
+  },
+  {
+    "location": "Lakjang",
+    "expected": null
+  },
+  {
+    "location": "Chengdu, Sichuang",
+    "expected": "CN"
+  },
+  {
+    "location": "Kano, Nigeria",
+    "expected": "NG"
+  },
+  {
+    "location": "UTC+01:00",
+    "expected": null
+  },
+  {
+    "location": "Uyo, Nigeria",
+    "expected": "NG"
+  },
+  {
+    "location": "Hangzhou - Tangerang",
+    "expected": "CN"
+  },
+  {
+    "location": "nannning",
+    "expected": "CN"
+  },
+  {
+    "location": "Sydney/Väckelsång",
+    "expected": "AU"
+  },
+  {
+    "location": "alwyas changing ",
+    "expected": null
+  },
+  {
+    "location": "Waterloo, Canada // Hong Kong",
+    "expected": "CA"
+  },
+  {
+    "location": "Austria - Tyrol",
+    "expected": "AT"
+  },
+  {
+    "location": "Zwettl, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Hello World",
+    "expected": null
+  },
+  {
+    "location": "Linz/Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Blue planet",
+    "expected": null
+  },
+  {
+    "location": "At a computer",
+    "expected": null
+  },
+  {
+    "location": "@ameygat",
+    "expected": null
+  },
+  {
+    "location": "Gmunden",
+    "expected": "AT"
+  },
+  {
+    "location": "Styria, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Graz",
+    "expected": "AT"
+  },
+  {
+    "location": "Lower Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "NMS, DE",
+    "expected": "DE"
+  },
+  {
+    "location": "linz",
+    "expected": "AT"
+  },
+  {
+    "location": "Dornbirn",
+    "expected": "AT"
+  },
+  {
+    "location": "Dorbirn, AT",
+    "expected": "AT"
+  },
+  {
+    "location": "Tha",
+    "expected": null
+  },
+  {
+    "location": "Sankt Florian bei Linz, AT",
+    "expected": "AT"
+  },
+  {
+    "location": "In the woods",
+    "expected": null
+  },
+  {
+    "location": "Österreich-Tirol",
+    "expected": "AT"
+  },
+  {
+    "location": "Dornbirn, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Japan (九州地方) / VirtualCast / VRChat",
+    "expected": "JP"
+  },
+  {
+    "location": "Austria - Vienna",
+    "expected": "AT"
+  },
+  {
+    "location": "Venice - Italy",
+    "expected": "IT"
+  },
+  {
+    "location": "Wien, Österreich",
+    "expected": "AT"
+  },
+  {
+    "location": "Wolfsberg | Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Tulln an der Donau, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Klagenfurt, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "BTV",
+    "expected": null
+  },
+  {
+    "location": "Linz , Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "somehow DE, ES & AT",
+    "expected": "DE"
+  },
+  {
+    "location": "Research Institute of Molecular Pathology",
+    "expected": null
+  },
+  {
+    "location": "Theresienfeld, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Nußdorf am Haunsberg, Salzburg, Österreich",
+    "expected": "AT"
+  },
+  {
+    "location": "Linz, Austria ",
+    "expected": "AT"
+  },
+  {
+    "location": "Salzburg Austria ",
+    "expected": "AT"
+  },
+  {
+    "location": "Oslip, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Weiz, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Wein, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Austria / オーストリア",
+    "expected": "AT"
+  },
+  {
+    "location": "Am Campus 1, Klosterneuburg, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Austria/Switzerland",
+    "expected": "AT"
+  },
+  {
+    "location": "/usr/dcat",
+    "expected": null
+  },
+  {
+    "location": "Austria, Salzburg",
+    "expected": "AT"
+  },
+  {
+    "location": "Bruck an der Mur, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "1 AU",
+    "expected": null
+  },
+  {
+    "location": "Austria: Styria",
+    "expected": "AT"
+  },
+  {
+    "location": "Tirol/Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Tropical Urheimat",
+    "expected": null
+  },
+  {
+    "location": "Celovec/Klagenfurt",
+    "expected": "AT"
+  },
+  {
+    "location": "Berlin & Graz",
+    "expected": "DE"
+  },
+  {
+    "location": "Andelsbuch",
+    "expected": "AT"
+  },
+  {
+    "location": "Steiermark, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Linz, Oberösterreich",
+    "expected": "AT"
+  },
+  {
+    "location": "Mank, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Austria > Hallein",
+    "expected": "AT"
+  },
+  {
+    "location": "Feistritz Drau, Carinthia, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "St. Pölten",
+    "expected": "AT"
+  },
+  {
+    "location": "Heidenreichstein, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Europe, Österreich",
+    "expected": "AT"
+  },
+  {
+    "location": "Westendorf, Tirol, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Scharnstein, Upper Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Gemeinlebarn, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "u guess",
+    "expected": null
+  },
+  {
+    "location": "₿:8333",
+    "expected": null
+  },
+  {
+    "location": "Vienna (Wien), Austria (Österreich)",
+    "expected": "AT"
+  },
+  {
+    "location": "Austria - Vorarlberg",
+    "expected": "AT"
+  },
+  {
+    "location": "irc: FireFly on libera.chat",
+    "expected": null
+  },
+  {
+    "location": "Leoben, AT",
+    "expected": "AT"
+  },
+  {
+    "location": "Pregarten, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Vienna. Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "CEST",
+    "expected": null
+  },
+  {
+    "location": "Tirol, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Linz / Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Austria, Wien",
+    "expected": "AT"
+  },
+  {
+    "location": "Austria, Styria",
+    "expected": "AT"
+  },
+  {
+    "location": "Villach, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Götzis, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Austria, Europe",
+    "expected": "AT"
+  },
+  {
+    "location": "Hagenberg, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Pinkafeld, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Austria / Graz",
+    "expected": "AT"
+  },
+  {
+    "location": "Vienna (Austria)",
+    "expected": "AT"
+  },
+  {
+    "location": "Laxenburg, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Zams, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Perg",
+    "expected": "AT"
+  },
+  {
+    "location": "Proleb, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Asten, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Lower Austria, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Wien, AT",
+    "expected": "AT"
+  },
+  {
+    "location": "HF",
+    "expected": null
+  },
+  {
+    "location": "Gandhianagar, Gujarat",
+    "expected": "IN"
+  },
+  {
+    "location": "Axams, Tirol",
+    "expected": "AT"
+  },
+  {
+    "location": "Mostly Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "irc.libera.chat",
+    "expected": null
+  },
+  {
+    "location": "Österreich",
+    "expected": "AT"
+  },
+  {
+    "location": "Schwaz, Tyrol, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "São Paulo, São Paulo, Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Lubbock, TX",
+    "expected": "US"
+  },
+  {
+    "location": "Coes Creek, Qld",
+    "expected": "AU"
+  },
+  {
+    "location": "Hiroshima",
+    "expected": "JP"
+  },
+  {
+    "location": "Slovakia",
+    "expected": "SK"
+  },
+  {
+    "location": "Lugano, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Lynn, Massachusetts",
+    "expected": "US"
+  },
+  {
+    "location": "Vancouver",
+    "expected": "CA"
+  },
+  {
+    "location": "Hollywood, FL",
+    "expected": "US"
+  },
+  {
+    "location": "Ireland, Galway",
+    "expected": "IE"
+  },
+  {
+    "location": "Portland, OR 97209",
+    "expected": "US"
+  },
+  {
+    "location": "Milton Keynes, London",
+    "expected": "GB"
+  },
+  {
+    "location": "Stockholm/Sweden",
+    "expected": "SE"
+  },
+  {
+    "location": "Abilene, Tx",
+    "expected": "US"
+  },
+  {
+    "location": "Greater DFW",
+    "expected": "US"
+  },
+  {
+    "location": "Salisbury, NH",
+    "expected": "US"
+  },
+  {
+    "location": "Soquel, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Uppsala",
+    "expected": "SE"
+  },
+  {
+    "location": "Silver Spring, MD 20910",
+    "expected": "US"
+  },
+  {
+    "location": "Seattle/Redmond",
+    "expected": "US"
+  },
+  {
+    "location": "Albuquerque New Mexico",
+    "expected": "US"
+  },
+  {
+    "location": "Halifax, NS",
+    "expected": "CA"
+  },
+  {
+    "location": "Draper, Utah",
+    "expected": "US"
+  },
+  {
+    "location": "Ukraine, Dnipro",
+    "expected": "UA"
+  },
+  {
+    "location": "Deutschland",
+    "expected": "DE"
+  },
+  {
+    "location": "Gouda, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Boone, NC",
+    "expected": "US"
+  },
+  {
+    "location": "Brittany, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Kyoto",
+    "expected": "JP"
+  },
+  {
+    "location": "Northern Italy",
+    "expected": "IT"
+  },
+  {
+    "location": "WI, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Berlin - Hamburg - Wien",
+    "expected": "DE"
+  },
+  {
+    "location": "syracuse,NY",
+    "expected": "US"
+  },
+  {
+    "location": "Bunurong Land, Melbourne, Australia ",
+    "expected": "AU"
+  },
+  {
+    "location": "American Fork, Utah",
+    "expected": "US"
+  },
+  {
+    "location": "root",
+    "expected": "CH"
+  },
+  {
+    "location": "Warwickshire",
+    "expected": "GB"
+  },
+  {
+    "location": "at the coast of Paradise Island",
+    "expected": null
+  },
+  {
+    "location": "Vitoria, ES - Brazil",
+    "expected": "ES"
+  },
+  {
+    "location": "Coimbatore",
+    "expected": "IN"
+  },
+  {
+    "location": "Winnipeg, Treaty 1",
+    "expected": "CA"
+  },
+  {
+    "location": "Epen, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Den Haag, Nederland",
+    "expected": "NL"
+  },
+  {
+    "location": "NS, Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "Hannover, Lower Saxony, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Japan Tokyo",
+    "expected": "JP"
+  },
+  {
+    "location": "Tucson, Arizona",
+    "expected": "US"
+  },
+  {
+    "location": "Georgetown, ON, CA",
+    "expected": "CA"
+  },
+  {
+    "location": "Haute Savoie, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Medellín - Colombia",
+    "expected": "CO"
+  },
+  {
+    "location": "St Louis MO",
+    "expected": "US"
+  },
+  {
+    "location": "Waltham, MA",
+    "expected": "US"
+  },
+  {
+    "location": "Montréal, Qc Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "Southern California Megaregion",
+    "expected": "US"
+  },
+  {
+    "location": "NorCal",
+    "expected": "US"
+  },
+  {
+    "location": "La Union, Philippines",
+    "expected": "PH"
+  },
+  {
+    "location": "27°35'20.2\"S 48°31'12.5\"W",
+    "expected": null
+  },
+  {
+    "location": "Grenoble",
+    "expected": "FR"
+  },
+  {
+    "location": "Daejeon, Korea",
+    "expected": "KR"
+  },
+  {
+    "location": "Winchester Uk",
+    "expected": "GB"
+  },
+  {
+    "location": "Hässleholm, Sweden",
+    "expected": "SE"
+  },
+  {
+    "location": "Arlington, VA, USA",
+    "expected": "US"
+  },
+  {
+    "location": "San Francisco, CA & Islesboro, ME",
+    "expected": "US"
+  },
+  {
+    "location": "bj",
+    "expected": "BJ"
+  },
+  {
+    "location": "Ticino, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Berlin + New York",
+    "expected": "DE"
+  },
+  {
+    "location": "Orange County, California",
+    "expected": "US"
+  },
+  {
+    "location": "dev/null",
+    "expected": null
+  },
+  {
+    "location": "Hennigsdorf bei Berlin, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Londrina, Paraná, Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "waiting between the walls",
+    "expected": null
+  },
+  {
+    "location": "Jundiai",
+    "expected": "BR"
+  },
+  {
+    "location": "Palm Desert, CA",
+    "expected": "US"
+  },
+  {
+    "location": "+48 22",
+    "expected": null
+  },
+  {
+    "location": "Hangzhou, CN",
+    "expected": "CN"
+  },
+  {
+    "location": "Olympia, WA, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Lancashire, England",
+    "expected": "GB"
+  },
+  {
+    "location": "Токио Эбису",
+    "expected": "JP"
+  },
+  {
+    "location": "Long Island, NY",
+    "expected": "US"
+  },
+  {
+    "location": "Resistencia, Chaco. Argentina",
+    "expected": "AR"
+  },
+  {
+    "location": "Melbourne/Perth, Australia",
+    "expected": "AU"
+  },
+  {
+    "location": "San Rafael, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Upstate New York",
+    "expected": "US"
+  },
+  {
+    "location": "Ellicott City, MD",
+    "expected": "US"
+  },
+  {
+    "location": "Kirkland, WA (Seattle)",
+    "expected": "US"
+  },
+  {
+    "location": "Silver Spring, MD",
+    "expected": "US"
+  },
+  {
+    "location": "Prague, CZ, EU",
+    "expected": "CZ"
+  },
+  {
+    "location": "Schiedam, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Brookyln, NY",
+    "expected": "US"
+  },
+  {
+    "location": "Uberlândia-MG, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Londrina, PR - Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Zaandam, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Montréal,QC, Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "Perth; Australia",
+    "expected": "AU"
+  },
+  {
+    "location": "Marysville, WA, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Indianapolis, IN, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Kegworth, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "United States of Atlanta",
+    "expected": "US"
+  },
+  {
+    "location": "On Earth",
+    "expected": null
+  },
+  {
+    "location": "Bs. As., Argentina",
+    "expected": "AR"
+  },
+  {
+    "location": "Atlanta, US",
+    "expected": "US"
+  },
+  {
+    "location": "中国",
+    "expected": "CN"
+  },
+  {
+    "location": "Gan Zhou, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Hong Kong / China",
+    "expected": "HK"
+  },
+  {
+    "location": "Hong Kong SAR",
+    "expected": "HK"
+  },
+  {
+    "location": "Changsha,Hunan,China",
+    "expected": "CN"
+  },
+  {
+    "location": "shanghai, shenzhen",
+    "expected": "CN"
+  },
+  {
+    "location": "Beijing PRC",
+    "expected": "CN"
+  },
+  {
+    "location": "Harbin, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Beijing/China",
+    "expected": "CN"
+  },
+  {
+    "location": "Hangzhou/China",
+    "expected": "CN"
+  },
+  {
+    "location": "Nanning, Guangxi, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Vernon, CT",
+    "expected": "US"
+  },
+  {
+    "location": "Santa Monica,CA",
+    "expected": "US"
+  },
+  {
+    "location": "San Antonio, TX",
+    "expected": "US"
+  },
+  {
+    "location": "Asheville, NC",
+    "expected": "US"
+  },
+  {
+    "location": "Oklahoma City, OK",
+    "expected": "US"
+  },
+  {
+    "location": "FTW, TX",
+    "expected": "US"
+  },
+  {
+    "location": "Saratoga, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Richmond, Va",
+    "expected": "US"
+  },
+  {
+    "location": "Michigan",
+    "expected": "US"
+  },
+  {
+    "location": "Webster, NY",
+    "expected": "US"
+  },
+  {
+    "location": "Jaipur",
+    "expected": "IN"
+  },
+  {
+    "location": "Pondicherry, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Bengaluru, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Chennai, India.",
+    "expected": "IN"
+  },
+  {
+    "location": "Gurgaon",
+    "expected": "IN"
+  },
+  {
+    "location": "Indore",
+    "expected": "IN"
+  },
+  {
+    "location": "Indy",
+    "expected": "US"
+  },
+  {
+    "location": "Kanpur, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Cochin",
+    "expected": "IN"
+  },
+  {
+    "location": "PNW",
+    "expected": null
+  },
+  {
+    "location": "Kozhikode, Kerala",
+    "expected": "IN"
+  },
+  {
+    "location": "Buxtehude, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Hamburg/Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Remscheid, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Bremen, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Neuwied, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "GMT +/- 8",
+    "expected": null
+  },
+  {
+    "location": "Landshut, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Frankfurt",
+    "expected": "DE"
+  },
+  {
+    "location": "Leipzig ",
+    "expected": "DE"
+  },
+  {
+    "location": "Speyer, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Lüdenscheid, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Karlsruhe / Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Florianópolis, SC, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Lima - Perú",
+    "expected": "BR"
+  },
+  {
+    "location": "Lavras/MG",
+    "expected": "BR"
+  },
+  {
+    "location": "Serra - ES - Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Cuiabá-MT-Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Recife, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Belo Horizonte, Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "São Carlos, SP, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Leeds/London, United Kingdom",
+    "expected": "GB"
+  },
+  {
+    "location": "Bristol",
+    "expected": "GB"
+  },
+  {
+    "location": "Ely, United Kingdom",
+    "expected": "GB"
+  },
+  {
+    "location": "Cambridge, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Scotland",
+    "expected": "GB"
+  },
+  {
+    "location": "Hampshire, United Kingdom",
+    "expected": "GB"
+  },
+  {
+    "location": "Belfast",
+    "expected": "GB"
+  },
+  {
+    "location": "Devon, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Winchester, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "South West, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Edinburgh, Scotland",
+    "expected": "GB"
+  },
+  {
+    "location": "Mouans-Sartoux, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Toulon, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Toulouse (31), France ",
+    "expected": "FR"
+  },
+  {
+    "location": "Le Gué du Loir",
+    "expected": "FR"
+  },
+  {
+    "location": "France / Luxembourg",
+    "expected": "FR"
+  },
+  {
+    "location": "Chambéry, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Betton, Rennes, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Grenoble/France",
+    "expected": "FR"
+  },
+  {
+    "location": "Strasbourg, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Réunion",
+    "expected": "FR"
+  },
+  {
+    "location": "Loire, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Perm",
+    "expected": "RU"
+  },
+  {
+    "location": "UTC-8",
+    "expected": null
+  },
+  {
+    "location": "Russia, Rostov-on-Don",
+    "expected": "RU"
+  },
+  {
+    "location": "Tomsk, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "UTC-6",
+    "expected": null
+  },
+  {
+    "location": "Balashiha, Moscow",
+    "expected": "RU"
+  },
+  {
+    "location": "Taganrog, Russian Federation",
+    "expected": "RU"
+  },
+  {
+    "location": "Russian Federation, Saint Petersburg",
+    "expected": "RU"
+  },
+  {
+    "location": "Russian",
+    "expected": "RU"
+  },
+  {
+    "location": "Russian  Federation, Moscow",
+    "expected": "RU"
+  },
+  {
+    "location": "Russia, Moscow region",
+    "expected": "RU"
+  },
+  {
+    "location": "Russia, Saint-Petersburg",
+    "expected": "RU"
+  },
+  {
+    "location": "Yogyakarta - ID",
+    "expected": "ID"
+  },
+  {
+    "location": "Sleman, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Wonogiri, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Dubai ⇄ Jakarta",
+    "expected": "ID"
+  },
+  {
+    "location": "DIY, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Bogor, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Bali",
+    "expected": "ID"
+  },
+  {
+    "location": "Manado, North Sulawesi, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Kubu Raya, West Kalimantan, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Mojokerto, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Saitama,Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Meguro, Tokyo, JAPAN",
+    "expected": "JP"
+  },
+  {
+    "location": "yamagata, japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Toyama, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Asia/Tokyo",
+    "expected": "JP"
+  },
+  {
+    "location": "japan shizuoka",
+    "expected": "JP"
+  },
+  {
+    "location": "Sendai, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Shiga, JAPAN",
+    "expected": "JP"
+  },
+  {
+    "location": "Nagano Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Shizuoka, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Abuja-Nigeria",
+    "expected": "NG"
+  },
+  {
+    "location": "China Shannxi Yangling",
+    "expected": "CN"
+  },
+  {
+    "location": "Karu, Abuja",
+    "expected": "NG"
+  },
+  {
+    "location": "Lagos",
+    "expected": "NG"
+  },
+  {
+    "location": "shenzeng",
+    "expected": "CN"
+  },
+  {
+    "location": "Bekasi, Bandung, Jakarta, Malang",
+    "expected": "ID"
+  },
+  {
+    "location": "Lagos, Nigeria.",
+    "expected": "NG"
+  },
+  {
+    "location": "Yaba, Lagos, Nigeria",
+    "expected": "NG"
+  },
+  {
+    "location": "Vagabonding",
+    "expected": null
+  },
+  {
+    "location": "UTC+00",
+    "expected": null
+  },
+  {
+    "location": "BeingJing",
+    "expected": "CN"
+  },
+  {
+    "location": "Rotterdam, NL",
+    "expected": "NL"
+  },
+  {
+    "location": "Sogndla",
+    "expected": "NO"
+  },
+  {
+    "location": "Rotterdam, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Solothurn, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Brussels [Belgium]",
+    "expected": "BE"
+  },
+  {
+    "location": "Bennekom, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Jakarta, Indonesia.",
+    "expected": "ID"
+  },
+  {
+    "location": "Somewhere West Coast USA",
+    "expected": "US"
+  },
+  {
+    "location": "Bern",
+    "expected": "CH"
+  },
+  {
+    "location": ".git/refs/stash",
+    "expected": null
+  },
+  {
+    "location": "Lausanne",
+    "expected": "CH"
+  },
+  {
+    "location": "St Gallen, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Amstelveen, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Amsterdam, Holland",
+    "expected": "NL"
+  },
+  {
+    "location": "Amsterdam,Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Ghent",
+    "expected": "BE"
+  },
+  {
+    "location": "Basel, CH",
+    "expected": "CH"
+  },
+  {
+    "location": "France / Switzerland",
+    "expected": "FR"
+  },
+  {
+    "location": "Obdam",
+    "expected": "NL"
+  },
+  {
+    "location": "Potland, OR, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Scheveningen",
+    "expected": "NL"
+  },
+  {
+    "location": "Wilen bei Wollerau, Schwyz - Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Hasselt, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Alkmaar, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Zürich Lake",
+    "expected": "CH"
+  },
+  {
+    "location": "Neuchatel; Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Gistel, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Winterthur, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Belgium, Leuven",
+    "expected": "BE"
+  },
+  {
+    "location": "Liège, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Vaud, CH",
+    "expected": "CH"
+  },
+  {
+    "location": "Leiden, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Bern, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "NH",
+    "expected": "US"
+  },
+  {
+    "location": "The Mountains, ID",
+    "expected": "ID"
+  },
+  {
+    "location": "Lombok, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Bandung - Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Morges, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Jakarta, Bandung",
+    "expected": "ID"
+  },
+  {
+    "location": "Antwerpen, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Arnhem, NL",
+    "expected": "NL"
+  },
+  {
+    "location": "Amstelveen, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Westerlo, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Tangerang Selatan",
+    "expected": "ID"
+  },
+  {
+    "location": "Wageningen, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "ch",
+    "expected": "CH"
+  },
+  {
+    "location": "Belgium - Rillaar",
+    "expected": "BE"
+  },
+  {
+    "location": "Joure",
+    "expected": "NL"
+  },
+  {
+    "location": "Gorinchem, the Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "1170 Vienna",
+    "expected": "AT"
+  },
+  {
+    "location": "Voorschoten, the Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Louvain la Neuve",
+    "expected": "BE"
+  },
+  {
+    "location": "München / Málaga",
+    "expected": "DE"
+  },
+  {
+    "location": "railapp.com",
+    "expected": null
+  },
+  {
+    "location": "Graubünden, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Feldkirch, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Berne, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "nyon, switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Utrecht/NL",
+    "expected": "NL"
+  },
+  {
+    "location": "Fribourg, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Piauí, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Lexington, Massachusetts",
+    "expected": "US"
+  },
+  {
+    "location": "Eden Prairie,MN,55347",
+    "expected": "US"
+  },
+  {
+    "location": "Cambridgeshire, United Kingdom",
+    "expected": "GB"
+  },
+  {
+    "location": "Chandler, AZ",
+    "expected": "US"
+  },
+  {
+    "location": "Abu Dhabi, UAE",
+    "expected": "AE"
+  },
+  {
+    "location": "Brussel",
+    "expected": "BE"
+  },
+  {
+    "location": "Regina, SK. Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "Devizes, Wiltshire, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Dundee, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Daruvar, Croatia",
+    "expected": "HR"
+  },
+  {
+    "location": "MDE",
+    "expected": null
+  },
+  {
+    "location": "Lilongwe - Malawi",
+    "expected": "MW"
+  },
+  {
+    "location": "Ramsgate, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Sunnyvale, Caleeefourniah",
+    "expected": "US"
+  },
+  {
+    "location": "São Paulo / SP",
+    "expected": "BR"
+  },
+  {
+    "location": "Seattle, Washington",
+    "expected": "US"
+  },
+  {
+    "location": "WaKeeney, Kansas, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Denver, CO Metro",
+    "expected": "US"
+  },
+  {
+    "location": "San Francisco, Calif.",
+    "expected": "US"
+  },
+  {
+    "location": "Elora, Ontario",
+    "expected": "CA"
+  },
+  {
+    "location": "Tri-State Area",
+    "expected": "US"
+  },
+  {
+    "location": "Palo Alto",
+    "expected": "US"
+  },
+  {
+    "location": "Sioux Falls, SD, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Bekasi",
+    "expected": "ID"
+  },
+  {
+    "location": "Halle (Saale)",
+    "expected": "DE"
+  },
+  {
+    "location": "Saint Augustine, FL",
+    "expected": "US"
+  },
+  {
+    "location": "Miami,Florida",
+    "expected": "US"
+  },
+  {
+    "location": "Tullahoma, Tennessee",
+    "expected": "US"
+  },
+  {
+    "location": "Chattanooga, TN USA",
+    "expected": "US"
+  },
+  {
+    "location": "Bern CH",
+    "expected": "CH"
+  },
+  {
+    "location": "Manaus",
+    "expected": "BR"
+  },
+  {
+    "location": ".fr",
+    "expected": "FR"
+  },
+  {
+    "location": "NoVA",
+    "expected": null
+  },
+  {
+    "location": "Bigfork, MT",
+    "expected": "US"
+  },
+  {
+    "location": "Maastricht, NL",
+    "expected": "NL"
+  },
+  {
+    "location": "Galway, IE",
+    "expected": "IE"
+  },
+  {
+    "location": "Walla Walla, WA",
+    "expected": "US"
+  },
+  {
+    "location": "Jinan, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Lake District, England",
+    "expected": "GB"
+  },
+  {
+    "location": "Oslo / Norway",
+    "expected": "NO"
+  },
+  {
+    "location": "Belarus, Minsk",
+    "expected": "BY"
+  },
+  {
+    "location": "Oosterwolde Gld, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Ciudad Autonoma de Buenos Aires, Argentina",
+    "expected": "AR"
+  },
+  {
+    "location": "kharkiv",
+    "expected": "UA"
+  },
+  {
+    "location": "San Francisco / Bay Area, CA",
+    "expected": "US"
+  },
+  {
+    "location": "VIC, Australia",
+    "expected": "AU"
+  },
+  {
+    "location": "Belem, Para, Amazonia, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Florence, OR",
+    "expected": "US"
+  },
+  {
+    "location": "Kingston, NY",
+    "expected": "US"
+  },
+  {
+    "location": "Santos, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Canada, QC",
+    "expected": "CA"
+  },
+  {
+    "location": "Amposta",
+    "expected": "ES"
+  },
+  {
+    "location": "ipv6",
+    "expected": null
+  },
+  {
+    "location": "Salt Lake City",
+    "expected": "US"
+  },
+  {
+    "location": "Pisa, Italy",
+    "expected": "IT"
+  },
+  {
+    "location": "Terra firma",
+    "expected": null
+  },
+  {
+    "location": "Kuala Lampur",
+    "expected": "MY"
+  },
+  {
+    "location": "Gliwice",
+    "expected": "PL"
+  },
+  {
+    "location": "South Amana, Iowa",
+    "expected": "US"
+  },
+  {
+    "location": "Philadelphia PA, USA",
+    "expected": "US"
+  },
+  {
+    "location": "California or Bermuda",
+    "expected": "US"
+  },
+  {
+    "location": "Sao Paulo/Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "🇵🇭️",
+    "expected": null
+  },
+  {
+    "location": "Durham, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Japan, Fujisawa",
+    "expected": "JP"
+  },
+  {
+    "location": "San Jose, United States",
+    "expected": "US"
+  },
+  {
+    "location": "Belin",
+    "expected": "RO"
+  },
+  {
+    "location": "Nice - Sophia Antipolis / France",
+    "expected": "FR"
+  },
+  {
+    "location": "West Jordan, Utah",
+    "expected": "US"
+  },
+  {
+    "location": "Troy, AL",
+    "expected": "US"
+  },
+  {
+    "location": "Caçapava, São Paulo, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Bengaluru, Karnataka, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Santiago - Chile",
+    "expected": "CL"
+  },
+  {
+    "location": "Beaufort, SC",
+    "expected": "US"
+  },
+  {
+    "location": "Siga",
+    "expected": null
+  },
+  {
+    "location": "Montes Claros, Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Santa Cruz, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Adelaide , South Australia ",
+    "expected": "AU"
+  },
+  {
+    "location": "Bournemouth",
+    "expected": "GB"
+  },
+  {
+    "location": "Winston Salem, NC",
+    "expected": "US"
+  },
+  {
+    "location": "São Paulo/SP – Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Gig Harbor, WA",
+    "expected": "US"
+  },
+  {
+    "location": "Hangzhou Zhejiang China",
+    "expected": "CN"
+  },
+  {
+    "location": "Russia/Moscow",
+    "expected": "RU"
+  },
+  {
+    "location": "TX, US",
+    "expected": "US"
+  },
+  {
+    "location": "Krefeld",
+    "expected": "DE"
+  },
+  {
+    "location": "Edesheim, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Indiana, USA",
+    "expected": "US"
+  },
+  {
+    "location": "København, Danmark",
+    "expected": "DK"
+  },
+  {
+    "location": "Bude, UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Auburn, California",
+    "expected": "US"
+  },
+  {
+    "location": "Olinda/PE",
+    "expected": "BR"
+  },
+  {
+    "location": "Valparaíso - Chile",
+    "expected": "CL"
+  },
+  {
+    "location": "Cotati, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Brisbane, AU",
+    "expected": "AU"
+  },
+  {
+    "location": "Gifu/Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Denver/Boulder, CO",
+    "expected": "US"
+  },
+  {
+    "location": "Charlotte,NC",
+    "expected": "US"
+  },
+  {
+    "location": "Liberty, SC  U.S.A.",
+    "expected": "US"
+  },
+  {
+    "location": "Shanghai,China",
+    "expected": "CN"
+  },
+  {
+    "location": "Shenyang, China",
+    "expected": "CN"
+  },
+  {
+    "location": "Dallas, TX",
+    "expected": "US"
+  },
+  {
+    "location": "St Petersburg, FL",
+    "expected": "US"
+  },
+  {
+    "location": "Boston, Massachusetts, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Austin, Texas",
+    "expected": "US"
+  },
+  {
+    "location": "Summerville SC",
+    "expected": "US"
+  },
+  {
+    "location": "Holland, MI",
+    "expected": "US"
+  },
+  {
+    "location": "Thiruvananthapuram, Kerala, India",
+    "expected": "IN"
+  },
+  {
+    "location": "Jaipur Rajasthan (India)",
+    "expected": "IN"
+  },
+  {
+    "location": "Pune, IN",
+    "expected": "IN"
+  },
+  {
+    "location": "Konstanz, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Freiburg, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "Germany - Darss",
+    "expected": "DE"
+  },
+  {
+    "location": "Jülich, Germany",
+    "expected": "DE"
+  },
+  {
+    "location": "São Paulo - SP - Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Florianópolis/SC Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Manchester, United Kingdom",
+    "expected": "GB"
+  },
+  {
+    "location": "St Andrews, Scotland",
+    "expected": "GB"
+  },
+  {
+    "location": "Paris, France, Europe",
+    "expected": "FR"
+  },
+  {
+    "location": "Mulhouse, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Bretagne",
+    "expected": "FR"
+  },
+  {
+    "location": "Vladivostok",
+    "expected": "RU"
+  },
+  {
+    "location": "Omsk, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Saratov",
+    "expected": "RU"
+  },
+  {
+    "location": "Russia, Naberezhnye Chelny",
+    "expected": "RU"
+  },
+  {
+    "location": "Arkhangelsk, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Saint-Petersburg",
+    "expected": "RU"
+  },
+  {
+    "location": "Jombang",
+    "expected": "ID"
+  },
+  {
+    "location": "Malang, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "Jogjakarta, Indonesia",
+    "expected": "ID"
+  },
+  {
+    "location": "BK/RI",
+    "expected": null
+  },
+  {
+    "location": "Komaba, Meguro, Tokyo JAPAN",
+    "expected": "JP"
+  },
+  {
+    "location": "Taito, Tokyo, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Saitama Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Shibuya, Tokyo, Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Fukuoka,Japan",
+    "expected": "JP"
+  },
+  {
+    "location": "Nigeria, Africa",
+    "expected": "NG"
+  },
+  {
+    "location": "guangdong shenzheng",
+    "expected": "CN"
+  },
+  {
+    "location": "Insititut Teknologi Bandung",
+    "expected": "ID"
+  },
+  {
+    "location": "Oisterwijk, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Mont-Soleil, Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Nijmegen",
+    "expected": "NL"
+  },
+  {
+    "location": "Gent, Belgium",
+    "expected": "BE"
+  },
+  {
+    "location": "Eindhoven, The Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Perth, UK / Des Moines, IA, USA",
+    "expected": "GB"
+  },
+  {
+    "location": "Graz, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Voorburg, Netherlands",
+    "expected": "NL"
+  },
+  {
+    "location": "Wiener Neustadt, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Innsbruck, Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Zurich Switzerland",
+    "expected": "CH"
+  },
+  {
+    "location": "Amsterdam, NL",
+    "expected": "NL"
+  },
+  {
+    "location": "Atzeneta, Spain",
+    "expected": "ES"
+  },
+  {
+    "location": "Piraquara, Paraná, Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Alexandria, VA",
+    "expected": "US"
+  },
+  {
+    "location": "Simsbury, CT",
+    "expected": "US"
+  },
+  {
+    "location": "Akron, PA (USA)",
+    "expected": "US"
+  },
+  {
+    "location": "Fuquay-Varina, NC",
+    "expected": "US"
+  },
+  {
+    "location": "Natal, RN - Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Cambridge, England",
+    "expected": "GB"
+  },
+  {
+    "location": "Zürich, CH",
+    "expected": "CH"
+  },
+  {
+    "location": "Huntsville, Alabama, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Flensburg, Europe",
+    "expected": "DE"
+  },
+  {
+    "location": " Sahrawi Arab Democratic Republic",
+    "expected": "EH"
+  },
+  {
+    "location": "Pond",
+    "expected": null
+  },
+  {
+    "location": "Nantong",
+    "expected": "CN"
+  },
+  {
+    "location": "Natal - Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "SMILEUPPS-D27D4CAC29",
+    "expected": null
+  },
+  {
+    "location": "Madison, Wisconsin, United States",
+    "expected": "US"
+  },
+  {
+    "location": "Vienna, AUT",
+    "expected": "AT"
+  },
+  {
+    "location": "SF Bay Area (USA)",
+    "expected": "US"
+  },
+  {
+    "location": "Switzerland, ZH",
+    "expected": "CH"
+  },
+  {
+    "location": "Salvador, BA. Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "São Paulo - SP Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Bellevue, WA USA",
+    "expected": "US"
+  },
+  {
+    "location": "Kufstein - Austria",
+    "expected": "AT"
+  },
+  {
+    "location": "Manhattan, KS",
+    "expected": "US"
+  },
+  {
+    "location": "Florianopolis, SC, Brasil",
+    "expected": "BR"
+  },
+  {
+    "location": "Earth, Solar System, Milky Way",
+    "expected": null
+  },
+  {
+    "location": "Bend, Oregon",
+    "expected": "US"
+  },
+  {
+    "location": "Creston, BC",
+    "expected": "CA"
+  },
+  {
+    "location": "Malaga Spain",
+    "expected": "ES"
+  },
+  {
+    "location": "Åndalsnes, Norway",
+    "expected": "NO"
+  },
+  {
+    "location": "Del Mar, CA",
+    "expected": "US"
+  },
+  {
+    "location": "Cupertino, United States",
+    "expected": "US"
+  },
+  {
+    "location": "Jacksonville FL USA",
+    "expected": "US"
+  },
+  {
+    "location": "Lancaster/Lancashire/UK",
+    "expected": "GB"
+  },
+  {
+    "location": "Moab, Utah, USA",
+    "expected": "US"
+  },
+  {
+    "location": "Curitiba/PR - Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Nelson, BC",
+    "expected": "CA"
+  },
+  {
+    "location": "Thousand Oaks, CA USA",
+    "expected": "US"
+  },
+  {
+    "location": "Lambersart, FRANCE",
+    "expected": "FR"
+  },
+  {
+    "location": "Thessaloniki, G­r­e­e­c­e",
+    "expected": "GR"
+  },
+  {
+    "location": "in the middle of nowhere",
+    "expected": null
+  },
+  {
+    "location": "Paris Region, France",
+    "expected": "FR"
+  },
+  {
+    "location": "Barnaul, Russia",
+    "expected": "RU"
+  },
+  {
+    "location": "Victoria, British Columbia, Canada",
+    "expected": "CA"
+  },
+  {
+    "location": "Bordeaux/France",
+    "expected": "FR"
+  },
+  {
+    "location": "New York City. New York",
+    "expected": "US"
+  },
+  {
+    "location": "Belo Horizonte, MG - Brazil",
+    "expected": "BR"
+  },
+  {
+    "location": "Utrecht, The Netherlands, Europe",
+    "expected": "NL"
+  },
+  {
+    "location": "Ulaanbaatar, Mongolia",
+    "expected": "MN"
+  },
+  {
+    "location": "DC Metro Area",
+    "expected": "US"
+  },
+  {
+    "location": "Knoxville, TN US",
+    "expected": "US"
+  },
+  {
+    "location": "Shanghai, China.",
+    "expected": "CN"
+  },
+  {
+    "location": "Oklahoma, USA",
+    "expected": "US"
+  }
+]
