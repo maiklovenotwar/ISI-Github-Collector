@@ -82,7 +82,6 @@ class HQResolution:
 
 # Reihenfolge bestimmt die Kaskade. Niedrigere Zahl = höhere Priorität.
 # WARNUNG: GUO_SELF hat 0.0% Accuracy in Validierung (März 2026)
-# Siehe docs/enrichment/hq_strategy_requirements.md
 HQ_METHOD_PRIORITY = {
     "HQ_TABLE": 1,  # Explizite HQ-Markierung (8.3% Coverage, hohe Zuverlässigkeit)
     "CONSOLIDATING_ENTITY": 2,  # C1/C2 Codes (1.2% Coverage)
@@ -102,7 +101,7 @@ HQ_METHOD_PRIORITY = {
 # Pfad-/Subdomain-Variante. Muss vom Caller über `matches_root_domain` gesetzt
 # werden (Vergleich candidate.website vs. GH-Root-Domain), da dieses Modul
 # selbst keine DB-Verbindung hat. Siehe
-# workstreams/orbis_matching/docs/batches/batch01_review.md.
+# Orbis-Notizen (intern): batches/batch01_review.md.
 
 # Independence-Indicator Priorität (für GUO_SELF Ranking)
 INDEPENDENCE_PRIORITY = {
@@ -196,7 +195,7 @@ def resolve_headquarters(  # noqa: C901
            github_country-Landes falls vorhanden, 100% Coverage)
 
     Bevor die Kaskade läuft, werden zwei Vorverarbeitungsschritte angewendet
-    (Fund aus workstreams/orbis_matching/docs/validation_batch2_baseline.md:
+    (Fund aus Orbis-Notizen (intern): validation_batch2_baseline.md:
     selbst Signal 1 kann bei Domain-Mehrfachnutzung auf Rauschen zeigen, wenn
     vorher nicht nach Namens-Plausibilität gefiltert wird):
         a) Namens-Plausibilitätsfilter (nur wenn github_name/github_login übergeben)

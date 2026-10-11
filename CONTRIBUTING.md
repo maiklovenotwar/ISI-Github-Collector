@@ -80,6 +80,10 @@ The affected paths are listed in `.gitignore`, and the `detect-secrets` hook rej
 that contain tokens. The rationale is given under "Data Sensitivity" in
 `docs/methodology/orbis_enrichment.md`.
 
+Some code comments cite `Orbis-Notizen (intern)` followed by a file name. These are review
+notes of the Orbis matching that contain licensed data and are therefore not part of the
+repository. The comment states the finding itself; the note is only its internal source.
+
 ## Documentation
 
 `docs/` is organized into `docs/architecture/` (system design, database schema, API client,

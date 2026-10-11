@@ -123,7 +123,7 @@ class ScoringConfig:
     high_score_threshold: int = 60
     medium_score_threshold: int = 40
 
-    # Namens-Plausibilität (siehe workstreams/orbis_matching/docs/)
+    # Namens-Plausibilität (siehe interne Orbis-Notizen)
     name_similarity_min_score: float = 0.5
     generic_name_length_threshold: int = 5
     generic_name_malus: int = 15
@@ -245,7 +245,7 @@ class MatchCandidate:
     number_of_employees: Optional[int] = None
     # Root-Domain-Signal (vom Caller gesetzt: candidate.website == GH-Root-
     # Domain, exakter Root-Domain-Treffer, keine Pfad-/Subdomain-Variante -
-    # siehe workstreams/orbis_matching/docs/batches/batch01_review.md,
+    # siehe Orbis-Notizen (intern): batches/batch01_review.md,
     # Microsoft/Google-Fund: unter namensgleichen Kandidaten hat oft nur
     # EINER die echte Root-Domain, der Rest sind Hüllen/Auslandsniederlassungen
     # ohne Website)
@@ -281,7 +281,7 @@ class MatchResult:
 # weil Orbis' WEBSITE-Feld für viele unbeteiligte Firmen denselben String
 # enthält. Ohne Namens-Plausibilitätsprüfung VOR jeder Signal-Auswertung wählt
 # die Kaskade selbstbewusst falsch. Siehe
-# workstreams/orbis_matching/docs/validation_batch2_baseline.md
+# Orbis-Notizen (intern): validation_batch2_baseline.md
 # (Airbus/IBM: HQ_TABLE-Flag sitzt auf Rauschen, nicht auf der echten Zentrale).
 
 
@@ -351,7 +351,7 @@ def calculate_name_similarity(
     Prüft gegen BEIDE GitHub-Signale (Anzeigename und Login) und nimmt das
     Maximum, da der Login manchmal präziser ist als der Anzeigename (Fund aus
     Charge 04, Fall "touchmedia360" vs. Anzeigename "Touch Media" -
-    siehe workstreams/orbis_matching/docs/batches/batch04_review.md).
+    siehe Orbis-Notizen (intern): batches/batch04_review.md).
 
     Enthält eine Substring-Sonderbehandlung: reine SequenceMatcher-Ratio
     unterschätzt sehr häufige, echte Fälle wie "SAP" vs. "SAP SE" oder "Acme"
@@ -487,7 +487,7 @@ def filter_implausible_candidates(
 # ohne Konsens (PENDING) erscheinen lässt UND das HAS_HQ-Flag bevorzugt auf
 # Filialen statt der Hauptentität sitzt (Airbus "-B0001"/"-B0002",
 # Schlothauer & Wauer "-1002" bis "-1007" - siehe
-# workstreams/orbis_matching/docs/batches/batch04_review.md).
+# Orbis-Notizen (intern): batches/batch04_review.md).
 
 _BVD_BRANCH_SUFFIX_PATTERN = re.compile(r"-(?:B\d+|\d{3,5})$")
 
@@ -578,7 +578,7 @@ def score_candidate(
     direkt auf dem Kandidaten. Wendet zusätzlich einen Malus für generische/
     sehr kurze Namen ohne Blog-Bestätigung an (Fund aus Charge 05-09: Namen
     wie "FALS"/"F3X" liefern über Präfixsuche nur zufällige, unbeteiligte
-    Treffer - siehe workstreams/orbis_matching/docs/batches/
+    Treffer - siehe Orbis-Notizen (intern): batches/
     batch05-09_review.md).
 
     Args:
@@ -739,7 +739,7 @@ def determine_match_status(
     if not valid:
         return MatchStatus.NO_MATCH
 
-    # Fund aus Charge 11 (workstreams/orbis_matching/docs/batches/
+    # Fund aus Charge 11 (Orbis-Notizen (intern): batches/
     # batch11_review.md): reine Namens-/Login-Fallback-Treffer ohne jede
     # weitere Bestätigung (kein Blog-Match, kein exakter Login-Substring)
     # dürfen nie UNIQUE/CONSENSUS erreichen - selbst wenn zufällig nur ein

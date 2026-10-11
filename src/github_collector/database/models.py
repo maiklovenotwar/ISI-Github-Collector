@@ -138,7 +138,7 @@ class OrbisEnrichment(Base):
     Ergänzt die drei Ergebnis-Spalten auf `Organization` (bvd_id,
     country_code_orbis, orbis_enriched_at) um eine pro-Lauf-Historie mit
     Rollback-Fähigkeit über `run_id`. Umsetzung des Entwurfs aus
-    workstreams/orbis_matching/recovered_docs/enrichment/
+    Orbis-Notizen (intern, ältere Entwürfe): enrichment/
     orbis_matching_strategy_v2.md (Abschnitt 8), der nie implementiert wurde.
 
     Bewusst getrennt von den Legacy-Spalten `orbis_match_type`/`orbis_run_id`

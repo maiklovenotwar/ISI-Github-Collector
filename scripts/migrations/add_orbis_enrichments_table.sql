@@ -1,7 +1,7 @@
 -- Migration: Add orbis_enrichments table (Hybrid-Ansatz)
 -- Date: 2026-08-07
 -- Description: Implementiert den "Hybrid-Ansatz" aus dem wiederhergestellten
---   Strategiedokument (workstreams/orbis_matching/recovered_docs/
+--   Strategiedokument (Orbis-Notizen (intern, ältere Entwürfe):
 --   enrichment/orbis_matching_strategy_v2.md, Abschnitt 8), der nie
 --   umgesetzt wurde.
 --

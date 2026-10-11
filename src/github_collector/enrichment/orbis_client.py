@@ -63,7 +63,7 @@ MAX_CANDIDATES_PER_DOMAIN = 2000
 
 # Bekannte zweiteilige Public-Suffixe (Länder-TLDs mit eigenem
 # Registrierungs-Level wie "co.uk" oder "com.br"). Fund aus Charge 11
-# (workstreams/orbis_matching/docs/batches/batch11_review.md) und dem
+# (Orbis-Notizen (intern): batches/batch11_review.md) und dem
 # anschließenden Hold-out-Test: die naive "letzte 2 Labels"-Heuristik
 # behandelte "warren.com.br" bzw. "opensource.gammasoft.com.br" fälschlich
 # so, als wäre "warren"/"gammasoft" eine Subdomain von "com.br" - dabei IST
@@ -171,7 +171,7 @@ KNOWN_COMPOUND_SUFFIXES = {
 def extract_root_domain(domain: str) -> Optional[str]:
     """Extrahiere die Root-Domain aus einer (Sub-)Domain.
 
-    Fund aus Charge 01 (workstreams/orbis_matching/docs/batches/
+    Fund aus Charge 01 (Orbis-Notizen (intern): batches/
     batch01_review.md): viele GH-Orgs verlinken auf eine Subdomain wie
     `opensource.sap.com` statt der echten Firmen-Root-Domain `sap.com` -
     eine reine Domain-Suche auf die Subdomain findet dann nichts, obwohl die
@@ -214,7 +214,7 @@ def load_blog_blacklist(path: Optional[Path] = None) -> set[str]:
     Muster (`*.github.io`), um ganze Plattform-Domain-Familien abzudecken -
     Fund aus Charge 01: `*.github.io`-Subdomains sind strukturell nie eine
     echte Firmen-Website (GitHub Pages), das muss nicht einzeln abgefragt
-    werden. Siehe workstreams/orbis_matching/docs/batches/batch01_review.md.
+    werden. Siehe Orbis-Notizen (intern): batches/batch01_review.md.
 
     Args:
         path: Pfad zur Blacklist-Datei. Falls None, wird
@@ -608,7 +608,7 @@ class OrbisClient:
         die Namens-Plausibilitätsprüfung und HQ-Kaskade nie greifen. Diese
         Methode gibt bewusst alle Kandidaten zurück, damit die Scoring-Schicht
         selbst entscheidet. Siehe
-        workstreams/orbis_matching/docs/validation_batch2_baseline.md.
+        Orbis-Notizen (intern): validation_batch2_baseline.md.
 
         Root-Domain-Fallback (siehe `extract_root_domain()`): wenn eine Domain
         eine Subdomain ist (z.B. `opensource.sap.com`), wird zusätzlich die

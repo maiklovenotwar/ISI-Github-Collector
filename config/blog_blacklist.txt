@@ -5,7 +5,7 @@
 # Hosting-Plattformen
 # Wildcard-Muster ("*.domain") decken die eigentliche Realform ab (z.B.
 # "nightswatchgames.github.io" statt der nie vorkommenden nackten Apex-Domain)
-# - siehe workstreams/orbis_matching/docs/pilot_findings.md Pattern 4.
+# - siehe Orbis-Notizen (intern): pilot_findings.md Pattern 4.
 # Gegen echte DB-Daten geprüft (2026-08-16, organizations.blog, ~735k Zeilen):
 # jede Plattform unten mit Wildcard hat mind. 1 reale Subdomain-Blog-Org, die
 # sonst unblacklisted durchrutschen würde (github.io allein: 1, s. Pattern 4;

@@ -14,6 +14,9 @@ import argparse
 import os
 import subprocess
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 import sqlalchemy
 from sqlalchemy import text

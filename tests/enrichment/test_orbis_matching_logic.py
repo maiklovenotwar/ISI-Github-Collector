@@ -3,7 +3,7 @@
 Bis zu diesem Commit hatte dieses Modul keine Testabdeckung. Die Tests decken
 sowohl die bestehende Scoring-/Konsens-Logik ab (Regression) als auch die
 neuen Namens-Plausibilitäts- und BVDID-Filial-Dedup-Fixes, die direkt aus der
-Chargen-Dokumentation in workstreams/orbis_matching/docs/batches/
+Chargen-Dokumentation in Orbis-Notizen (intern): batches/
 abgeleitet sind (siehe Verweise in den einzelnen Tests).
 """
 
@@ -65,7 +65,7 @@ class TestCalculateNameSimilarity:
     def test_login_more_similar_than_name(self) -> None:
         """Fund aus Charge 04 (touchmedia360): Login kann präziser sein als Name.
 
-        Siehe workstreams/orbis_matching/docs/batches/batch04_review.md.
+        Siehe Orbis-Notizen (intern): batches/batch04_review.md.
         """
         orbis_name = "Touch Media 360 Services SRL"
         similarity_via_login = calculate_name_similarity(orbis_name, "Touch Media", "touchmedia360")

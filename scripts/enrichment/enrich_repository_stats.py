@@ -12,6 +12,9 @@ GitHub-PATs werden über den SecretManager geladen (z.B. aus GITHUB_API_TOKENS, 
 import argparse
 import os
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from sqlalchemy import create_engine, text
 from tqdm import tqdm

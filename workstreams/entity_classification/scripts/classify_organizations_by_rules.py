@@ -26,7 +26,7 @@ ROR_CSV = WORKSTREAM_ROOT / "ror" / "v2.10-2026-07-20-ror-data.csv"
 OUT_SUMMARY = WORKSTREAM_ROOT / "results" / "rule_classification_summary.txt"
 OUT_EXAMPLES = WORKSTREAM_ROOT / "results" / "rule_classification_examples.csv"
 
-# ---------- same helpers/rules as classify_ror.py ----------
+# ---------- helpers and rules ----------
 
 
 def normalize_domain(raw):

@@ -8,6 +8,9 @@ import argparse
 import os
 import sys
 from datetime import datetime, timedelta
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 # UTF-8 Output für Windows
 sys.stdout.reconfigure(encoding="utf-8")

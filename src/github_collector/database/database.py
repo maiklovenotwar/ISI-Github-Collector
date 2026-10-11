@@ -743,7 +743,7 @@ class GitHubDatabase:
 
     # --- Orbis Enrichment (Hybrid-Ansatz) ---
     #
-    # Setzt den in workstreams/orbis_matching/recovered_docs/enrichment/
+    # Setzt den in Orbis-Notizen (intern, ältere Entwürfe): enrichment/
     # orbis_matching_strategy_v2.md (Abschnitt 8) entworfenen, nie
     # implementierten "Hybrid-Ansatz" um: drei Ergebnis-Spalten direkt auf
     # `Organization` (bvd_id, country_code_orbis, orbis_enriched_at) für

@@ -4,8 +4,8 @@
 Verdrahtet zum ersten Mal die bisher ungenutzten Module
 `orbis_matching_logic.py` und `hq_detection.py` mit einer echten Datenquelle
 (MySQL `organizations`) und einer echten Senke (Hybrid-Schema:
-`organizations`-Ergebnisspalten + `orbis_enrichments`-Historie). Siehe Plan
-unter workstreams/orbis_matching/ für den vollständigen Kontext.
+`organizations`-Ergebnisspalten + `orbis_enrichments`-Historie). Die Methodik
+ist in docs/methodology/orbis_enrichment.md beschrieben.
 
 WICHTIGE EINSCHRÄNKUNG (bewusst gescoped, siehe Plan "Teil A", GUO/Ownership
 als Stretch-Goal markiert): Diese Version holt CONTACT_INFO-Felder (Name,
@@ -112,8 +112,7 @@ def fetch_organizations(
         limit: Maximale Anzahl (None = kein Limit).
         logins: Optionale explizite Login-Liste (überschreibt den
             country_code_orbis-IS-NULL-Filter) - für gezielte Validierung
-            gegen die dokumentierten Chargen-Fälle
-            (workstreams/orbis_matching/data/batches/).
+            gegen die von Hand geprüften Chargen-Fälle.
 
     Returns:
         Liste von Dicts mit id, login, name, blog, country_code.
@@ -583,7 +582,7 @@ def main() -> int:
         "--logins",
         type=str,
         help="Komma-getrennte Liste von Logins (für gezielte Validierung gegen "
-        "workstreams/orbis_matching/data/batches/)",
+        "von Hand geprüfte Fälle)",
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="Keine Datenbank-Schreibvorgänge, nur Analyse"

@@ -636,7 +636,7 @@ class TestOrbisClientRootDomainBlacklist:
 
 
 class TestBlogBlacklistCoversKnownPlatformSubdomains:
-    """Pinnt die Empfehlung aus workstreams/orbis_matching/docs/pilot_findings.md
+    """Pinnt die Empfehlung aus Orbis-Notizen (intern): pilot_findings.md
     (Pattern 4) gegen die ECHTE, im Projekt eingecheckte Blacklist-Datei
     (config/blog_blacklist.txt) - anders als der `root_domain_blacklist`-Pfad in
     OrbisClient.lookup_batch_by_websites_all_candidates() (siehe

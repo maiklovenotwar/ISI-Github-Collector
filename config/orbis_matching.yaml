@@ -45,7 +45,7 @@ scoring:
 # filter_implausible_candidates() in orbis_matching_logic.py). Grund:
 # selbst das höchstpriorisierte HQ-Signal (HQ_TABLE) kann bei domain-
 # mehrfachgenutzten Firmen auf Rauschen zeigen, siehe
-# workstreams/orbis_matching/docs/validation_batch2_baseline.md.
+# Orbis-Notizen (intern): validation_batch2_baseline.md.
 plausibility:
   # Mindest-Ähnlichkeit (difflib SequenceMatcher, 0.0-1.0) zwischen Orbis-Name
   # und GitHub Name/Login, damit ein Kandidat überhaupt in Betracht kommt.

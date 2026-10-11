@@ -71,6 +71,12 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Six entry points (`collect_repositories.py`, `enrich_repository_stats.py`,
+  `update_location_geocoding.py`, `export_tables_to_csv.py`, `cleanup_orphaned_owners.py`,
+  `reset_and_collect.py`) started only when the package was installed. They now add `src/` to
+  the import path themselves, like the other scripts.
+- Comments and docstrings no longer point to files that do not exist or that are not part of
+  the repository.
 - `scripts/enrichment/enrich_org_data_graphql.py` no longer writes its own timestamp and run identifier
   to `organizations.orbis_enriched_at` and `orbis_run_id`; it records the fetch in
   `organizations.enrichment_checked_at`. Organizations that GitHub no longer knows are recorded

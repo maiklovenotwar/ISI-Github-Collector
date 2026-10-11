@@ -4,7 +4,7 @@ Bis zu diesem Commit hatte dieses Modul keine Testabdeckung. Die Tests decken
 die bestehende 9-Signal-Kaskade (Regression, inkl. des neuen
 ROOT_DOMAIN_PRESENCE-Signals) sowie die neuen Vorverarbeitungsschritte
 (Namens-Plausibilität, Filial-Dedup), die beide VOR der Kaskade laufen -
-siehe workstreams/orbis_matching/docs/validation_batch2_baseline.md
+siehe Orbis-Notizen (intern): validation_batch2_baseline.md
 (Airbus/IBM: selbst HQ_TABLE kann ohne Namensfilter auf Rauschen zeigen).
 """
 
