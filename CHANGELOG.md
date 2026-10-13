@@ -8,6 +8,13 @@ Notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Methodology of the collection pipeline: `docs/methodology/repository_collection.md`,
+  `docs/methodology/geocoding.md`, and `docs/methodology/country_attribution.md`. They state the
+  population (forks are excluded), the reference date, the measures and limits regarding
+  completeness, the limits and the validation of geocoding, and the rules for counting accounts
+  and assigning a country to a repository.
+- `scripts/diagnostics/count_excluded_forks.py` and `scripts/diagnostics/methodology_checks.sql`
+  provide figures that support these documents.
 - `update_location_geocoding.py --retry-empty` asks again for locations that an earlier run
   could not resolve. New cache entries record their source (mapping table, text heuristic,
   Nominatim, or no result) and the time they were written.

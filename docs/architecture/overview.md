@@ -57,6 +57,9 @@ The core component responsible for collecting repository data:
 - Batch processing
 - Error handling and targeted retry of failed items
 
+The population, the procedure, and the completeness of the collection are described in
+`docs/methodology/repository_collection.md`.
+
 ### 5. Owner Processor (`owners/owner_processor.py`)
 
 Processes owner metadata (contributors and organizations):
@@ -88,6 +91,10 @@ Geocodes contributor and organization locations:
 - Geocoding via Nominatim
 - Caching of geocoding results
 - Error handling
+
+The procedure, its limits, and its validation are described in
+`docs/methodology/geocoding.md`; the use of the resulting country in
+`docs/methodology/country_attribution.md`.
 
 ### 8. Export (`export/csv_export.py`)
 

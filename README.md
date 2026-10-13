@@ -20,6 +20,12 @@ firmographic data; see `CONTEXT.md` for the terminology used throughout that
 component and `docs/methodology/orbis_enrichment.md` for the matching and
 headquarters-resolution methodology.
 
+The methodology of the collection pipeline is documented in three files:
+`docs/methodology/repository_collection.md` (population, procedure, completeness),
+`docs/methodology/geocoding.md` (derivation of a country from the profile location, limits,
+validation), and `docs/methodology/country_attribution.md` (unit of analysis, country of a
+repository, sources of a country).
+
 ## Features
 
 - GitHub REST and GraphQL API integration for repository, contributor, and
@@ -149,7 +155,7 @@ ISI-Github-Collector/
 ├── config/                 # Matching thresholds and blog-domain blacklist
 ├── docs/
 │   ├── architecture/        # System design, database schema, API client
-│   ├── methodology/         # Orbis matching, validation, contributor network
+│   ├── methodology/         # Collection, geocoding, country attribution, Orbis matching
 │   ├── decisions/           # Recorded project decisions
 │   ├── usage.md             # Full command reference with examples
 │   └── testing.md           # Test suite layout and markers
