@@ -110,6 +110,16 @@ def _evaluate_sample(
     result = service.geocode(location)
     actual_code = _extract_country_code(result)
 
+    # Herkunft des Ergebnisses (Sonderfall-Tabelle, Texterkennung, Nominatim) mitzählen;
+    # unbeantwortete Anfragen getrennt ausweisen, weil sie nichts über das Verfahren sagen.
+    if getattr(service, "last_request_unanswered", False) is True:
+        source = "unanswered"
+    else:
+        source = (result or {}).get("source", "no_result")
+    counters[f"source_{source}_total"] = counters.get(f"source_{source}_total", 0) + 1
+    if expected_code == actual_code:
+        counters[f"source_{source}_correct"] = counters.get(f"source_{source}_correct", 0) + 1
+
     if expected_code == actual_code:
         counters["correct"] += 1
         if expected_code is None:
@@ -156,6 +166,11 @@ def _print_report(total: int, counters: Dict[str, int], error_details: List[str]
     print("False Positives (Non-Geo -> Geo):", counters["fp"])
     print("False Negatives (Geo -> None):   ", counters["fn"])
     print("Mismatches (falsches Land):      ", counters["mismatches"])
+    print("")
+    print("Nach Herkunft des Ergebnisses (korrekt / gesamt):")
+    for key in sorted(k for k in counters if k.startswith("source_") and k.endswith("_total")):
+        name = key[len("source_") : -len("_total")]
+        print(f"  {name:<12} {counters.get(f'source_{name}_correct', 0)} / {counters[key]}")
     print("=" * 60)
 
     if error_details:
