@@ -51,7 +51,8 @@ collector database.
 ## `diagnostics/`
 
 Manual checks. The two Orbis scripts query the live Orbis database and require VPN
-access; the other two read a local file only.
+access; the fork count sends a few search requests to GitHub; the audit summary and the
+cache summary read a local file only.
 
 | Script | Purpose | Writes | External access |
 |--------|---------|--------|-----------------|
@@ -59,6 +60,7 @@ access; the other two read a local file only.
 | `diagnostics/diagnose_hq_signals.py` | Analyses the headquarters signals of organizations with several Orbis candidates. | nothing | Orbis database (VPN) |
 | `diagnostics/summarize_collection_audit.py` | Summarizes the audit log of the repository collection (`logs/collection_audit.jsonl`) and lists the periods in which fewer repositories arrived than GitHub announced, a response was marked incomplete, or the result was truncated. | nothing | none |
 | `diagnostics/inspect_geocoding_cache.py` | Counts the entries of the local geocoding cache with and without a country and separates the entries without a country into those the current rules resolve, those recognised as not a place, and the rest. | nothing | none |
+| `diagnostics/count_excluded_forks.py` | Reports, for several star thresholds, how many forks and how many non-fork repositories the GitHub search announces; forks are not part of the collected population. Two search requests per threshold. | nothing | GitHub API |
 
 ## `migrations/`
 
