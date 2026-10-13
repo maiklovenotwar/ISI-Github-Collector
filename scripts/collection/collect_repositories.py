@@ -45,6 +45,21 @@ def setup_api_client():
     return GitHubAPI(tokens, cache_dir=cache_dir)
 
 
+def report_aborted_collection(collector, error) -> None:
+    """Melde einen Abbruch der Sammlung so, dass er nicht zu übersehen ist."""
+    period = collector.state.get_current_period()
+    where = f"{period[0].isoformat()} bis {period[1].isoformat()}" if period else "unbekannt"
+    logger.error(f"Fehler bei der Repository-Sammlung: {error}")
+    print(
+        "\nSammlung ABGEBROCHEN: "
+        f"{error}\n"
+        f"Abgebrochen in der Zeitperiode {where}. Diese Periode ist NICHT als erledigt "
+        "markiert.\nDer Fortschritt wurde gespeichert; derselbe Aufruf setzt die Sammlung an "
+        "dieser Stelle fort.",
+        file=sys.stderr,
+    )
+
+
 def parse_arguments():
     """Parse Kommandozeilenargumente."""
     parser = argparse.ArgumentParser(description="Sammle GitHub-Repositories")
@@ -315,6 +330,7 @@ def interactive_mode(args, api_client, db):  # noqa: C901
             current_end = current_start + timedelta(days=period_size)
         periods.append((current_start, current_end))
         current_start = current_end
+    collection_failed = False
     try:
         collector.state.reset(start_date, end_date)
         collector.state.set_time_periods(periods)
@@ -340,7 +356,8 @@ def interactive_mode(args, api_client, db):  # noqa: C901
             "\nSammlung unterbrochen. Der Fortschritt wurde gespeichert und kann später fortgesetzt werden."
         )
     except Exception as e:
-        logger.error(f"Fehler bei der Repository-Sammlung: {e}")
+        report_aborted_collection(collector, e)
+        collection_failed = True
 
     # Zeige aktualisierte Statistiken an (best effort)
     try:
@@ -349,6 +366,8 @@ def interactive_mode(args, api_client, db):  # noqa: C901
         logger.error(f"Fehler beim Anzeigen der abschließenden Statistiken: {e}")
         print("Konnte keine abschließenden Statistiken anzeigen.")
         print("Bitte prüfen Sie die Logs für Details.")
+
+    return not collection_failed
 
 
 def non_interactive_mode(args, api_client, db):
@@ -374,6 +393,7 @@ def non_interactive_mode(args, api_client, db):
     limit = args.limit if args.limit else None
 
     # Star-Range-Modus: Wenn --star-range gesetzt ist, wird die neue Methode verwendet
+    collection_failed = False
     try:
         if args.star_range:
             min_stars, max_stars = args.star_range
@@ -399,7 +419,8 @@ def non_interactive_mode(args, api_client, db):
             "\nSammlung unterbrochen. Der Fortschritt wurde gespeichert und kann später fortgesetzt werden."
         )
     except Exception as e:
-        logger.error(f"Fehler bei der Repository-Sammlung: {e}")
+        report_aborted_collection(collector, e)
+        collection_failed = True
         # Bei Fehlern in der Sammlung: Session zurücksetzen
         try:
             db.session.rollback()
@@ -411,6 +432,8 @@ def non_interactive_mode(args, api_client, db):
             db.refresh_session()
         except Exception as refresh_error:
             logger.error(f"Fehler beim Erneuern der Session: {refresh_error}")
+
+    return not collection_failed
 
 
 def _resolve_time_range(args):
@@ -554,14 +577,17 @@ def main():  # noqa: C901
 
     # Führe im interaktiven oder nicht-interaktiven Modus aus
     if args.non_interactive:
-        non_interactive_mode(args, api_client, db)
+        completed = non_interactive_mode(args, api_client, db)
     else:
         # Im interaktiven Modus: Falls --star-range gesetzt ist, Hinweis anzeigen
         if hasattr(args, "star_range") and args.star_range:
             print(
                 "Hinweis: Die Star-Range-Option (--star-range) ist nur im nicht-interaktiven Modus direkt verfügbar. Für interaktive Nutzung bitte den nicht-interaktiven Modus verwenden."
             )
-        interactive_mode(args, api_client, db)
+        completed = interactive_mode(args, api_client, db)
+
+    # Ein Abbruch der Sammlung darf nicht wie ein erfolgreicher Lauf enden
+    return 1 if completed is False else 0
 
 
 if __name__ == "__main__":

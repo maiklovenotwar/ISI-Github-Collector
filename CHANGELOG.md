@@ -71,6 +71,14 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- A failed repository search is no longer treated as an empty period. Previously any API
+  error that outlasted the client's own retries, including an exhausted rate limit and invalid
+  tokens, made the collector record zero repositories for the period, mark it as done and
+  move on. The collection now stops after three attempts (immediately for invalid tokens),
+  leaves the period open, and `collect_repositories.py` exits with code 1 and names the period;
+  the same call resumes there.
+- The test suite no longer modifies `data/collection_state.json`. Tests that ran the collection
+  script used the real state file; every test now gets a temporary one.
 - Six entry points (`collect_repositories.py`, `enrich_repository_stats.py`,
   `update_location_geocoding.py`, `export_tables_to_csv.py`, `cleanup_orphaned_owners.py`,
   `reset_and_collect.py`) started only when the package was installed. They now add `src/` to

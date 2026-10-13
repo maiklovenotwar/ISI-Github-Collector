@@ -40,7 +40,12 @@ from github_collector.ui.progress import (
 from github_collector.utils.performance import AdaptiveBatchConfig, AdaptiveBatchManager
 from github_collector.utils.performance_tracker import PerformanceTracker
 
-from .api.github_api import GitHubAPI, GitHubAPIError, GitHubRateLimitError
+from .api.github_api import (
+    GitHubAPI,
+    GitHubAPIError,
+    GitHubAuthenticationError,
+    GitHubRateLimitError,
+)
 from .database.database import GitHubDatabase, session_scope
 from .owners.owner_processor import OwnerProcessor
 from .schemas import RepositorySchema
@@ -354,6 +359,11 @@ class RepositoryCollector:
 
         Returns:
             Suchergebnisse als Dictionary
+
+        Raises:
+            GitHubAPIError: Wenn die Suche fehlschlägt. Ein Fehler darf nicht wie eine
+                leere Periode aussehen - sonst würde die Periode als erledigt markiert
+                und nie nachgeholt.
         """
         # Erstelle die Suchanfrage
         if max_stars is not None:
@@ -362,19 +372,13 @@ class RepositoryCollector:
             query = f"created:{start_date.isoformat()}..{end_date.isoformat()} stars:>={min_stars}"
 
         # Führe die Suche durch (per_page fest aus Konfiguration, z.B. 100)
-        try:
-            results = self.github.search_repositories(
-                query=query,
-                sort="stars",
-                order="desc",
-                per_page=GITHUB_API["search_page_size"],
-                page=page,
-            )
-
-            return results
-        except GitHubAPIError as e:
-            logger.error(f"Fehler bei der Repository-Suche: {e}")
-            return {"items": [], "total_count": 0}
+        return self.github.search_repositories(
+            query=query,
+            sort="stars",
+            order="desc",
+            per_page=GITHUB_API["search_page_size"],
+            page=page,
+        )
 
     def _initialize_or_resume_star_range_collection(
         self,
@@ -572,16 +576,11 @@ class RepositoryCollector:
         # Feste Seitengröße für die Search-API (z.B. 100, GitHub-Limit-konform)
         per_page = GITHUB_API["search_page_size"]
         while True:
-            results = self._search_repositories_in_period(
-                start_date,
-                end_date,
-                min_stars=min_stars,
-                max_stars=max_stars,
-                page=page,
+            items, page_total_count, _incomplete = self._fetch_page_with_retry(
+                start_date, end_date, min_stars, page, max_stars=max_stars
             )
             if total_count is None:
-                total_count = results.get("total_count", 0)
-            items = results.get("items", [])
+                total_count = page_total_count
             if not items:
                 logger.info(f"Keine weiteren Repositories in dieser Periode (Seite {page})")
                 if collected_count < total_count and collected_count > 0:
@@ -1228,19 +1227,12 @@ class RepositoryCollector:
         Returns:
             total_count wenn Periode zu groß ist (>1000 Ergebnisse), sonst None
         """
-        try:
-            results = self._search_repositories_in_period(
-                start_date=start_date, end_date=end_date, min_stars=min_stars, page=1
-            )
-            total_count = results.get("total_count", 0)
-
-            if total_count > GITHUB_API["search_max_results"]:
-                return total_count
-
-            return None
-        except (GitHubRateLimitError, GitHubAPIError) as e:
-            logger.warning(f"Fehler bei Period-Split-Prüfung: {e}")
-            return None
+        _items, total_count, _incomplete = self._fetch_page_with_retry(
+            start_date, end_date, min_stars, page=1
+        )
+        if total_count > GITHUB_API["search_max_results"]:
+            return total_count
+        return None
 
     def _split_and_reschedule_period(
         self, start_date: datetime, end_date: datetime, total_count: int
@@ -1285,8 +1277,13 @@ class RepositoryCollector:
         return 0
 
     def _fetch_page_with_retry(
-        self, start_date: datetime, end_date: datetime, min_stars: int, page: int
-    ) -> tuple[list, Optional[int]]:
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        min_stars: int,
+        page: int,
+        max_stars: Optional[int] = None,
+    ) -> tuple[list, int, bool]:
         """Hole eine Seite mit Retry-Logik bei Rate-Limit/API-Fehlern.
 
         Args:
@@ -1294,9 +1291,15 @@ class RepositoryCollector:
             end_date: Enddatum
             min_stars: Minimale Anzahl von Stars
             page: Seitennummer
+            max_stars: Maximale Anzahl von Stars (nur im Star-Range-Modus)
 
         Returns:
-            Tuple aus (items, total_count)
+            Tuple aus (items, total_count, incomplete). `incomplete` ist True, wenn
+            GitHub die Antwort als möglicherweise unvollständig markiert hat.
+
+        Raises:
+            GitHubAuthenticationError: Sofort, ohne Wiederholung (kein Token ist gültig).
+            GitHubAPIError: Nach dem letzten erfolglosen Versuch.
         """
         max_retries = 3
 
@@ -1309,11 +1312,16 @@ class RepositoryCollector:
 
                 # API-Call
                 results = self._search_repositories_in_period(
-                    start_date=start_date, end_date=end_date, min_stars=min_stars, page=page
+                    start_date=start_date,
+                    end_date=end_date,
+                    min_stars=min_stars,
+                    page=page,
+                    max_stars=max_stars,
                 )
 
                 items = results.get("items", [])
                 total_count = results.get("total_count", 0)
+                incomplete = bool(results.get("incomplete_results", False))
 
                 # Bei erster erfolgreicher Page: Logging + UI-Update
                 if page == 1 and total_count > 0:
@@ -1322,7 +1330,11 @@ class RepositoryCollector:
                     )
                     show_repositories_found(total_count)
 
-                return items, total_count
+                return items, total_count, incomplete
+
+            except GitHubAuthenticationError:
+                # Kein gültiges Token mehr: Wiederholen hilft nicht
+                raise
 
             except GitHubRateLimitError:
                 if attempt < max_retries - 1:
@@ -1344,7 +1356,7 @@ class RepositoryCollector:
                 else:
                     raise
 
-        return [], None
+        raise GitHubAPIError("Repository-Suche fehlgeschlagen")  # pragma: no cover
 
     def _check_max_repos_reached(
         self, total_collected: int, max_repos: Optional[int], collected_count: int
@@ -1411,7 +1423,7 @@ class RepositoryCollector:
 
         while True:
             # Hole Seite mit Retry-Logik
-            items, page_total_count = self._fetch_page_with_retry(
+            items, page_total_count, _incomplete = self._fetch_page_with_retry(
                 start_date, end_date, min_stars, page
             )
 

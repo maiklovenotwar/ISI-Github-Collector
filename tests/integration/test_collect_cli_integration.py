@@ -198,3 +198,50 @@ def test_non_interactive_mode_with_file_sqlite_runs_without_error(
 
     # Minimale Prüfung: SQLite-Datei wurde erstellt
     assert db_file.exists(), "SQLite-Datei wurde nicht erstellt"
+
+
+@pytest.mark.integration
+@patch(
+    "scripts.collection.collect_repositories.SecretManager.get_github_tokens",
+    return_value=["dummy_token"],
+)
+@patch("github_collector.api.github_api.GitHubAPI.monitor_rate_limit", return_value={})
+@patch("github_collector.api.github_api.GitHubAPI.search_repositories")
+@pytest.mark.parametrize("extra_args", [[], ["--star-range", "100", "200"]])
+def test_aborted_collection_exits_with_one_and_names_the_period(
+    mock_search_repositories,
+    mock_monitor_rate_limit,
+    mock_get_tokens,
+    extra_args,
+    monkeypatch,
+    capsys,
+) -> None:
+    """Ein dauerhafter API-Fehler darf nicht wie ein erfolgreicher Lauf enden."""
+    import github_collector.repository_collector as rc
+    from github_collector.api.github_api import GitHubAPIError
+
+    monkeypatch.setenv("GITHUB_API_TOKENS", "dummy_token")
+    monkeypatch.setattr(rc.time, "sleep", lambda seconds: None)
+    mock_search_repositories.side_effect = GitHubAPIError("HTTP 500")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "collect_repositories.py",
+            "--non-interactive",
+            "--time-range",
+            "week",
+            "--db-path",
+            "sqlite:///:memory:",
+            "--min-stars",
+            "100",
+            *extra_args,
+        ],
+    )
+
+    assert main() == 1
+
+    err = capsys.readouterr().err
+    assert "ABGEBROCHEN" in err
+    assert "HTTP 500" in err
+    assert "setzt die Sammlung" in err
