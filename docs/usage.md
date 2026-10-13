@@ -211,6 +211,16 @@ python scripts/enrichment/update_location_geocoding.py --contributors --limit 50
 - `--clear-cache`: Clear the geocoding cache before running
 - `--show-missing`: List entities with a location that could not be geocoded
 - `--force`: Re-geocode entities that already have a country code
+- `--retry-empty`: Ask again for locations that an earlier run could not resolve: removes cache
+  entries without a country and also selects rows that were marked as not geocodable
+
+A location is marked as not geocodable (empty country code) only when the geocoder answered
+without a match. If the geocoder did not answer (timeout, rate limit, service error), nothing
+is stored and the row stays open. The run then ends with exit code 1 and reports the number of
+unanswered requests; after ten unanswered requests in a row it stops early. Calling the script
+again processes the rows that stayed open. In `collect_contributor_network.py` this makes step 4
+fail although part of the rows were geocoded; repeat it with
+`--skip-collect --skip-stubs --skip-enrich`.
 
 ### ccTLD Enrichment
 

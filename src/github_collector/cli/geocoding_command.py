@@ -212,7 +212,20 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Leere den Geocoding-Cache vor der Aktualisierung",
     )
+
+    parser.add_argument(
+        "--retry-empty",
+        action="store_true",
+        help=(
+            "Frühere Fehlversuche erneut anfragen: entfernt Cache-Einträge ohne Land und "
+            "verarbeitet auch Einträge, die als 'kein geocodierbares Land' markiert sind"
+        ),
+    )
     return parser.parse_args()
+
+
+# Nach so vielen unbeantworteten Anfragen in Folge gilt der Dienst als nicht erreichbar
+MAX_CONSECUTIVE_UNANSWERED = 10
 
 
 def _process_single_contributor(
@@ -255,6 +268,15 @@ def _process_single_contributor(
         return False
 
     geocoding_result = geocoder.geocode(contributor.location)
+    if _unanswered(geocoder):
+        # Der Dienst hat nicht geantwortet: Zeile NICHT als verarbeitet markieren,
+        # damit ein späterer Lauf sie erneut anfragt.
+        logger.warning(
+            "Geocoding-Dienst hat für Contributor %s (Standort '%s') nicht geantwortet",
+            contributor.login,
+            contributor.location,
+        )
+        return False
 
     if geocoding_result:
         country_code = geocoding_result.get("country_code")
@@ -335,27 +357,42 @@ def _process_single_contributor(
     return False
 
 
-def update_contributors(
+def _unanswered(geocoder) -> bool:
+    """True, wenn der Geocoding-Dienst auf die letzte Anfrage nicht geantwortet hat."""
+    return getattr(geocoder, "last_request_unanswered", False) is True
+
+
+def exit_code_for(geocoder) -> int:
+    """Exit-Code eines Laufs: 1, wenn Anfragen unbeantwortet blieben, sonst 0."""
+    unanswered = getattr(geocoder, "unavailable_count", 0)
+    return 1 if isinstance(unanswered, int) and unanswered > 0 else 0
+
+
+def _update_entities(
     db: GitHubDatabase,
     geocoder: GeocodingService,
-    limit: Optional[int] = None,
-    force: bool = False,
+    entity_type: str,
+    process_single,
     *,
-    created_since: Optional[datetime] = None,
-    created_until: Optional[datetime] = None,
-    min_stars: Optional[int] = None,
-    max_stars: Optional[int] = None,
+    limit: Optional[int],
+    force: bool,
+    retry_empty: bool,
+    created_since: Optional[datetime],
+    created_until: Optional[datetime],
+    min_stars: Optional[int],
+    max_stars: Optional[int],
 ) -> int:
-    """Aktualisiere Geocoding-Informationen für Contributors.
+    """Gemeinsame Schleife für Contributors und Organisationen.
 
-    Die Auswahl der zu verarbeitenden Entities erfolgt vollständig über
-    ``get_entities_without_location``. Das CLI kümmert sich nur noch um
-    Geocoding, Filterung von non-geographischen Standorten und DB-Updates.
+    Blättert nach ID durch die ausgewählten Einträge. Dadurch wird jeder Eintrag in einem
+    Lauf genau einmal verarbeitet - auch wenn er danach weiterhin zur Auswahl passt (bei
+    --force, bei --retry-empty und wenn der Dienst nicht geantwortet hat).
     """
-
     updated_count = 0
     batch_size = 25  # Kleinere Batches für bessere Fehlertoleranz
     batch_index = 0
+    last_id: Optional[int] = None
+    consecutive_unanswered = 0
 
     while True:
         if limit is not None:
@@ -366,37 +403,83 @@ def update_contributors(
         else:
             effective_limit = batch_size
 
-        batch_contributors = db.get_entities_for_geocoding(
-            "contributor",
+        batch = db.get_entities_for_geocoding(
+            entity_type,
             missing_country_only=not force,
+            include_marked_empty=retry_empty,
+            after_id=last_id,
             created_from=created_since,
             created_to=created_until,
             min_stars=min_stars,
             max_stars=max_stars,
             limit=effective_limit,
         )
-        if not batch_contributors:
+
+        if not batch:
             break
 
         batch_index += 1
-        logger.info(
-            "Verarbeite Contributor-Batch %s mit %s Einträgen",
-            batch_index,
-            len(batch_contributors),
-        )
+        logger.info("Verarbeite %s-Batch %s mit %s Einträgen", entity_type, batch_index, len(batch))
 
-        for contributor in batch_contributors:
+        for entity in batch:
+            last_id = entity.id
+            geocoder.last_request_unanswered = False
             try:
-                if _process_single_contributor(db, geocoder, contributor):
+                if process_single(db, geocoder, entity):
                     updated_count += 1
             except Exception as exc:  # noqa: BLE001
                 logger.error(
-                    "Fehler bei der Verarbeitung des Contributors %s: %s",
-                    getattr(contributor, "login", "<unbekannt>"),
+                    "Fehler bei der Verarbeitung von %s %s: %s",
+                    entity_type,
+                    getattr(entity, "login", "<unbekannt>"),
                     exc,
                 )
 
+            consecutive_unanswered = consecutive_unanswered + 1 if _unanswered(geocoder) else 0
+            if consecutive_unanswered >= MAX_CONSECUTIVE_UNANSWERED:
+                logger.error(
+                    "Geocoding-Dienst hat %s Anfragen in Folge nicht beantwortet - Lauf wird "
+                    "abgebrochen. Die betroffenen Einträge bleiben offen und werden beim "
+                    "nächsten Lauf erneut angefragt.",
+                    consecutive_unanswered,
+                )
+                return updated_count
+
     return updated_count
+
+
+def update_contributors(
+    db: GitHubDatabase,
+    geocoder: GeocodingService,
+    limit: Optional[int] = None,
+    force: bool = False,
+    *,
+    retry_empty: bool = False,
+    created_since: Optional[datetime] = None,
+    created_until: Optional[datetime] = None,
+    min_stars: Optional[int] = None,
+    max_stars: Optional[int] = None,
+) -> int:
+    """Aktualisiere Geocoding-Informationen für Contributors.
+
+    Args:
+        force: Auch Einträge mit vorhandenem Ländercode erneut verarbeiten.
+        retry_empty: Zusätzlich Einträge erneut verarbeiten, die ein früherer Lauf als
+            "kein geocodierbares Land" markiert hat (leerer Ländercode).
+    """
+    return _update_entities(
+        db,
+        geocoder,
+        "contributor",
+        _process_single_contributor,
+        limit=limit,
+        force=force,
+        retry_empty=retry_empty,
+        created_since=created_since,
+        created_until=created_until,
+        min_stars=min_stars,
+        max_stars=max_stars,
+    )
 
 
 def _process_single_organization(
@@ -439,6 +522,15 @@ def _process_single_organization(
         return False
 
     geocoding_result = geocoder.geocode(organization.location)
+    if _unanswered(geocoder):
+        # Der Dienst hat nicht geantwortet: Zeile NICHT als verarbeitet markieren,
+        # damit ein späterer Lauf sie erneut anfragt.
+        logger.warning(
+            "Geocoding-Dienst hat für Organisation %s (Standort '%s') nicht geantwortet",
+            organization.login,
+            organization.location,
+        )
+        return False
 
     if geocoding_result:
         country_code = geocoding_result.get("country_code")
@@ -525,6 +617,7 @@ def update_organizations(
     limit: Optional[int] = None,
     force: bool = False,
     *,
+    retry_empty: bool = False,
     created_since: Optional[datetime] = None,
     created_until: Optional[datetime] = None,
     min_stars: Optional[int] = None,
@@ -532,56 +625,24 @@ def update_organizations(
 ) -> int:
     """Aktualisiere Geocoding-Informationen für Organisationen.
 
-    Analog zu ``update_contributors`` werden nur Entities ohne Country Code
-    verarbeitet, und alle Einträge werden nach der Verarbeitung so
-    aktualisiert, dass sie nicht erneut von ``get_entities_without_location``
-    geliefert werden.
+    Args:
+        force: Auch Einträge mit vorhandenem Ländercode erneut verarbeiten.
+        retry_empty: Zusätzlich Einträge erneut verarbeiten, die ein früherer Lauf als
+            "kein geocodierbares Land" markiert hat (leerer Ländercode).
     """
-
-    updated_count = 0
-    batch_size = 25
-    batch_index = 0
-
-    while True:
-        if limit is not None:
-            remaining = limit - updated_count
-            if remaining <= 0:
-                break
-            effective_limit = min(batch_size, remaining)
-        else:
-            effective_limit = batch_size
-
-        batch_organizations = db.get_entities_for_geocoding(
-            "organization",
-            missing_country_only=not force,
-            created_from=created_since,
-            created_to=created_until,
-            min_stars=min_stars,
-            max_stars=max_stars,
-            limit=effective_limit,
-        )
-        if not batch_organizations:
-            break
-
-        batch_index += 1
-        logger.info(
-            "Verarbeite Organisations-Batch %s mit %s Einträgen",
-            batch_index,
-            len(batch_organizations),
-        )
-
-        for organization in batch_organizations:
-            try:
-                if _process_single_organization(db, geocoder, organization):
-                    updated_count += 1
-            except Exception as exc:  # noqa: BLE001
-                logger.error(
-                    "Fehler bei der Verarbeitung der Organisation %s: %s",
-                    getattr(organization, "login", "<unbekannt>"),
-                    exc,
-                )
-
-    return updated_count
+    return _update_entities(
+        db,
+        geocoder,
+        "organization",
+        _process_single_organization,
+        limit=limit,
+        force=force,
+        retry_empty=retry_empty,
+        created_since=created_since,
+        created_until=created_until,
+        min_stars=min_stars,
+        max_stars=max_stars,
+    )
 
 
 def count_missing_country_codes(db: GitHubDatabase, entity_type: str) -> int:
@@ -624,6 +685,15 @@ def _initialize_geocoder(args: argparse.Namespace) -> GeocodingService:
     geocoder = GeocodingService(cache_file=cache_file, user_agent=user_agent)
     logger.info(f"Geocoding-Service initialisiert mit Cache-Datei: {cache_file}")
     return geocoder
+
+
+def _maybe_drop_empty_cache_entries(args: argparse.Namespace, geocoder: GeocodingService) -> None:
+    """Entferne bei --retry-empty alle Cache-Einträge ohne Land."""
+    if not getattr(args, "retry_empty", False) or geocoder.cache is None:
+        return
+    removed = geocoder.cache.drop_empty()
+    logger.info("--retry-empty: %s Cache-Einträge ohne Land entfernt.", removed)
+    print(f"--retry-empty: {removed} Cache-Einträge ohne Land entfernt.")
 
 
 def _maybe_clear_cache(args: argparse.Namespace, geocoder: GeocodingService) -> None:
@@ -730,6 +800,7 @@ def _run_geocoding_updates(  # noqa: C901
                 geocoder,
                 limit=contributor_limit,
                 force=args.force,
+                retry_empty=getattr(args, "retry_empty", False),
                 created_since=created_since_dt,
                 created_until=created_until_dt,
                 min_stars=args.min_stars,
@@ -747,6 +818,7 @@ def _run_geocoding_updates(  # noqa: C901
                 geocoder,
                 limit=organization_limit,
                 force=args.force,
+                retry_empty=getattr(args, "retry_empty", False),
                 created_since=created_since_dt,
                 created_until=created_until_dt,
                 min_stars=args.min_stars,
@@ -782,6 +854,7 @@ def main() -> int:
         geocoder = _initialize_geocoder(args)
 
         _maybe_clear_cache(args, geocoder)
+        _maybe_drop_empty_cache_entries(args, geocoder)
 
         # Zeige Zusammenfassung der fehlenden Country Codes
         show_missing_country_codes_summary(db)
@@ -795,6 +868,16 @@ def main() -> int:
             return 0
 
         _run_geocoding_updates(db, geocoder, args)
+
+        if exit_code_for(geocoder):
+            message = (
+                f"Der Geocoding-Dienst hat {geocoder.unavailable_count} Anfragen nicht "
+                "beantwortet. Die betroffenen Einträge sind offen geblieben; ein erneuter "
+                "Aufruf fragt sie noch einmal an."
+            )
+            logger.error(message)
+            print(message, file=sys.stderr)
+            return 1
         return 0
 
     except Exception as exc:  # noqa: BLE001

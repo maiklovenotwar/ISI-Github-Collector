@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
-from sqlalchemy import and_, create_engine, desc, exists, func
+from sqlalchemy import and_, create_engine, desc, exists, func, or_
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
@@ -116,6 +116,13 @@ def init_db(database_url: str, reset_db: bool = False) -> sessionmaker[Session]:
     # expire_on_commit=False, damit Objekte nach Commit weiterhin nutzbar bleiben,
     # obwohl die Session im session_scope geschlossen wird.
     return sessionmaker(bind=engine, expire_on_commit=False)
+
+
+def _missing_country_filter(model, include_marked_empty: bool):
+    """Filter für Einträge ohne Country Code, wahlweise einschließlich der mit "" markierten."""
+    if include_marked_empty:
+        return or_(model.country_code.is_(None), model.country_code == "")
+    return model.country_code.is_(None)
 
 
 class GitHubDatabase:
@@ -1672,6 +1679,8 @@ class GitHubDatabase:
         entity_type: str,
         *,
         missing_country_only: bool = True,
+        include_marked_empty: bool = False,
+        after_id: Optional[int] = None,
         created_from: Optional[datetime] = None,
         created_to: Optional[datetime] = None,
         min_stars: Optional[int] = None,
@@ -1684,6 +1693,13 @@ class GitHubDatabase:
         Args:
             entity_type: "contributor" oder "organization".
             missing_country_only: Wenn True, nur Einträge ohne Country Code.
+            include_marked_empty: Wenn True, zusätzlich Einträge, die ein früherer Lauf
+                mit leerem Country Code ("") als "kein geocodierbares Land" markiert hat.
+                Wirkt nur zusammen mit missing_country_only.
+            after_id: Nur Einträge mit größerer ID liefern. Die Ergebnisse sind nach ID
+                sortiert; der Aufrufer blättert damit durch die Tabelle, ohne dass ein
+                Eintrag, der nach der Verarbeitung weiterhin zur Auswahl passt, erneut
+                geliefert wird.
             created_from: Untere Grenze für Repository-Erstellungszeit (inklusive).
             created_to: Obere Grenze für Repository-Erstellungszeit (exklusive).
             min_stars: Minimale Anzahl an Sternen (stars_at_collection) eines zugehörigen Repos.
@@ -1710,8 +1726,12 @@ class GitHubDatabase:
                 # Nur Einträge ohne gesetzten Country Code (NULL) berücksichtigen.
                 # Einträge mit leerem String ("") wurden bereits verarbeitet und
                 # explizit als "kein geocodierbares Land" markiert und sollen
-                # daher nicht erneut in die Geocoding-Pipeline gelangen.
-                query = query.filter(model.country_code.is_(None))
+                # daher nicht erneut in die Geocoding-Pipeline gelangen - außer der
+                # Aufrufer verlangt es ausdrücklich (include_marked_empty).
+                query = query.filter(_missing_country_filter(model, include_marked_empty))
+
+            if after_id is not None:
+                query = query.filter(model.id > after_id)
 
             # Filter auf verbundene Repositories
             # (Sterne und Erstellungszeit des Repositories)
@@ -1742,6 +1762,7 @@ class GitHubDatabase:
 
                 query = query.filter(exists().where(and_(*repo_filters)))
 
+            query = query.order_by(model.id)
             if limit is not None:
                 query = query.limit(limit)
 

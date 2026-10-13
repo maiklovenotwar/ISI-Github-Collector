@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple
 
 import pycountry
@@ -11,7 +12,10 @@ import pycountry
 from github_collector.config import CACHE_CONFIG
 from github_collector.geocoding.cache import GeocodingCache
 from github_collector.geocoding.heuristics import HeuristicResolver
-from github_collector.geocoding.nominatim_client import NominatimClient
+from github_collector.geocoding.nominatim_client import (
+    GeocodingUnavailableError,
+    NominatimClient,
+)
 from github_collector.geocoding.normalization import normalize_location
 from github_collector.geocoding.rate_limiter import RateLimiter
 
@@ -39,6 +43,9 @@ class GeocodingService:
         self.heuristics = HeuristicResolver()
         self.rate_limiter = RateLimiter(min_interval_seconds=1.0)
         self.enable_quality_logging = enable_quality_logging
+        # Anfragen, auf die der Dienst nicht geantwortet hat (werden nicht gecacht)
+        self.unavailable_count = 0
+        self.last_request_unanswered = False
 
         # Lade Ländercodes für schnelle Lookups
         self.country_codes = {
@@ -51,30 +58,45 @@ class GeocodingService:
             {country.alpha_3.lower(): country.alpha_2 for country in pycountry.countries}
         )
 
-    def geocode(self, location: str) -> Dict[str, Any]:  # noqa: C901
+    def _remember(self, location: str, result: Dict[str, Any], source: str) -> Dict[str, Any]:
+        """Lege ein Ergebnis mit Herkunft und Zeitpunkt im Cache ab und gib es zurück.
+
+        Ein Ergebnis ohne Land wird als ``{"source": "no_result", ...}`` gespeichert, an
+        den Aufrufer geht dafür weiterhin ein leeres Dict.
+        """
+        entry = dict(result)
+        entry["source"] = source if result else "no_result"
+        entry["cached_at"] = datetime.now(timezone.utc).isoformat()
+        if self.cache is not None:
+            self.cache.set(location, entry)
+        return entry if result else {}
+
+    def geocode(self, location: str) -> Dict[str, Any]:
+        """Bestimme Land und Region für eine Freitext-Ortsangabe.
+
+        Returns:
+            Das Ergebnis oder ein leeres Dict, wenn kein Land bestimmt werden konnte. Hat
+            der Dienst nicht geantwortet, ist `last_request_unanswered` True; in diesem
+            Fall wird nichts gecacht, damit der Ort später erneut angefragt wird.
+        """
+        self.last_request_unanswered = False
+
         # 1. Cache-Prüfung (nur wenn Cache aktiviert)
         if self.cache is not None:
             cached_result = self.cache.get(location)
             if cached_result is not None:
-                return cached_result
+                return {} if GeocodingCache.is_empty_result(cached_result) else cached_result
 
         # 2. Vorverarbeitung & Normalisierung
         processed_location = self._preprocess_location(location)
         normalized = normalize_location(processed_location) if processed_location else ""
         if not processed_location or not normalized:
-            if self.cache is not None:
-                self.cache.set(location, {})
-            return {}
+            return self._remember(location, {}, "no_result")
 
         # 3. Heuristische Mappings (Problemfälle & Aliase)
         mapped = self.heuristics.resolve_mapping(normalized)
         if mapped is not None:
-            if self.cache is not None:
-                if mapped:
-                    self.cache.set(location, mapped)
-                else:
-                    self.cache.set(location, {})
-            return mapped or {}
+            return self._remember(location, mapped or {}, "mapping")
 
         # 4. Textbasierte Heuristiken VOR Nominatim (verhindert False Positives)
         code, region = self.heuristics.extract_country_from_text(normalized)
@@ -90,42 +112,46 @@ class GeocodingService:
             }
             if self.enable_quality_logging:
                 logger.debug("Heuristic match for '%s': %s", location, result)
-            if self.cache is not None:
-                self.cache.set(location, result)
-            return result
+            return self._remember(location, result, "heuristic")
 
         # 5. Nominatim-Geocoding (nur wenn Heuristiken nichts finden)
         self.rate_limiter.wait_for_api()
-        api_result = self.nominatim_client.geocode(processed_location)
-        if api_result is not None:
-            country_code = api_result.get("country_code", "")
-            country_name = api_result.get("country", "")
-            if country_code and len(country_code) == 2 and country_name.lower() != "earth":
-                region = self._extract_region(api_result.get("address", {}))
-                result = {
-                    "country_code": country_code,
-                    "country": country_name,
-                    "region": region,
-                    "latitude": api_result.get("latitude"),
-                    "longitude": api_result.get("longitude"),
-                    "formatted_address": api_result.get("formatted_address"),
-                }
-                if self.enable_quality_logging:
-                    logger.debug("Nominatim successful for '%s': %s", location, result)
-                if self.cache is not None:
-                    self.cache.set(location, result)
-                return result
+        try:
+            api_result = self.nominatim_client.geocode(processed_location)
+        except GeocodingUnavailableError as exc:
+            # Kein Ergebnis UND keine Aussage über den Ort: nicht cachen.
+            self.unavailable_count += 1
+            self.last_request_unanswered = True
+            logger.warning("Geocoding-Dienst nicht erreichbar für '%s': %s", location, exc)
+            return {}
 
-        # 6. Wenn alles fehlschlägt, gib leeres Ergebnis zurück und cache es
-        if self.enable_quality_logging:
+        result = self._result_from_api(api_result)
+        if result and self.enable_quality_logging:
+            logger.debug("Nominatim successful for '%s': %s", location, result)
+        if not result and self.enable_quality_logging:
             logger.warning(
                 "Could not determine valid geocoding data for location: '%s' after "
                 "all attempts.",
                 location,
             )
-        if self.cache is not None:
-            self.cache.set(location, {})
-        return {}
+        return self._remember(location, result, "nominatim")
+
+    def _result_from_api(self, api_result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Übersetze eine Nominatim-Antwort; leer, wenn sie kein gültiges Land enthält."""
+        if api_result is None:
+            return {}
+        country_code = api_result.get("country_code", "")
+        country_name = api_result.get("country", "")
+        if not country_code or len(country_code) != 2 or country_name.lower() == "earth":
+            return {}
+        return {
+            "country_code": country_code,
+            "country": country_name,
+            "region": self._extract_region(api_result.get("address", {})),
+            "latitude": api_result.get("latitude"),
+            "longitude": api_result.get("longitude"),
+            "formatted_address": api_result.get("formatted_address"),
+        }
 
     def _preprocess_location(self, location: str) -> Optional[str]:
         """

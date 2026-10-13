@@ -1,12 +1,23 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Dict, Optional
 
-from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from geopy.geocoders import Nominatim
 
 logger = logging.getLogger(__name__)
+
+# Pause vor dem einen Wiederholungsversuch, wenn der Dienst nicht geantwortet hat
+RETRY_DELAY_SECONDS = 5
+
+
+class GeocodingUnavailableError(Exception):
+    """Der Geocoding-Dienst hat nicht geantwortet (Timeout, Limit, Dienstfehler).
+
+    Bewusst von "Dienst hat geantwortet, kein Treffer" (Rückgabe None) getrennt: ein
+    Ausfall sagt nichts über den Ort aus und darf nicht als Ergebnis gespeichert werden.
+    """
 
 
 class NominatimClient:
@@ -15,22 +26,36 @@ class NominatimClient:
         self._timeout = timeout
 
     def geocode(self, location: str) -> Optional[Dict[str, Any]]:
-        try:
-            geocode_api_result = self._geolocator.geocode(
-                location,
-                exactly_one=True,
-                language="en",
-                addressdetails=True,
-                timeout=self._timeout,
-            )
-        except (GeocoderTimedOut, GeocoderUnavailable) as exc:
-            logger.warning("Nominatim Geocoding API error for '%s': %s", location, exc)
-            return None
-        except Exception as exc:  # noqa: BLE001
-            logger.error(
-                "Unexpected Geocoding exception for '%s': %s", location, exc, exc_info=True
-            )
-            return None
+        """Frage Nominatim nach einem Ort.
+
+        Returns:
+            Das Ergebnis oder None, wenn der Dienst geantwortet, aber nichts gefunden hat.
+
+        Raises:
+            GeocodingUnavailableError: Wenn der Dienst auch beim zweiten Versuch nicht
+                geantwortet hat. Jede Ausnahme des Aufrufs zählt als "nicht geantwortet".
+        """
+        geocode_api_result = None
+        for attempt in (1, 2):
+            try:
+                geocode_api_result = self._geolocator.geocode(
+                    location,
+                    exactly_one=True,
+                    language="en",
+                    addressdetails=True,
+                    timeout=self._timeout,
+                )
+                break
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Nominatim hat für '%s' nicht geantwortet (Versuch %d/2): %s",
+                    location,
+                    attempt,
+                    exc,
+                )
+                if attempt == 2:
+                    raise GeocodingUnavailableError(str(exc)) from exc
+                time.sleep(RETRY_DELAY_SECONDS)
 
         if not geocode_api_result or not hasattr(geocode_api_result, "raw"):
             return None

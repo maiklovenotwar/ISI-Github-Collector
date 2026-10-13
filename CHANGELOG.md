@@ -8,6 +8,9 @@ Notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- `update_location_geocoding.py --retry-empty` asks again for locations that an earlier run
+  could not resolve. New cache entries record their source (mapping table, text heuristic,
+  Nominatim, or no result) and the time they were written.
 - Audit log of the repository collection: one JSON line per finished period in
   `logs/collection_audit.jsonl` with the number of results GitHub announced, the number
   collected, and the shortfall. `scripts/diagnostics/summarize_collection_audit.py` summarizes
@@ -77,6 +80,13 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Geocoding no longer records an outage of the geocoder as "this location has no country".
+  A timeout was cached without expiry and the row was marked as not geocodable, so the
+  location, and every account using it, was never asked again. Unanswered requests are now
+  retried once, are not cached, and leave the row open; the run exits with code 1 and stops
+  after ten unanswered requests in a row.
+- `update_location_geocoding.py --force` without `--limit` processed the same first batch
+  indefinitely. Rows are now paged by id and each row is processed once per run.
 - After a period with more than 1,000 search results had been split, the standard collection
   skipped the first of the resulting parts: the loop advanced to the next period although the
   pointer already stood on the first part. Every part is now collected.

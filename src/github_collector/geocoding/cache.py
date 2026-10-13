@@ -92,6 +92,28 @@ class GeocodingCache:
         """
         self.save()
 
+    @staticmethod
+    def is_empty_result(entry: Optional[Dict[str, Any]]) -> bool:
+        """Return True for a cached entry that carries no country.
+
+        Covers entries written before metadata was stored (``{}``) as well as
+        entries of the form ``{"source": "no_result", ...}``.
+        """
+        return not entry or not entry.get("country_code")
+
+    def drop_empty(self) -> int:
+        """Remove all entries without a country and persist the cache.
+
+        Returns:
+            The number of removed entries.
+        """
+        empty_keys = [key for key, entry in self.cache.items() if self.is_empty_result(entry)]
+        for key in empty_keys:
+            del self.cache[key]
+        if empty_keys:
+            self.save()
+        return len(empty_keys)
+
     def get(self, location: str) -> Optional[Dict[str, Any]]:
         """Return a cached geocoding result for ``location``.
 
