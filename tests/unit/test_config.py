@@ -48,7 +48,8 @@ def test_config_collection_state():
     assert isinstance(config.STATE_CONFIG, dict)
     assert "file" in config.STATE_CONFIG
     state_file = config.STATE_CONFIG["file"]
-    assert str(config.DATA_DIR) in str(state_file)
+    # Der Pfad selbst wird für Tests umgelenkt (siehe isolated_collection_state in conftest.py)
+    assert str(state_file).endswith("collection_state.json")
 
 
 def test_config_performance_tracking():

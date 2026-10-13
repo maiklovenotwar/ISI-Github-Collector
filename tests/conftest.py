@@ -31,6 +31,23 @@ from github_collector.api.github_api import GitHubAPI  # noqa: E402
 from github_collector.database.database import GitHubDatabase, init_db  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def isolated_collection_state(tmp_path, monkeypatch):
+    """Lenkt die Zustandsdatei der Sammlung für jeden Test in ein temporäres Verzeichnis um.
+
+    Ohne diese Umlenkung verwendet jeder Test, der einen RepositoryCollector ohne eigenen
+    Pfad anlegt (z.B. über das CLI-Skript), die echte Datei data/collection_state.json und
+    verändert damit den Fortschritt einer tatsächlichen Sammlung.
+    """
+    from github_collector import config, repository_collector
+
+    redirected = tmp_path / "collection_state.json"
+    # Beide Verweise umlenken: Tests, die das config-Modul neu laden, erzeugen ein neues
+    # STATE_CONFIG-Dict, während der Collector weiter das beim Import gebundene verwendet.
+    monkeypatch.setitem(config.STATE_CONFIG, "file", redirected)
+    monkeypatch.setitem(repository_collector.STATE_CONFIG, "file", redirected)
+
+
 @pytest.fixture
 def temp_db_path():
     """Erstellt einen temporären Pfad für eine Testdatenbank."""
