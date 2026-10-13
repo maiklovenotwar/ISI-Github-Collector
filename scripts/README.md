@@ -62,6 +62,10 @@ cache summary read a local file only.
 | `diagnostics/inspect_geocoding_cache.py` | Counts the entries of the local geocoding cache with and without a country and separates the entries without a country into those the current rules resolve, those recognised as not a place, and the rest. | nothing | none |
 | `diagnostics/count_excluded_forks.py` | Reports, for several star thresholds, how many forks and how many non-fork repositories the GitHub search announces; forks are not part of the collected population. Two search requests per threshold. | nothing | GitHub API |
 
+`diagnostics/methodology_checks.sql` contains read-only queries that support the figures in
+`docs/methodology/` (reference date, repositories per month of creation, accounts with a
+location and a country, the two rows of an organization, countries by source).
+
 ## `migrations/`
 
 Schema changes, applied manually. There is no migration framework. The SQL
