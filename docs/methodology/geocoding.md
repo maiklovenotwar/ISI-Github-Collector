@@ -92,22 +92,28 @@ expectation that no country applies, serves as a reference
 `scripts/maintenance/benchmark_geocoding.py` compares the result of the
 procedure with this list.
 
-Result of the run of 2026-10-13, without cache; the geocoder answered
-every request:
+Result of the run of 2026-10-13 with the current rules, without cache;
+the geocoder answered every request:
 
 | | Entries | Share |
 |---|---:|---:|
 | Entries in the list | 1,068 | |
-| Result as expected | 1,012 | 94.8% |
-| Expected country assigned | 941 of 997 | 94.4% |
-| No country assigned although one was expected | 35 of 997 | 3.5% |
-| A different country assigned | 21 of 997 | 2.1% |
+| Result as expected | 1,013 | 94.9% |
+| Expected country assigned | 942 of 997 | 94.5% |
+| No country assigned although one was expected | 36 of 997 | 3.6% |
+| A different country assigned | 19 of 997 | 1.9% |
 | Correctly without a country (not a place) | 71 of 71 | 100% |
 
-Of the 962 entries to which the procedure assigned a country, 941 (97.8%)
+Of the 961 entries to which the procedure assigned a country, 942 (98.0%)
 carried the expected one. By stage: the table of special cases resolved 75
-entries, all as expected; the text rules 165, of which 159 as expected;
-Nominatim 722, of which 707 as expected.
+entries, all as expected; the text rules 148, of which 144 as expected;
+Nominatim 738, of which 723 as expected.
+
+A run on the same day before the rules for ambiguous US state endings were
+changed gave 1,012 entries as expected: the change corrected two entries
+that had been assigned to the United States (expected: Canada and
+Georgia), and one US location that the text rules had resolved is no
+longer resolved by the geocoder.
 
 Two properties of the list limit what this figure means.
 

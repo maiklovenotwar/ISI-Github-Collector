@@ -30,8 +30,18 @@ Three properties follow from this query.
   account, and most forks carry no development of their own. Its size can
   be estimated with `scripts/diagnostics/count_excluded_forks.py`, which
   reports how many forks and how many non-fork repositories the search
-  announces above a star threshold. This figure has not yet been
-  recorded here.
+  announces above a star threshold. On 2026-10-13 the search announced:
+
+  | Stars at least | Forks | Non-fork repositories | Forks per 100 non-forks |
+  |---:|---:|---:|---:|
+  | 1 | 7,095,401 | 32,534,721 | 21.8 |
+  | 10 | 111,525 | 2,902,023 | 3.8 |
+  | 100 | 10,104 | 483,785 | 2.1 |
+  | 1,000 | 773 | 65,551 | 1.2 |
+
+  These totals are approximations reported by GitHub. The exclusion is
+  therefore substantial at a threshold of one star and small at higher
+  thresholds.
 - **Private and deleted repositories are excluded.** The search covers
   public repositories that exist at the time of the request.
 - **Membership depends on the star count at retrieval.** A repository
