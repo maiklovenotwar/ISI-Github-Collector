@@ -45,6 +45,7 @@ collector database.
 |--------|---------|--------|-----------------|
 | `maintenance/reset_and_collect.py` | Empties the configured database and starts a repository collection. Refuses to run without `--yes`; MySQL additionally requires `GITHUB_COLLECTOR_ALLOW_MYSQL_RESET=true`. | deletes all collected data | GitHub API (through the collection it starts) |
 | `maintenance/cleanup_orphaned_owners.py` | Removes contributors and organizations that no repository and no contributor list refers to; `--dry-run` reports the numbers only. | deletes rows from `contributors`, `organizations` | none |
+| `maintenance/recheck_ambiguous_locations.py` | Re-evaluates stored locations that end in `Georgia`, `WA`, or `CA`, which earlier versions assigned to the United States without asking the geocoder; dry run unless `--write` is given. | `contributors`, `organizations` (`country_code`, `region`) | geocoding service |
 | `maintenance/benchmark_geocoding.py` | Measures the accuracy of the geocoding against the gold-standard locations in `tests/resources/`. | nothing in the database | geocoding service |
 | `maintenance/manage_gold_standard.py` | Maintains the gold-standard locations used by the geocoding benchmark. | `tests/resources/geocoding_gold_standard.json` | geocoding service |
 

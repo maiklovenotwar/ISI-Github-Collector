@@ -808,8 +808,30 @@ class HeuristicResolver:
 
         return None, None
 
+    # Namen von US-Bundesstaaten, die auch einen Ort außerhalb der USA bezeichnen
+    # ("Tbilisi, Georgia"). Für sie entscheidet die Textregel nur, wenn der Name allein
+    # steht (dokumentierte Konvention: der Bundesstaat) oder der Text davor ein bekannter
+    # US-Ort ist - sonst entscheidet der Geocoder.
+    _AMBIGUOUS_STATE_NAMES = {"georgia"}
+
+    # Kürzel von US-Bundesstaaten, die ohne bekannten US-Ort davor weder als Bundesstaat
+    # noch als Ländercode gewertet werden: "CA" ist Kalifornien oder Kanada, "WA" ist
+    # Washington oder Western Australia. Auch hier entscheidet dann der Geocoder.
+    _DEFERRED_ABBRS = {"ca", "wa"}
+
+    def _is_known_us_place(self, prefix: str) -> bool:
+        """True, wenn der Text vor einem Bundesstaat ein bekannter US-Ort oder -Staat ist."""
+        prefix = prefix.strip().rstrip(",").strip().lower()
+        return prefix in self._MAJOR_US_CITIES or prefix in self._US_STATES
+
     def _match_us_state(self, text: str) -> Optional[Tuple[str, str]]:
         for state, code in self._US_STATES.items():
+            if state in self._AMBIGUOUS_STATE_NAMES:
+                if state == text:
+                    return code, state.title()
+                if text.endswith(state) and self._is_known_us_place(text[: -len(state)]):
+                    return code, state.title()
+                continue
             if state == text or text.endswith(f", {state}") or f" {state} " in f" {text} ":
                 return code, state.title()
         return None
@@ -842,12 +864,11 @@ class HeuristicResolver:
         if not abbr or abbr not in self._US_STATE_ABBR:
             return None
 
-        # Konflikt-Check: Ist das Abbr auch ein ISO-Ländercode?
-        if abbr in self._ISO_CONFLICT_ABBRS:
+        # Konflikt-Check: Ist das Abbr auch ein ISO-Ländercode oder eine Region anderswo?
+        if abbr in self._ISO_CONFLICT_ABBRS or abbr in self._DEFERRED_ABBRS:
             # Prüfe, ob der Präfix (vor dem Abbr) eine bekannte US-Stadt oder US-State ist
-            prefix = text[: abbr_match.start()].strip().rstrip(",").lower()
-            if prefix not in self._MAJOR_US_CITIES and prefix not in self._US_STATES:
-                return None  # Im Zweifel kein US-Match, könnte ISO-Land sein
+            if not self._is_known_us_place(text[: abbr_match.start()]):
+                return None  # Im Zweifel kein US-Match
 
         return "US", abbr.upper()
 
@@ -867,6 +888,9 @@ class HeuristicResolver:
         if not match:
             return None
         code = match.group(1).upper()
+        if code.lower() in self._DEFERRED_ABBRS:
+            # "…, CA" ohne bekannten US-Ort davor: weder Kalifornien noch Kanada annehmen
+            return None
         if code in self._country_aliases.values():
             return code, None
         return None

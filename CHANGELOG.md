@@ -87,6 +87,12 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Geocoding assigned every location ending in `Georgia`, `WA`, or `CA` to the United States
+  before the geocoder was asked, including `Tbilisi, Georgia`, `Perth, WA` (Western Australia),
+  and `Toronto, CA`. These endings are now decided by the text rules only if a known US city or
+  state precedes them; otherwise the geocoder decides.
+  `scripts/maintenance/recheck_ambiguous_locations.py` applies the corrected rule to stored
+  rows (dry run unless `--write` is given).
 - Errors while writing a page of repositories to the database were logged and ignored; the
   page counted as collected. They now end the collection, like a failed search.
 - A call of the collection script resumed whatever state file it found, also a finished one

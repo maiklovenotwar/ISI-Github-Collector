@@ -35,10 +35,14 @@ result ends the procedure.
    string, after a comma, or as a separate word; a two-letter US state
    abbreviation at the end; one of 56 large US cities at the beginning; a
    country alias as the whole string; a two-letter country code at the
-   end. Sixteen abbreviations that are both a US state and a country code
-   (for example `DE`, `IN`, `CO`) count as a US state only if the
-   preceding text is a known US city or state; `CA` is not among them and
-   always counts as California.
+   end. Three kinds of endings are ambiguous and are decided by these
+   rules only if the preceding text is a known US city or state:
+   sixteen abbreviations that are both a US state and a country code (for
+   example `DE`, `IN`, `CO`); the abbreviations `CA` (California or
+   Canada) and `WA` (Washington or Western Australia); and the name
+   `Georgia`. Otherwise the sixteen abbreviations are read as a country
+   code, and strings ending in `CA`, `WA`, or `Georgia` are passed to the
+   geocoder. `Georgia` as the whole string is assigned to the US state.
 5. **Nominatim.** All remaining strings are sent to the Nominatim
    geocoder of OpenStreetMap, one request per second, with English
    output. The first result is used; its country code and
@@ -65,12 +69,12 @@ stays open, and the run ends with exit code 1.
 - **Ambiguous names follow fixed rules.** The text rules for US states
   run before the geocoder and take precedence. A string that ends in the
   name or abbreviation of a US state is assigned to the United States,
-  also where the same name denotes another place: `Georgia` and
-  `Tbilisi, Georgia` are assigned to the United States, as are
-  `Perth, WA` (Western Australia) and `London, CA`. In the local cache of
-  2026-10-13, 30 of the 104 distinct strings naming one of four Georgian
-  cities carried the code `US`. For all other ambiguous names the first
-  result of Nominatim decides.
+  with the exceptions listed under stage 4. Two conventions remain:
+  `Georgia` as the whole string is assigned to the US state, not to the
+  country, and a string that ends in one of the sixteen abbreviations
+  without a known US place before it is read as a country code (`…, IN`
+  as India). For all other ambiguous names the first result of Nominatim
+  decides.
 - **Unresolved strings.** In the same cache, 74,032 of 289,920 distinct
   location strings (25.5%) had no country; 5,491 of them are recognised
   as not a place by the current rules. About a quarter of the strings
@@ -129,7 +133,15 @@ table of special cases, text rule, Nominatim, or no result) and when
 `scripts/diagnostics/inspect_geocoding_cache.py` summarises the cache
 without sending requests.
 
-### Caches and Results Written Before 2026-10-12
+### Caches and Results Written Before 2026-10-13
+
+Until 2026-10-13 the text rules assigned every string ending in
+`Georgia`, `WA`, or `CA` to the United States, including
+`Tbilisi, Georgia`, `Perth, WA` (Western Australia), and `Toronto, CA`.
+In the local cache of that day, 30 of the 104 distinct strings naming one
+of four Georgian cities carried the code `US`.
+`scripts/maintenance/recheck_ambiguous_locations.py` applies the current
+rule to the stored rows whose location has such an ending.
 
 In earlier versions, a request the geocoder did not answer was stored
 like a request without a match: the location entered the cache without a

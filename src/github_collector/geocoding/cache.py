@@ -101,6 +101,19 @@ class GeocodingCache:
         """
         return not entry or not entry.get("country_code")
 
+    def remove(self, location: str) -> bool:
+        """Remove the entry for ``location``, if present.
+
+        Returns:
+            True if an entry was removed. The cache is not persisted by this
+            call; use :meth:`flush`.
+        """
+        key = normalize_location(location)
+        if key and key in self.cache:
+            del self.cache[key]
+            return True
+        return False
+
     def drop_empty(self) -> int:
         """Remove all entries without a country and persist the cache.
 
