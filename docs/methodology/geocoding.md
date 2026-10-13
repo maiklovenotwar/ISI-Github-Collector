@@ -44,8 +44,8 @@ result ends the procedure.
    output. The first result is used; its country code and
    state/region are stored.
 
-A location for which the geocoder returns no match is marked with an
-empty country code, so that it is not requested again in later runs. If
+A location that is not a place, or for which the geocoder returns no
+match, is marked with an empty country code, so that it is not requested again in later runs. If
 the geocoder does not answer (timeout, rate limit, service error), the
 request is repeated once; if it still fails, nothing is stored, the row
 stays open, and the run ends with exit code 1.

@@ -77,15 +77,25 @@ the time of retrieval; the collector does not record their history.
 The collector takes the following measures against silent loss.
 
 - **Errors stop the collection.** A search request is attempted up to
-  three times. If it still fails, the collection ends with an error, the
-  period remains open, and the script exits with code 1. Invalid tokens
-  end the collection at once. The same call resumes at the open period.
+  three times, also after a network error. If it still fails, the
+  collection ends with an error, the period remains open, and the script
+  exits with code 1. Invalid tokens end the collection at once. The same
+  applies when the retrieved repositories cannot be written to the
+  database. The same call resumes at the open period.
+- **The state file belongs to one collection.** It records the mode and
+  the star range of the collection it describes and whether that
+  collection has finished. A call with other arguments starts a new
+  collection only if the recorded one has finished; otherwise it is
+  refused.
 - **Oversized periods are divided** in both collection modes, as
   described above.
 - **Each finished period is recorded** in `logs/collection_audit.jsonl`
-  with the number of matches GitHub announced, the number collected, and
-  the difference. `scripts/diagnostics/summarize_collection_audit.py`
-  lists the periods in which fewer repositories arrived than announced.
+  with the number of matches GitHub announced, the number retrieved, the
+  number written to the database, and the difference between announced
+  and retrieved. `scripts/diagnostics/summarize_collection_audit.py` lists
+  the periods in which fewer repositories arrived than announced or fewer
+  were stored than retrieved. The retrieved number counts search results;
+  a repository returned twice within a period is counted twice.
 
 Three limits remain.
 
@@ -103,9 +113,9 @@ Three limits remain.
   were created within the same second, the first 1,000 by star count are
   collected and the period is recorded as truncated.
 
-### Collections Made Before 2026-10-12
+### Collections Made Before 2026-10-13
 
-Three defects affected earlier versions of the collector. They are
+Six defects affected earlier versions of the collector. They are
 described here because data collected with those versions may be
 incomplete.
 
@@ -120,6 +130,18 @@ incomplete.
 3. **The star-range mode did not divide periods.** It stopped after 1,000
    results per period; the repositories with the fewest stars in that
    period were missing.
+4. **Errors while writing to the database were logged and ignored.** The
+   page counted as collected although nothing had been stored.
+5. **A finished state file was resumed by the next call**, whatever its
+   arguments. A second collection with another star range or time range,
+   started with the state file of the first, processed only the last
+   period of the first.
+6. **A collection resumed with `--limit` ended the open period after one
+   page**, so that the remaining pages of that period were never
+   requested.
+
+In addition, `repositories.organization_id` was not set for repositories
+found through the search; see `country_attribution.md`.
 
 Affected collections can be recognised by periods with markedly fewer
 repositories than their neighbours. `scripts/diagnostics/methodology_checks.sql`

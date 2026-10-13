@@ -34,13 +34,34 @@ DEFAULT_AUDIT_FILE = config.LOG_DIR / "collection_audit.jsonl"
 
 def read_audit(path: Path) -> List[Dict[str, Any]]:
     """Liest die Zeilen des Prüfprotokolls; leere Zeilen werden übersprungen."""
+    entries = []
     with open(path, encoding="utf-8") as handle:
-        return [json.loads(line) for line in handle if line.strip()]
+        for number, line in enumerate(handle, start=1):
+            if not line.strip():
+                continue
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                # z.B. eine beim Abbruch nur teilweise geschriebene letzte Zeile
+                print(
+                    f"Zeile {number} ist kein gültiges JSON und wird übersprungen.", file=sys.stderr
+                )
+    return entries
+
+
+def not_stored(entry: Dict[str, Any]) -> int:
+    """Abgerufene, aber nicht gespeicherte Repositories (ältere Zeilen ohne Angabe: 0)."""
+    return max(0, entry["collected"] - entry.get("stored", entry["collected"]))
 
 
 def is_flagged(entry: Dict[str, Any]) -> bool:
-    """Eine Periode ist auffällig bei Fehlbetrag, unvollständiger Antwort oder Abschneiden."""
-    return bool(entry["shortfall"] > 0 or entry["incomplete_pages"] > 0 or entry["truncated"])
+    """Auffällig bei Fehlbetrag, nicht Gespeichertem, unvollständiger Antwort, Abschneiden."""
+    return bool(
+        entry["shortfall"] > 0
+        or not_stored(entry) > 0
+        or entry["incomplete_pages"] > 0
+        or entry["truncated"]
+    )
 
 
 def summarize(entries: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
@@ -49,7 +70,10 @@ def summarize(entries: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "periods": len(entries),
         "collected": sum(e["collected"] for e in entries),
-        "announced": sum(min(e["total_count"], 1000) for e in entries),
+        # angekündigt = gesammelt + Fehlbetrag (berücksichtigt fortgesetzte Perioden)
+        "announced": sum(e["collected"] + e["shortfall"] for e in entries),
+        "stored": sum(e.get("stored", e["collected"]) for e in entries),
+        "with_unstored": sum(1 for e in entries if not_stored(e) > 0),
         "with_shortfall": sum(1 for e in entries if e["shortfall"] > 0),
         "shortfall_total": sum(e["shortfall"] for e in entries),
         "incomplete": sum(1 for e in entries if e["incomplete_pages"] > 0),
@@ -78,7 +102,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     summary = summarize(read_audit(args.audit_file))
     print(f"Prüfprotokoll: {args.audit_file}")
     print(f"Abgeschlossene Perioden:        {summary['periods']:,}")
-    print(f"Gesammelte Repositories:        {summary['collected']:,}")
+    print(f"Abgerufene Repositories:        {summary['collected']:,}")
+    print(f"Davon gespeichert:              {summary['stored']:,}")
+    print(f"Perioden mit nicht Gespeichertem: {summary['with_unstored']:,}")
     print(f"Von GitHub angekündigt:         {summary['announced']:,}")
     print(f"Perioden mit Fehlbetrag:        {summary['with_shortfall']:,}")
     print(f"  fehlende Repositories gesamt: {summary['shortfall_total']:,}")
@@ -98,7 +124,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         print(
             f"  {e['start']} bis {e['end']} (Stars {stars}): gemeldet {e['total_count']}, "
-            f"gesammelt {e['collected']}, Fehlbetrag {e['shortfall']}, "
+            f"abgerufen {e['collected']}, gespeichert {e.get('stored', e['collected'])}, "
+            f"Fehlbetrag {e['shortfall']}, "
             f"unvollst. Seiten {e['incomplete_pages']}, abgeschnitten {e['truncated']}"
         )
     return 1

@@ -84,3 +84,26 @@ def test_missing_file_exits_with_two(module, tmp_path, capsys):
     assert module.main(["--audit-file", str(tmp_path / "absent.jsonl")]) == 2
 
     assert "Kein Prüfprotokoll" in capsys.readouterr().err
+
+
+def test_fetched_but_not_stored_repositories_are_flagged(module, tmp_path, capsys):
+    unstored = dict(entry(250, 250), stored=220)
+    path = write(tmp_path / "audit.jsonl", [entry(600, 600), unstored])
+
+    assert module.main(["--audit-file", str(path)]) == 1
+
+    out = capsys.readouterr().out
+    assert "abgerufen 250, gespeichert 220" in out
+    assert "Perioden mit nicht Gespeichertem: 1" in out
+
+
+def test_damaged_last_line_is_skipped(module, tmp_path, capsys):
+    path = tmp_path / "audit.jsonl"
+    damaged = json.dumps(entry(600, 600)) + "\n" + '{"start": "2024'
+    path.write_text(damaged, encoding="utf-8")
+
+    assert module.main(["--audit-file", str(path)]) == 0
+
+    captured = capsys.readouterr()
+    assert "Abgeschlossene Perioden:        1" in captured.out
+    assert "Zeile 2" in captured.err

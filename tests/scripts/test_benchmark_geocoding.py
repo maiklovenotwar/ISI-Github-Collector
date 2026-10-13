@@ -50,7 +50,9 @@ def test_results_are_counted_by_source_and_unanswered_requests_separately(module
     ]:
         module._evaluate_sample(location, expected, service, counters, errors)
 
-    assert (counters["correct"], counters["mismatches"], counters["fn"]) == (3, 1, 1)
+    # the unanswered request is neither correct nor a miss
+    assert (counters["correct"], counters["mismatches"], counters["fn"]) == (3, 1, 0)
+    assert counters["unanswered"] == 1
     assert (counters["source_heuristic_total"], counters["source_heuristic_correct"]) == (1, 1)
     assert (counters["source_nominatim_total"], counters["source_nominatim_correct"]) == (2, 1)
     assert counters["source_unanswered_total"] == 1
@@ -59,3 +61,5 @@ def test_results_are_counted_by_source_and_unanswered_requests_separately(module
     module._print_report(5, counters, errors)
     out = capsys.readouterr().out
     assert "unanswered" in out and "nominatim    1 / 2" in out
+    assert "Nicht beantwortet (nicht gewertet): 1" in out
+    assert "Korrekt:        3 (75.00%)" in out

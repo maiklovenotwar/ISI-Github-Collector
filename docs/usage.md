@@ -78,6 +78,18 @@ python scripts/collection/collect_repositories.py
 python scripts/collection/collect_repositories.py --non-interactive --time-range week --limit 1000 --min-stars 100
 ```
 
+**Interrupted and repeated runs.** Progress is stored in `data/collection_state.json`,
+together with the mode and the star range of the collection. A run that ends with an error
+(exit code 1) names the period at which it stopped; the same call resumes there. A call with
+other arguments starts a new collection if the recorded one has finished, and is refused if it
+has not; in that case finish the interrupted collection first, or rename or delete the state
+file. A state file written by a version before 2026-10-13 records no arguments and is refused
+in the same way.
+
+**Checking a collection.** Every finished period is recorded in `logs/collection_audit.jsonl`.
+`python scripts/diagnostics/summarize_collection_audit.py` summarizes the file and exits with
+code 1 if a period needs attention; see `docs/methodology/repository_collection.md`.
+
 ### Parameters
 
 #### Time Range Options

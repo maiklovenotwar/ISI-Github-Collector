@@ -24,7 +24,7 @@ def statements():
 def test_every_statement_is_a_select():
     parsed = statements()
 
-    assert len(parsed) == 11
+    assert len(parsed) == 12
     assert all(statement.upper().startswith("SELECT") for statement in parsed)
     forbidden = re.compile(r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|REPLACE)\b", re.I)
     assert not any(forbidden.search(statement) for statement in parsed)
@@ -44,7 +44,8 @@ def test_statements_run_on_the_current_schema_and_apply_the_owner_rule(test_db):
         session.add_all(
             [
                 Repository(id=10, name="a", full_name="alice/a", owner_id=1),
-                Repository(id=11, name="b", full_name="acme/b", owner_id=20, organization_id=20),
+                # as in older collections: owned by an organization, organization_id not set
+                Repository(id=11, name="b", full_name="acme/b", owner_id=20),
             ]
         )
 
@@ -54,5 +55,8 @@ def test_statements_run_on_the_current_schema_and_apply_the_owner_rule(test_db):
 
     # query 7: one organization with a placeholder row, the two rows disagree
     assert tuple(results[6][0])[:3] == (1, 0, 1)
-    # query 8: both repositories get a country, the organization's repository from organizations
+    # query 8: both repositories get a country; the organization's repository from the
+    # organizations table although organization_id is empty
     assert sorted(tuple(row) for row in results[7]) == [("organization", 1, 1), ("user", 1, 1)]
+    # query 12: one repository is owned by an organization, none carries organization_id
+    assert tuple(results[11][0]) == (1, 0, 0)

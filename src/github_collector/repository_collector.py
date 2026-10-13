@@ -11,6 +11,7 @@ from math import ceil
 from time import perf_counter
 from typing import Any, Dict, List, Optional, Tuple
 
+import requests
 from dateutil import tz
 from pydantic import ValidationError
 
@@ -57,6 +58,11 @@ logger = logging.getLogger(__name__)
 # nicht gesammelt. Die Hauptschleife darf dann NICHT zur nächsten Periode weiterschalten,
 # sonst wird die erste Subperiode übersprungen.
 PERIOD_SPLIT = object()
+
+
+class CollectionStateMismatchError(Exception):
+    """Die Zustandsdatei gehört zu einer anderen, nicht abgeschlossenen Sammlung."""
+
 
 # GitHub löst `created:` sekundengenau auf - kürzere Perioden lassen sich nicht weiter teilen.
 MIN_SPLITTABLE_SECONDS = 1
@@ -412,7 +418,8 @@ class RepositoryCollector:
             max_stars: Maximale Anzahl von Stars
             resume: Ob unterbrochene Sammlung fortgesetzt werden soll
         """
-        if resume and self.state.state.get("time_periods"):
+        params = {"mode": "star_range", "min_stars": min_stars, "max_stars": max_stars}
+        if self._begin_or_resume(params, resume):
             # Fortsetzen einer unterbrochenen Sammlung
             state_start_date = datetime.fromisoformat(self.state.get("start_date"))
             state_end_date = datetime.fromisoformat(self.state.get("end_date"))
@@ -443,6 +450,7 @@ class RepositoryCollector:
             # Berechne Zeitperioden und initialisiere State
             periods = self._calculate_time_periods(start_date, end_date)
             self.state.reset(start_date, end_date)
+            self.state.update(params=params, finished=False)
             self.state.set_time_periods(periods)
 
     def collect_repositories_by_star_range(
@@ -487,6 +495,7 @@ class RepositoryCollector:
             period = self.state.get_current_period()
             if not period:
                 logger.info("Keine weiteren Zeitperioden verfügbar")
+                self.state.update(finished=True)
                 break
             period_start, period_end = period
             current_period_index = self.state.state.get("current_period_index", 0)
@@ -512,6 +521,7 @@ class RepositoryCollector:
                 break
             if not self.state.next_period():
                 logger.info("Alle Zeitperioden abgeschlossen")
+                self.state.update(finished=True)
                 break
         show_collection_summary(total_collected)
         collection_end_time = perf_counter()
@@ -529,20 +539,22 @@ class RepositoryCollector:
         )
         return total_collected
 
-    def _process_batch_with_feature_flag(self, items: list) -> None:
+    def _process_batch_with_feature_flag(self, items: list) -> int:
         """Verarbeite einen Batch basierend auf Feature-Flag (parallel oder sequentiell).
 
         Args:
             items: Liste von Repository-Daten zum Verarbeiten
+
+        Returns:
+            Anzahl der gespeicherten Repositories.
         """
         if ENABLE_PARALLEL_PROCESSING:
             logger.info(
                 "Verarbeite Repository-Batch parallel (ENABLE_PARALLEL_PROCESSING aktiviert)"
             )
-            self.process_repositories_parallel(items)
-        else:
-            logger.info("Verarbeite Repository-Batch sequentiell (Parallelisierung deaktiviert)")
-            self._process_repositories_batch(items)
+            return self.process_repositories_parallel(items)
+        logger.info("Verarbeite Repository-Batch sequentiell (Parallelisierung deaktiviert)")
+        return self._process_repositories_batch(items)
 
     def _collect_repositories_in_period_by_star_range(
         self,
@@ -611,8 +623,8 @@ class RepositoryCollector:
                 total_repos,
                 chunk_size,
             )
-            self._process_repositories_batch(repositories_data)
-            return total_repos
+            stored = self._process_repositories_batch(repositories_data)
+            return total_repos if stored is None else stored
 
         # Erzeuge Chunks basierend auf der aktuellen Ziel-Batchgröße
         chunks: List[List[Dict[str, Any]]] = [
@@ -628,6 +640,7 @@ class RepositoryCollector:
         )
 
         processed_total = 0
+        first_error: Optional[BaseException] = None
 
         # Phase 4.1: Prometheus-Metrik für aktive Threads
         update_active_threads(MAX_WORKER_THREADS)
@@ -642,11 +655,10 @@ class RepositoryCollector:
                 for future in as_completed(future_to_chunk_size):
                     chunk_len = future_to_chunk_size[future]
                     try:
-                        # _process_repositories_batch gibt aktuell None zurück;
-                        # wir verlassen uns daher auf chunk_len als Näherung.
-                        future.result()
-                        processed_total += chunk_len
-                    except Exception as exc:  # noqa: BLE001
+                        stored = future.result()
+                        processed_total += chunk_len if stored is None else stored
+                    except Exception as exc:
+                        first_error = first_error or exc
                         logger.error(
                             "Fehler bei der parallelen Verarbeitung eines Repository-Chunks (%d Elemente): %s",
                             chunk_len,
@@ -656,6 +668,9 @@ class RepositoryCollector:
             # Phase 4.1: Threads beendet
             update_active_threads(0)
 
+        if first_error is not None:
+            # Nicht verschlucken: ein fehlgeschlagener Chunk heißt, dass Repositories fehlen
+            raise first_error
         return processed_total
 
     def _get_total_repositories_in_timeframe(
@@ -874,9 +889,13 @@ class RepositoryCollector:
                 continue
 
             # organization_id separat aus organization_mapping
+            # Die Suche liefert kein eigenes "organization"-Feld; ob ein Repository einer
+            # Organisation gehört, steht im Typ des Owners.
             org_id: Optional[int] = None
             org_data = repo_data.get("organization") or {}
             org_login = org_data.get("login")
+            if not org_login and owner_data.get("type") == "Organization":
+                org_login = owner_login
             if org_login:
                 org_id = organization_mapping.get(org_login)
 
@@ -1069,9 +1088,11 @@ class RepositoryCollector:
                     session=session,
                     batch_id=batch_id,
                 )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
+            # Nicht verschlucken: sonst gilt die Seite als gesammelt, obwohl nichts
+            # gespeichert wurde, und die Periode wird als erledigt markiert.
             logger.error(f"Fehler bei der Bulk-Verarbeitung von Repositories: {e}")
-            return 0
+            raise
 
         return processed_count
 
@@ -1126,12 +1147,15 @@ class RepositoryCollector:
         # Überwache das Rate-Limit nach dem Batch
         self.api.monitor_rate_limit()
 
-    def _process_repositories_batch(self, repositories_data: List[Dict[str, Any]]) -> None:
+    def _process_repositories_batch(self, repositories_data: List[Dict[str, Any]]) -> int:
         """
         Verarbeite mehrere Repositories in einem Batch.
 
         Args:
             repositories_data: Liste von Repository-Daten aus der GitHub API.
+
+        Returns:
+            Anzahl der gespeicherten Repositories.
         """
         # Starte Zeitmessung für den Batch
         batch_start_time = perf_counter()
@@ -1155,7 +1179,7 @@ class RepositoryCollector:
             logger.error(
                 f"[{batch_id}] Keine validen Repositories im Batch - überspringe Verarbeitung"
             )
-            return
+            return 0
 
         user_owners, org_owners = self._analyze_owner_distribution(clean_repositories_data)
 
@@ -1178,6 +1202,7 @@ class RepositoryCollector:
             processed_count=processed_count,
             batch_start_time=batch_start_time,
         )
+        return processed_count
 
     def _split_and_reschedule_period(
         self, start_date: datetime, end_date: datetime, total_count: int
@@ -1195,7 +1220,9 @@ class RepositoryCollector:
         show_period_too_large(total_count)
 
         # Teile die Periode auf
-        new_periods = self._adjust_period_size((start_date, end_date), total_count)
+        new_periods = self._adjust_period_size(
+            (start_date, end_date), total_count, GITHUB_API["search_max_results"]
+        )
 
         # Hole aktuellen State
         current_period_index = self.state.state.get("current_period_index", 0)
@@ -1264,8 +1291,14 @@ class RepositoryCollector:
                     max_stars=max_stars,
                 )
 
+                if not isinstance(results, dict) or "total_count" not in results:
+                    # z.B. leere Antwort nach HTTP 404: kein Ergebnis, sondern ein Fehler
+                    raise GitHubAPIError(
+                        f"Unerwartete Antwort der Repository-Suche (kein total_count): {results!r}"
+                    )
+
                 items = results.get("items", [])
-                total_count = results.get("total_count", 0)
+                total_count = results["total_count"]
                 incomplete = bool(results.get("incomplete_results", False))
 
                 # Bei erster erfolgreicher Page: Logging + UI-Update
@@ -1293,7 +1326,7 @@ class RepositoryCollector:
                 else:
                     raise
 
-            except GitHubAPIError as e:
+            except (GitHubAPIError, requests.RequestException) as e:
                 if attempt < max_retries - 1:
                     logger.error(f"API-Fehler (Versuch {attempt + 1}/{max_retries}): {e}")
                     print(f"\n[Fehler] GitHub API-Fehler: {e}\n")
@@ -1335,14 +1368,16 @@ class RepositoryCollector:
         Returns:
             True wenn Pagination beendet werden soll, sonst False
         """
-        # GitHub API Limit: Max 1000 Ergebnisse (10 Seiten à 100 Items)
-        if len(items) < 100 or page >= 10:
+        # GitHub API Limit: Max 1000 Ergebnisse (bei 100 pro Seite: 10 Seiten)
+        per_page = GITHUB_API["search_page_size"]
+        last_page = page * per_page >= GITHUB_API["search_max_results"]
+        if len(items) < per_page or last_page:
             if collected_count > 0:
                 if total_count and collected_count >= total_count:
                     show_collection_complete(total_count)
                 else:
                     show_collection_progress(collected_count, total_count or collected_count)
-                    if page >= 10:
+                    if last_page:
                         show_api_limit_reached()
             return True
         return False
@@ -1386,6 +1421,43 @@ class RepositoryCollector:
         )
         self.state.update(truncated_periods=truncated)
 
+    def _begin_or_resume(self, params: Dict[str, Any], resume: bool) -> bool:
+        """Entscheide, ob die Zustandsdatei fortgesetzt oder neu begonnen wird.
+
+        Eine Zustandsdatei gehört zu genau einer Sammlung (Modus und Star-Bereich). Ist
+        diese abgeschlossen, beginnt ein Aufruf eine neue. Ist sie unterbrochen, wird sie
+        nur mit denselben Angaben fortgesetzt.
+
+        Returns:
+            True, wenn die vorhandene Sammlung fortgesetzt wird; False für eine neue.
+
+        Raises:
+            CollectionStateMismatchError: Wenn eine unterbrochene Sammlung mit anderen
+                Angaben vorliegt, oder eine Zustandsdatei ohne Angaben (ältere Version).
+        """
+        self._run_collected = 0
+        state = self.state.state
+        if not resume or not state.get("time_periods") or not self.state.get_current_period():
+            return False
+        if state.get("finished"):
+            return False
+
+        recorded = state.get("params")
+        if recorded == params:
+            return True
+
+        if recorded is None:
+            described = "ohne gespeicherte Angaben (von einer älteren Version geschrieben)"
+        else:
+            stars = f"{recorded.get('min_stars')}..{recorded.get('max_stars')}"
+            described = f"im Modus '{recorded.get('mode')}' mit Stars {stars}"
+        raise CollectionStateMismatchError(
+            f"Die Zustandsdatei {self.state.state_file} enthält eine nicht abgeschlossene "
+            f"Sammlung {described}. Dieser Aufruf verlangt etwas anderes. Entweder die "
+            "unterbrochene Sammlung mit ihren ursprünglichen Angaben zu Ende führen oder "
+            "die Zustandsdatei umbenennen bzw. löschen, um neu zu beginnen."
+        )
+
     def _report_empty_page(self, page: int, collected_count: int, total_count: int) -> None:
         """Melde das Ende einer Periode durch eine leere Seite."""
         logger.info(f"Keine weiteren Repositories in dieser Periode (Seite {page})")
@@ -1410,6 +1482,14 @@ class RepositoryCollector:
 
     def _write_period_audit(self, entry: Dict[str, Any]) -> None:
         """Hänge eine Zeile an das Prüfprotokoll an und warne bei einem Fehlbetrag."""
+        if entry["stored"] < entry["collected"]:
+            logger.warning(
+                "Periode %s bis %s: %d Repositories abgerufen, aber nur %d gespeichert.",
+                entry["start"],
+                entry["end"],
+                entry["collected"],
+                entry["stored"],
+            )
         if entry["shortfall"] > 0:
             logger.warning(
                 "Periode %s bis %s: GitHub meldete %d Treffer, gesammelt wurden %d "
@@ -1462,6 +1542,7 @@ class RepositoryCollector:
         first_page = self.state.get("current_period_page", 1)
         page = first_page
         collected_count = 0
+        stored_count = 0
         last_count = 0
         total_count = None
         pages_fetched = 0
@@ -1491,16 +1572,20 @@ class RepositoryCollector:
                 self._report_empty_page(page, collected_count, total_count)
                 break
 
-            # Verarbeite Batch
-            process_batch(items)
+            # Verarbeite Batch; die Funktion meldet, wie viele Repositories gespeichert wurden
+            stored = process_batch(items)
             collected_count += len(items)
+            stored_count += len(items) if stored is None else stored
 
             # State aktualisieren
             total_collected = self.state.get("repositories_collected", 0) + len(items)
             self.state.update(repositories_collected=total_collected, current_period_page=page)
 
-            # Max-Repos-Limit prüfen (Periode bleibt offen, daher kein Prüfprotokoll-Eintrag)
-            if self._check_max_repos_reached(total_collected, max_repos, collected_count):
+            # Max-Repos-Limit prüfen (Periode bleibt offen, daher kein Prüfprotokoll-Eintrag).
+            # Maßgeblich ist die Anzahl in DIESEM Lauf, nicht der Stand der Zustandsdatei -
+            # sonst beendet ein fortgesetzter Lauf die offene Periode nach einer Seite.
+            self._run_collected = getattr(self, "_run_collected", 0) + len(items)
+            if self._check_max_repos_reached(self._run_collected, max_repos, collected_count):
                 return collected_count
 
             # Progress-Update (alle 100 Repos)
@@ -1527,6 +1612,7 @@ class RepositoryCollector:
                 "max_stars": max_stars,
                 "total_count": total_count,
                 "collected": collected_count,
+                "stored": stored_count,
                 "first_page": first_page,
                 "pages": pages_fetched,
                 "shortfall": max(0, expected - collected_count),
@@ -1594,7 +1680,8 @@ class RepositoryCollector:
             min_stars: Minimale Anzahl von Stars
             resume: Ob unterbrochene Sammlung fortgesetzt werden soll
         """
-        if resume and self.state.get("time_periods") and self.state.get_current_period():
+        params = {"mode": "standard", "min_stars": min_stars, "max_stars": None}
+        if self._begin_or_resume(params, resume):
             # Fortsetzen einer unterbrochenen Sammlung
             logger.info("Setze unterbrochene Sammlung fort")
 
@@ -1621,6 +1708,7 @@ class RepositoryCollector:
             # Berechne Zeitperioden und initialisiere State
             periods = self._calculate_time_periods(start_date, end_date)
             self.state.reset(start_date, end_date)
+            self.state.update(params=params, finished=False)
             self.state.set_time_periods(periods)
 
     def collect_repositories(
@@ -1663,6 +1751,7 @@ class RepositoryCollector:
             period = self.state.get_current_period()
             if not period:
                 logger.info("Keine weiteren Zeitperioden verfügbar")
+                self.state.update(finished=True)
                 break
 
             period_start, period_end = period
@@ -1697,6 +1786,7 @@ class RepositoryCollector:
             # Gehe zur nächsten Periode
             if not self.state.next_period():
                 logger.info("Alle Zeitperioden abgeschlossen")
+                self.state.update(finished=True)
                 break
 
         # Zeige eine Zusammenfassung der gesamten Sammlung an

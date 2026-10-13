@@ -117,6 +117,10 @@ def _evaluate_sample(
     else:
         source = (result or {}).get("source", "no_result")
     counters[f"source_{source}_total"] = counters.get(f"source_{source}_total", 0) + 1
+    if source == "unanswered":
+        # Keine Aussage über das Verfahren: weder als richtig noch als falsch werten
+        counters["unanswered"] = counters.get("unanswered", 0) + 1
+        return
     if expected_code == actual_code:
         counters[f"source_{source}_correct"] = counters.get(f"source_{source}_correct", 0) + 1
 
@@ -153,12 +157,15 @@ def _print_report(total: int, counters: Dict[str, int], error_details: List[str]
     """Gib die Benchmark-Ergebnisse formatiert auf stdout aus."""
 
     correct = counters["correct"]
-    accuracy = (correct / total) * 100.0 if total else 0.0
+    unanswered = counters.get("unanswered", 0)
+    evaluated = total - unanswered
+    accuracy = (correct / evaluated) * 100.0 if evaluated else 0.0
 
     print("\n" + "=" * 60)
     print("Geocoding Benchmark gegen Gold-Standard")
     print("=" * 60)
     print(f"Samples gesamt: {total}")
+    print(f"Nicht beantwortet (nicht gewertet): {unanswered}")
     print(f"Korrekt:        {correct} ({accuracy:.2f}%)")
     print("")
     print("True Positives (Geo korrekt):   ", counters["tp"])

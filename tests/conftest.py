@@ -27,6 +27,11 @@ if ENV_PATH.exists():
 if not (os.getenv("GITHUB_API_TOKEN", "").strip() or os.getenv("GITHUB_API_TOKENS", "").strip()):
     os.environ["GITHUB_API_TOKEN"] = "placeholder-token-for-tests"  # pragma: allowlist secret
 
+# Log-Dateien der Tests gehören nicht in das echte logs/-Verzeichnis: die Skripte und Module
+# legen ihre Log-Handler beim Import bzw. Start unter config.LOG_DIR an. Muss vor dem ersten
+# Import von github_collector gesetzt sein; gestartete Unterprozesse erben die Variable.
+os.environ["LOG_DIR"] = tempfile.mkdtemp(prefix="github_collector_test_logs_")
+
 from github_collector.api.github_api import GitHubAPI  # noqa: E402
 from github_collector.database.database import GitHubDatabase, init_db  # noqa: E402
 

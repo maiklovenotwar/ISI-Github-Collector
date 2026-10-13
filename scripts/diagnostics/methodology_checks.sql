@@ -35,7 +35,9 @@ FROM repositories;
 
 -- 5. Accounts by type, with the share that states a location and the share with a country
 --    (geocoding.md, "Input"; country_attribution.md, "Unit of analysis").
---    country_code = '' marks a location for which the geocoder returned no match.
+--    country_code = '' marks a row that was processed without a result: the string is
+--    not a place, the geocoder returned no match or an invalid code, or (before
+--    2026-10-12) the geocoder did not answer.
 SELECT type,
        COUNT(*) AS accounts,
        SUM(CASE WHEN location IS NOT NULL AND location <> '' THEN 1 ELSE 0 END) AS with_location,
@@ -74,17 +76,19 @@ FROM organizations o
 JOIN contributors c ON c.id = o.id;
 
 -- 8. Country of a repository by the documented rule (country_attribution.md, "Country of a
---    repository"): the organization's country if the repository belongs to an organization,
---    otherwise the country of the owning account. Only the geocoded location is used.
-SELECT CASE WHEN r.organization_id IS NOT NULL THEN 'organization' ELSE 'user' END AS owner_kind,
+--    repository"): if the owner is an organization, the country of its row in
+--    organizations, otherwise the country of the owning account. The owner's kind is taken
+--    from its account type, because repositories.organization_id is not filled in older
+--    collections (see query 12). Only the geocoded location is used.
+SELECT CASE WHEN c.type = 'Organization' THEN 'organization' ELSE 'user' END AS owner_kind,
        COUNT(*) AS repositories,
-       SUM(CASE WHEN COALESCE(CASE WHEN r.organization_id IS NOT NULL THEN o.country_code
+       SUM(CASE WHEN COALESCE(CASE WHEN c.type = 'Organization' THEN o.country_code
                                    ELSE c.country_code END, '') <> '' THEN 1 ELSE 0 END)
            AS with_country
 FROM repositories r
-LEFT JOIN organizations o ON o.id = r.organization_id
 LEFT JOIN contributors c ON c.id = r.owner_id
-GROUP BY CASE WHEN r.organization_id IS NOT NULL THEN 'organization' ELSE 'user' END;
+LEFT JOIN organizations o ON o.id = r.owner_id
+GROUP BY CASE WHEN c.type = 'Organization' THEN 'organization' ELSE 'user' END;
 
 -- 9. Countries assigned by the ccTLD step, organizations (country_attribution.md, "ccTLD as
 --    a sensitivity analysis"). Generic domains such as .com and .io yield no country, so
@@ -111,3 +115,14 @@ WHERE country_code IS NOT NULL AND country_code <> ''
 GROUP BY country_code
 ORDER BY organizations DESC
 LIMIT 15;
+
+-- 12. Repositories owned by an organization, and how many of them carry organization_id.
+--     Collections made before 2026-10-13 did not set this column for repositories found
+--     through the search; the owner's account type is the reliable criterion.
+SELECT SUM(CASE WHEN c.type = 'Organization' THEN 1 ELSE 0 END) AS owned_by_organization,
+       SUM(CASE WHEN r.organization_id IS NOT NULL THEN 1 ELSE 0 END) AS with_organization_id,
+       SUM(CASE WHEN c.type = 'Organization' AND o.id IS NULL THEN 1 ELSE 0 END)
+           AS organization_owner_without_row_in_organizations
+FROM repositories r
+LEFT JOIN contributors c ON c.id = r.owner_id
+LEFT JOIN organizations o ON o.id = r.owner_id;

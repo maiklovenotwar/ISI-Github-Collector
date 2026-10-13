@@ -38,18 +38,25 @@ organizations carry different countries in their two rows.
 A repository has no location of its own. Its country is the country of
 its owner:
 
-- if the repository belongs to an organization (`organization_id` is
-  set), the country of that row in `organizations`;
+- if the owner is an organization (the owning row in `contributors` has
+  `type = 'Organization'`), the country of the row with the same
+  identifier in `organizations`;
 - otherwise the country of the owning account in `contributors`.
 
 ```sql
 SELECT r.id,
-       CASE WHEN r.organization_id IS NOT NULL THEN o.country_code
+       CASE WHEN c.type = 'Organization' THEN o.country_code
             ELSE c.country_code END AS country_code
 FROM repositories r
-LEFT JOIN organizations o ON o.id = r.organization_id
-LEFT JOIN contributors c ON c.id = r.owner_id;
+LEFT JOIN contributors c ON c.id = r.owner_id
+LEFT JOIN organizations o ON o.id = r.owner_id;
 ```
+
+The rule uses the account type of the owner, not the column
+`repositories.organization_id`. Collections made before 2026-10-13 left
+that column empty for repositories found through the search; it is set by
+later collections. Query 12 of `scripts/diagnostics/methodology_checks.sql`
+shows how many repositories carry it.
 
 A repository whose owner has no country has no country. The CSV export
 writes the three tables separately and does not apply this rule; it has

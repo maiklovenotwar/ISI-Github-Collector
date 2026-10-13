@@ -783,6 +783,7 @@ def _run_geocoding_updates(  # noqa: C901
 
     updated_contributors = 0
     updated_organizations = 0
+    failed = False
 
     # Parsed Filter in echte Datumswerte umwandeln (Repo-Erstellungszeit)
     created_since_dt: Optional[datetime] = None
@@ -809,6 +810,7 @@ def _run_geocoding_updates(  # noqa: C901
             logger.info("%s Contributors aktualisiert", updated_contributors)
         except Exception as exc:  # noqa: BLE001
             logger.error("Fehler bei der Aktualisierung der Contributors: %s", exc)
+            failed = True
 
     if args.organizations or not args.contributors:
         try:
@@ -827,6 +829,7 @@ def _run_geocoding_updates(  # noqa: C901
             logger.info("%s Organisationen aktualisiert", updated_organizations)
         except Exception as exc:  # noqa: BLE001
             logger.error("Fehler bei der Aktualisierung der Organisationen: %s", exc)
+            failed = True
 
     try:
         contributor_stats_after = db.get_contributor_location_stats()
@@ -843,7 +846,11 @@ def _run_geocoding_updates(  # noqa: C901
             exc,
         )
 
-    logger.info("Geocoding-Prozess erfolgreich abgeschlossen.")
+    if failed:
+        logger.error("Geocoding-Prozess mit Fehlern beendet.")
+    else:
+        logger.info("Geocoding-Prozess abgeschlossen.")
+    return failed
 
 
 def main() -> int:
@@ -854,7 +861,6 @@ def main() -> int:
         geocoder = _initialize_geocoder(args)
 
         _maybe_clear_cache(args, geocoder)
-        _maybe_drop_empty_cache_entries(args, geocoder)
 
         # Zeige Zusammenfassung der fehlenden Country Codes
         show_missing_country_codes_summary(db)
@@ -867,7 +873,23 @@ def main() -> int:
         if not _confirm_run_and_show_counts(db, args):
             return 0
 
-        _run_geocoding_updates(db, geocoder, args)
+        # Erst jetzt, nach Anzeige und Bestätigung: --show-missing und ein "Nein" bei der
+        # Rückfrage dürfen den Cache nicht verändern.
+        _maybe_drop_empty_cache_entries(args, geocoder)
+
+        try:
+            failed = _run_geocoding_updates(db, geocoder, args)
+        finally:
+            # Der Cache speichert nur bei jedem zehnten neuen Eintrag von selbst
+            if getattr(geocoder, "cache", None) is not None:
+                geocoder.cache.flush()
+
+        if failed:
+            print(
+                "Die Aktualisierung ist mit einem Fehler abgebrochen (siehe Log).",
+                file=sys.stderr,
+            )
+            return 1
 
         if exit_code_for(geocoder):
             message = (

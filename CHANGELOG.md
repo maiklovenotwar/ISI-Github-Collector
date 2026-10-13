@@ -87,6 +87,28 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Errors while writing a page of repositories to the database were logged and ignored; the
+  page counted as collected. They now end the collection, like a failed search.
+- A call of the collection script resumed whatever state file it found, also a finished one
+  and one written with another star range or time range; such a run processed only the last
+  period of the earlier collection. The state file now records the mode and the star range
+  and whether the collection has finished. A call with other arguments starts a new
+  collection after a finished one and is refused while one is unfinished.
+- A collection resumed with `--limit` ended the open period after one page, because the limit
+  was compared with the running total of the state file instead of the current run.
+- `repositories.organization_id` was never set for repositories found through the search,
+  because the search result carries no `organization` field. It is now derived from the type
+  of the owner.
+- A page size other than 100 (`GITHUB_PAGE_SIZE`) ended every period after the first page, and
+  a result limit other than 1000 (`GITHUB_MAX_RESULTS`) made the split repeat without end.
+- Network errors during the search are retried like API errors, and a search response without
+  a total (for example after HTTP 404) is an error instead of an empty period.
+- `update_location_geocoding.py`: `--retry-empty` no longer changes the cache when the run is
+  only displayed (`--show-missing`) or declined; the cache is written at the end of every run;
+  an error during the update sets exit code 1.
+- The geocoding benchmark no longer counts requests the geocoder did not answer as correct or
+  wrong.
+- The test suite no longer writes into `logs/`.
 - Geocoding no longer records an outage of the geocoder as "this location has no country".
   A timeout was cached without expiry and the row was marked as not geocodable, so the
   location, and every account using it, was never asked again. Unanswered requests are now
