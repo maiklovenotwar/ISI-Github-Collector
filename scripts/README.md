@@ -50,13 +50,14 @@ collector database.
 
 ## `diagnostics/`
 
-Manual checks against the live Orbis database. They are not part of the
-automated tests and require VPN access.
+Manual checks. The two Orbis scripts query the live Orbis database and require VPN
+access; the audit summary reads a local log file only.
 
 | Script | Purpose | Writes | External access |
 |--------|---------|--------|-----------------|
 | `diagnostics/check_orbis_schema.py` | Lists the Orbis tables and columns available for headquarters resolution. | nothing | Orbis database (VPN) |
 | `diagnostics/diagnose_hq_signals.py` | Analyses the headquarters signals of organizations with several Orbis candidates. | nothing | Orbis database (VPN) |
+| `diagnostics/summarize_collection_audit.py` | Summarizes the audit log of the repository collection (`logs/collection_audit.jsonl`) and lists the periods in which fewer repositories arrived than GitHub announced, a response was marked incomplete, or the result was truncated. | nothing | none |
 
 ## `migrations/`
 

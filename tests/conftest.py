@@ -46,6 +46,8 @@ def isolated_collection_state(tmp_path, monkeypatch):
     # STATE_CONFIG-Dict, während der Collector weiter das beim Import gebundene verwendet.
     monkeypatch.setitem(config.STATE_CONFIG, "file", redirected)
     monkeypatch.setitem(repository_collector.STATE_CONFIG, "file", redirected)
+    # Dasselbe gilt für das Prüfprotokoll der Sammlung (logs/collection_audit.jsonl).
+    monkeypatch.setattr(repository_collector, "AUDIT_FILE", tmp_path / "collection_audit.jsonl")
 
 
 @pytest.fixture

@@ -8,6 +8,12 @@ Notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Audit log of the repository collection: one JSON line per finished period in
+  `logs/collection_audit.jsonl` with the number of results GitHub announced, the number
+  collected, and the shortfall. `scripts/diagnostics/summarize_collection_audit.py` summarizes
+  it and exits with code 1 if a period needs attention.
+- Search responses that GitHub marks as `incomplete_results`, and periods that exceed 1,000
+  results but cannot be split further, are logged and recorded in the collection state.
 - `scripts/README.md` and `workstreams/README.md`: one line per script with its purpose,
   what it writes, and what it needs. A test fails when a script is missing from, or no
   longer matches, these overviews.
@@ -71,6 +77,13 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- After a period with more than 1,000 search results had been split, the standard collection
+  skipped the first of the resulting parts: the loop advanced to the next period although the
+  pointer already stood on the first part. Every part is now collected.
+- The star-range mode (`--star-range`) did not split such periods and stopped after 1,000
+  results per period. It now splits them like the standard mode. The total is read from the
+  first result page, so the check costs no additional request; the standard mode no longer
+  issues a separate request for it.
 - A failed repository search is no longer treated as an empty period. Previously any API
   error that outlasted the client's own retries, including an exhausted rate limit and invalid
   tokens, made the collector record zero repositories for the period, mark it as done and

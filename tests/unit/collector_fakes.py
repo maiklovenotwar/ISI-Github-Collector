@@ -77,6 +77,7 @@ def make_collector(tmp_path, monkeypatch, api: FakeSearchApi) -> RepositoryColle
     collector = RepositoryCollector(
         github_client=api, db=MagicMock(name="GitHubDatabase"), state_file=str(tmp_path / "s.json")
     )
+    collector.audit_file = tmp_path / "audit.jsonl"
     collector.stored: List[int] = []
     collector._process_repositories_batch = lambda items: collector.stored.append(len(items))
     collector.process_repositories_parallel = lambda items: collector.stored.append(len(items))

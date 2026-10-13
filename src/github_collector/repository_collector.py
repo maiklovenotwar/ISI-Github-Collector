@@ -18,6 +18,7 @@ from github_collector.config import (
     BATCH_CONFIG,
     ENABLE_PARALLEL_PROCESSING,
     GITHUB_API,
+    LOG_DIR,
     MAX_WORKER_THREADS,
     STATE_CONFIG,
 )
@@ -51,6 +52,18 @@ from .owners.owner_processor import OwnerProcessor
 from .schemas import RepositorySchema
 
 logger = logging.getLogger(__name__)
+
+# Rückgabemarke von _paginate_and_collect: die Periode wurde in Subperioden aufgeteilt und
+# nicht gesammelt. Die Hauptschleife darf dann NICHT zur nächsten Periode weiterschalten,
+# sonst wird die erste Subperiode übersprungen.
+PERIOD_SPLIT = object()
+
+# GitHub löst `created:` sekundengenau auf - kürzere Perioden lassen sich nicht weiter teilen.
+MIN_SPLITTABLE_SECONDS = 1
+
+# Prüfprotokoll: eine Zeile (JSON) je abgeschlossener Periode mit der von GitHub gemeldeten
+# und der tatsächlich gesammelten Anzahl. Dient dem Nachweis der Vollständigkeit.
+AUDIT_FILE = LOG_DIR / "collection_audit.jsonl"
 
 
 class CollectionState:
@@ -239,6 +252,8 @@ class RepositoryCollector:
         # Datenbankverbindung und Zustand
         self.db = db
         self.state = CollectionState(state_file or str(STATE_CONFIG["file"]))
+        # Pfad des Prüfprotokolls; None = Modul-Standard (AUDIT_FILE)
+        self.audit_file = None
 
         # Owner-Processor initialisieren
         self.owner_processor = OwnerProcessor(self.api, self.db, self.performance_tracker)
@@ -487,6 +502,10 @@ class RepositoryCollector:
                 max_stars=max_stars,
                 max_repos=max_repos,
             )
+            if period_collected is PERIOD_SPLIT:
+                # Die Periode wurde durch ihre Subperioden ersetzt; der Zeiger steht auf der
+                # ersten davon. Nicht weiterschalten, sondern diese als Nächstes sammeln.
+                continue
             total_collected += period_collected
             if max_repos and total_collected >= max_repos:
                 show_max_repos_reached(max_repos)
@@ -525,31 +544,6 @@ class RepositoryCollector:
             logger.info("Verarbeite Repository-Batch sequentiell (Parallelisierung deaktiviert)")
             self._process_repositories_batch(items)
 
-    def _check_star_range_pagination_end(
-        self, items: list, page: int, per_page: int, collected_count: int, total_count: int
-    ) -> bool:
-        """Prüfe, ob Pagination für Star-Range-Collection beendet werden soll.
-
-        Args:
-            items: Zuletzt abgerufene Items
-            page: Aktuelle Seitenzahl
-            per_page: Items pro Seite
-            collected_count: Anzahl gesammelter Repositories
-            total_count: Gesamtanzahl verfügbarer Repositories
-
-        Returns:
-            True wenn Pagination beendet werden soll, sonst False
-        """
-        # GitHub API Limit: Max 1000 Ergebnisse
-        if len(items) < per_page or page * per_page >= 1000:
-            if collected_count > 0:
-                if collected_count >= total_count:
-                    show_collection_complete(total_count)
-                else:
-                    show_collection_progress(collected_count, total_count)
-            return True
-        return False
-
     def _collect_repositories_in_period_by_star_range(
         self,
         start_date: datetime,
@@ -557,61 +551,32 @@ class RepositoryCollector:
         min_stars: int = 0,
         max_stars: int = 100,
         max_repos: Optional[int] = None,
-    ) -> int:
+    ):
         """
         Sammle Repositories in einer bestimmten Zeitperiode und Star-Range.
+
+        Nutzt dieselbe Seitenschleife wie die Standard-Sammlung, einschließlich der
+        Aufteilung von Perioden mit mehr als 1.000 Treffern.
+
         Args:
             start_date: Startdatum
             end_date: Enddatum
             min_stars: Minimale Anzahl von Stars
             max_stars: Maximale Anzahl von Stars
             max_repos: Maximale Anzahl zu sammelnder Repositories (optional)
+
         Returns:
-            Anzahl der gesammelten Repositories
+            Anzahl der gesammelten Repositories oder PERIOD_SPLIT, wenn die Periode
+            aufgeteilt wurde.
         """
-        page = self.state.get("current_period_page", 1)
-        collected_count = 0
-        total_count = None
-        last_count = 0
-        # Feste Seitengröße für die Search-API (z.B. 100, GitHub-Limit-konform)
-        per_page = GITHUB_API["search_page_size"]
-        while True:
-            items, page_total_count, _incomplete = self._fetch_page_with_retry(
-                start_date, end_date, min_stars, page, max_stars=max_stars
-            )
-            if total_count is None:
-                total_count = page_total_count
-            if not items:
-                logger.info(f"Keine weiteren Repositories in dieser Periode (Seite {page})")
-                if collected_count < total_count and collected_count > 0:
-                    show_collection_progress(collected_count, total_count)
-                break
-
-            # Verarbeite Batch (parallel oder sequentiell)
-            self._process_batch_with_feature_flag(items)
-            collected_count += len(items)
-
-            # State aktualisieren
-            total_collected = self.state.get("repositories_collected", 0) + len(items)
-            self.state.update(repositories_collected=total_collected, current_period_page=page)
-
-            # Max-Repos-Limit prüfen
-            if self._check_max_repos_reached(total_collected, max_repos, collected_count):
-                return collected_count
-
-            # Progress-Update (alle 100 Repos)
-            if collected_count // 100 > last_count // 100 and total_count > 0:
-                last_count = collected_count
-                show_collection_progress(collected_count, total_count)
-
-            # Pagination-Ende prüfen
-            if self._check_star_range_pagination_end(
-                items, page, per_page, collected_count, total_count
-            ):
-                break
-            page += 1
-            self.state.update(current_period_page=page)
-        return collected_count
+        return self._paginate_and_collect(
+            start_date,
+            end_date,
+            min_stars,
+            max_repos,
+            max_stars=max_stars,
+            process_batch=self._process_batch_with_feature_flag,
+        )
 
     def process_repositories_parallel(self, repositories_data: List[Dict[str, Any]]) -> int:
         """Parallele Verarbeitung von Repositories innerhalb eines API-Batches.
@@ -1214,26 +1179,6 @@ class RepositoryCollector:
             batch_start_time=batch_start_time,
         )
 
-    def _should_split_period(
-        self, start_date: datetime, end_date: datetime, min_stars: int
-    ) -> Optional[int]:
-        """Prüfe, ob eine Periode zu viele Ergebnisse hat und aufgeteilt werden muss.
-
-        Args:
-            start_date: Startdatum der Periode
-            end_date: Enddatum der Periode
-            min_stars: Minimale Anzahl von Stars
-
-        Returns:
-            total_count wenn Periode zu groß ist (>1000 Ergebnisse), sonst None
-        """
-        _items, total_count, _incomplete = self._fetch_page_with_retry(
-            start_date, end_date, min_stars, page=1
-        )
-        if total_count > GITHUB_API["search_max_results"]:
-            return total_count
-        return None
-
     def _split_and_reschedule_period(
         self, start_date: datetime, end_date: datetime, total_count: int
     ) -> int:
@@ -1402,56 +1347,164 @@ class RepositoryCollector:
             return True
         return False
 
+    def _record_incomplete_response(
+        self, start_date: datetime, end_date: datetime, page: int
+    ) -> None:
+        """Vermerke eine Suchantwort, die GitHub als möglicherweise unvollständig markiert hat."""
+        logger.warning(
+            "GitHub meldet incomplete_results=true für die Periode %s bis %s (Seite %d): "
+            "die Suche wurde serverseitig abgebrochen, Treffer können fehlen.",
+            start_date,
+            end_date,
+            page,
+        )
+        responses = self.state.get("incomplete_responses", []) or []
+        responses.append(
+            {"start": start_date.isoformat(), "end": end_date.isoformat(), "page": page}
+        )
+        self.state.update(incomplete_responses=responses)
+
+    def _record_truncated_period(
+        self, start_date: datetime, end_date: datetime, total_count: int
+    ) -> None:
+        """Vermerke eine Periode, die mehr als 1.000 Treffer hat und nicht teilbar ist."""
+        logger.error(
+            "Periode %s bis %s hat %d Treffer, lässt sich aber nicht weiter teilen. "
+            "Es werden nur die ersten %d gesammelt.",
+            start_date,
+            end_date,
+            total_count,
+            GITHUB_API["search_max_results"],
+        )
+        truncated = self.state.get("truncated_periods", []) or []
+        truncated.append(
+            {
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat(),
+                "total_count": total_count,
+            }
+        )
+        self.state.update(truncated_periods=truncated)
+
+    def _report_empty_page(self, page: int, collected_count: int, total_count: int) -> None:
+        """Melde das Ende einer Periode durch eine leere Seite."""
+        logger.info(f"Keine weiteren Repositories in dieser Periode (Seite {page})")
+        if 0 < collected_count < total_count:
+            show_collection_progress(collected_count, total_count)
+
+    def _split_if_possible(
+        self, start_date: datetime, end_date: datetime, total_count: int
+    ) -> bool:
+        """Teile eine Periode mit zu vielen Treffern auf, sofern sie noch teilbar ist.
+
+        Returns:
+            True, wenn die Periode durch Subperioden ersetzt wurde. False, wenn sie zu kurz
+            zum Teilen ist; sie wird dann als abgeschnitten vermerkt und bis zum Limit
+            gesammelt.
+        """
+        if (end_date - start_date).total_seconds() > MIN_SPLITTABLE_SECONDS:
+            self._split_and_reschedule_period(start_date, end_date, total_count)
+            return True
+        self._record_truncated_period(start_date, end_date, total_count)
+        return False
+
+    def _write_period_audit(self, entry: Dict[str, Any]) -> None:
+        """Hänge eine Zeile an das Prüfprotokoll an und warne bei einem Fehlbetrag."""
+        if entry["shortfall"] > 0:
+            logger.warning(
+                "Periode %s bis %s: GitHub meldete %d Treffer, gesammelt wurden %d "
+                "(Fehlbetrag %d).",
+                entry["start"],
+                entry["end"],
+                entry["total_count"],
+                entry["collected"],
+                entry["shortfall"],
+            )
+        path = self.audit_file or AUDIT_FILE
+        try:
+            with open(path, "a", encoding="utf-8") as handle:
+                handle.write(json.dumps(entry) + "\n")
+        except OSError as e:
+            logger.error(f"Prüfprotokoll konnte nicht geschrieben werden ({path}): {e}")
+
     def _paginate_and_collect(
-        self, start_date: datetime, end_date: datetime, min_stars: int, max_repos: Optional[int]
-    ) -> int:
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        min_stars: int,
+        max_repos: Optional[int],
+        max_stars: Optional[int] = None,
+        process_batch=None,
+    ):
         """Paginiere durch Suchergebnisse und sammle Repositories.
+
+        Die Gesamtzahl der Treffer steht bereits in der Antwort auf die erste Seite. Liegt
+        sie über dem Limit der Search-API (1.000), wird die Periode aufgeteilt, bevor
+        irgendetwas verarbeitet wird - ohne zusätzliche Anfrage.
 
         Args:
             start_date: Startdatum
             end_date: Enddatum
             min_stars: Minimale Anzahl von Stars
             max_repos: Maximale Anzahl zu sammelnder Repositories (optional)
+            max_stars: Maximale Anzahl von Stars (nur im Star-Range-Modus)
+            process_batch: Funktion, die eine Seite verarbeitet
+                (Standard: _process_repositories_batch)
 
         Returns:
-            Anzahl der gesammelten Repositories
+            Anzahl der gesammelten Repositories oder PERIOD_SPLIT, wenn die Periode
+            aufgeteilt wurde.
         """
-        page = self.state.get("current_period_page", 1)
+        process_batch = process_batch or self._process_repositories_batch
+
+        max_results = GITHUB_API["search_max_results"]
+        per_page = GITHUB_API["search_page_size"]
+        first_page = self.state.get("current_period_page", 1)
+        page = first_page
         collected_count = 0
         last_count = 0
         total_count = None
+        pages_fetched = 0
+        incomplete_pages = 0
+        truncated = False
 
         while True:
             # Hole Seite mit Retry-Logik
-            items, page_total_count, _incomplete = self._fetch_page_with_retry(
-                start_date, end_date, min_stars, page
+            items, page_total_count, incomplete = self._fetch_page_with_retry(
+                start_date, end_date, min_stars, page, max_stars=max_stars
             )
+            pages_fetched += 1
 
-            # Aktualisiere total_count bei erster Seite
-            if total_count is None and page_total_count is not None:
+            if total_count is None:
                 total_count = page_total_count
+                if page == 1 and total_count > max_results:
+                    if self._split_if_possible(start_date, end_date, total_count):
+                        return PERIOD_SPLIT
+                    truncated = True
+
+            if incomplete:
+                incomplete_pages += 1
+                self._record_incomplete_response(start_date, end_date, page)
 
             # Keine Items mehr → Fertig
             if not items:
-                logger.info(f"Keine weiteren Repositories in dieser Periode (Seite {page})")
-                if 0 < collected_count < total_count:
-                    show_collection_progress(collected_count, total_count)
+                self._report_empty_page(page, collected_count, total_count)
                 break
 
             # Verarbeite Batch
-            self._process_repositories_batch(items)
+            process_batch(items)
             collected_count += len(items)
 
             # State aktualisieren
             total_collected = self.state.get("repositories_collected", 0) + len(items)
             self.state.update(repositories_collected=total_collected, current_period_page=page)
 
-            # Max-Repos-Limit prüfen
+            # Max-Repos-Limit prüfen (Periode bleibt offen, daher kein Prüfprotokoll-Eintrag)
             if self._check_max_repos_reached(total_collected, max_repos, collected_count):
                 return collected_count
 
             # Progress-Update (alle 100 Repos)
-            if collected_count // 100 > last_count // 100 and total_count and total_count > 0:
+            if collected_count // 100 > last_count // 100 and total_count:
                 last_count = collected_count
                 show_collection_progress(collected_count, total_count)
 
@@ -1464,6 +1517,23 @@ class RepositoryCollector:
             self.state.update(current_period_page=page)
             time.sleep(1)  # API Rate-Limiting
 
+        expected = max(0, min(total_count, max_results) - (first_page - 1) * per_page)
+        self._write_period_audit(
+            {
+                "finished_at": datetime.now(tz.UTC).isoformat(),
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat(),
+                "min_stars": min_stars,
+                "max_stars": max_stars,
+                "total_count": total_count,
+                "collected": collected_count,
+                "first_page": first_page,
+                "pages": pages_fetched,
+                "shortfall": max(0, expected - collected_count),
+                "incomplete_pages": incomplete_pages,
+                "truncated": truncated,
+            }
+        )
         return collected_count
 
     def _collect_repositories_in_period(
@@ -1472,10 +1542,8 @@ class RepositoryCollector:
         end_date: datetime,
         min_stars: int = 0,
         max_repos: Optional[int] = None,
-    ) -> int:
+    ):
         """Sammle Repositories in einer bestimmten Zeitperiode.
-
-        Orchestriert Period-Splitting, Pagination und Collection.
 
         Args:
             start_date: Startdatum
@@ -1484,14 +1552,9 @@ class RepositoryCollector:
             max_repos: Maximale Anzahl zu sammelnder Repositories (optional)
 
         Returns:
-            Anzahl der gesammelten Repositories
+            Anzahl der gesammelten Repositories oder PERIOD_SPLIT, wenn die Periode
+            aufgeteilt wurde.
         """
-        # Prüfe, ob Periode zu groß ist und aufgeteilt werden muss
-        split_total_count = self._should_split_period(start_date, end_date, min_stars)
-        if split_total_count:
-            return self._split_and_reschedule_period(start_date, end_date, split_total_count)
-
-        # Normale Pagination und Collection
         return self._paginate_and_collect(start_date, end_date, min_stars, max_repos)
 
     def _setup_collection_dates(
@@ -1618,6 +1681,10 @@ class RepositoryCollector:
                 min_stars=min_stars,
                 max_repos=max_repos,
             )
+            if period_collected is PERIOD_SPLIT:
+                # Die Periode wurde durch ihre Subperioden ersetzt; der Zeiger steht auf der
+                # ersten davon. Nicht weiterschalten, sondern diese als Nächstes sammeln.
+                continue
 
             total_collected += period_collected
 

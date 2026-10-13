@@ -21,7 +21,6 @@ def mock_api() -> MagicMock:
     """
 
     api = MagicMock(name="GitHubAPI")
-    # search_repositories wird explizit im _should_split_period-Test gesetzt
     return api
 
 
@@ -57,40 +56,8 @@ def collector(mock_api: MagicMock, mock_db: MagicMock) -> RepositoryCollector:
 
 
 class TestPeriodSplittingLogic:
-    """Tests für _should_split_period und _split_and_reschedule_period."""
-
-    def test_should_split_period_returns_none_when_below_threshold(
-        self, collector: RepositoryCollector
-    ):
-        """Wenn total_count <= search_max_results, soll None zurückgegeben werden."""
-
-        start = datetime(2024, 1, 1)
-        end = datetime(2024, 1, 10)
-
-        # search_max_results aus der Config simulieren: 1000
-        # Wir nutzen hier einen Wert deutlich darunter.
-        collector._search_repositories_in_period = MagicMock(return_value={"total_count": 500})
-
-        result = collector._should_split_period(start, end, min_stars=0)
-
-        collector._search_repositories_in_period.assert_called_once()
-        assert result is None
-
-    def test_should_split_period_returns_total_count_when_above_threshold(
-        self, collector: RepositoryCollector
-    ):
-        """Wenn total_count > search_max_results, soll total_count zurückgegeben werden."""
-
-        start = datetime(2024, 1, 1)
-        end = datetime(2024, 1, 10)
-
-        # Simuliere einen Wert oberhalb des GitHub-Limits (1000)
-        collector._search_repositories_in_period = MagicMock(return_value={"total_count": 1500})
-
-        result = collector._should_split_period(start, end, min_stars=0)
-
-        collector._search_repositories_in_period.assert_called_once()
-        assert result == 1500
+    """Tests für _split_and_reschedule_period (die Aufteilung als Ganzes prüft
+    test_repository_collector_splitting.py)."""
 
     def test_split_and_reschedule_period_replaces_current_period_with_subperiods(
         self, collector: RepositoryCollector
