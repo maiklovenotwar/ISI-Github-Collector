@@ -1056,7 +1056,10 @@ class RepositoryCollector:
 
         processed_count = 0
         try:
-            with session_scope() as session:
+            # Die Session-Fabrik der übergebenen Datenbank verwenden - nicht die globale,
+            # die an die Datenbank der Konfiguration gebunden ist. Sonst schreibt ein
+            # Collector für eine andere Datenbank (--db-path) in die konfigurierte.
+            with session_scope(getattr(self.db, "session_factory", None)) as session:
                 contributor_mapping = self.db.bulk_upsert_contributors(
                     contributors,
                     session=session,

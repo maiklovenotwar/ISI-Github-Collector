@@ -87,6 +87,14 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- The collector wrote repositories through the global database session, which is bound to the
+  database of the configuration, instead of the database it was created for. With `--db-path`,
+  or in a test with its own database, the rows went to the configured database. The collector
+  now uses the session of its own database.
+- The test suite could reach the configured database: two integration tests ran the
+  collection script and thereby wrote their fixture repositories (ids 1 and 42) into it. The
+  whole test process now runs on a temporary SQLite database that is set before the package
+  is imported.
 - Geocoding assigned every location ending in `Georgia`, `WA`, or `CA` to the United States
   before the geocoder was asked, including `Tbilisi, Georgia`, `Perth, WA` (Western Australia),
   and `Toronto, CA`. These endings are now decided by the text rules only if a known US city or

@@ -15,7 +15,17 @@ from dotenv import load_dotenv
 # Füge das src-Verzeichnis zum Python-Pfad hinzu
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
 
-# Lade .env, damit Konfiguration und Tests die gleichen Umgebungsvariablen sehen
+# Die Tests dürfen NIE die in .env konfigurierte Datenbank erreichen. Deshalb wird die
+# Datenbank-URL für den gesamten Testprozess auf eine temporäre SQLite-Datei gesetzt, BEVOR
+# .env geladen und github_collector importiert wird (load_dotenv überschreibt gesetzte
+# Variablen nicht). Das betrifft insbesondere die globale Session (database.SessionLocal),
+# die an config.DB_URL gebunden ist, und alle von Tests gestarteten Unterprozesse.
+_TEST_DB_DIR = tempfile.mkdtemp(prefix="github_collector_test_db_")
+os.environ["DATABASE_URL"] = "sqlite:///" + os.path.join(_TEST_DB_DIR, "default.db").replace(
+    "\\", "/"
+)
+
+# Lade .env, damit Konfiguration und Tests die übrigen Umgebungsvariablen sehen
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ENV_PATH = PROJECT_ROOT / ".env"
 if ENV_PATH.exists():

@@ -56,7 +56,7 @@ def star_range(collector, min_stars, max_stars, **kwargs):
 
 def test_database_error_while_storing_is_not_swallowed(collector, monkeypatch):
     @contextmanager
-    def no_session():
+    def no_session(session_factory=None):
         yield object()
 
     monkeypatch.setattr(rc, "session_scope", no_session)
