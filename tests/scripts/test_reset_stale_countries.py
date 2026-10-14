@@ -42,6 +42,8 @@ def cache_file(tmp_path):
     cache.set("Paris", {"country_code": "FR", "country": "France", "region": None})
     cache.set("Berlin", {"country_code": "DE", "country": "Germany", "region": None})
     cache.set("Nowhere Land", {"country_code": "", "country": None})
+    # a wrong match of the kind found in K12
+    cache.set("Boston Area", {"country_code": "CO", "country": "Colombia", "region": None})
     cache.set("Korea, South", {"country_code": "AU", "country": "Australia", "region": "NSW"})
     cache.set(
         "Remote, Korea, South", {"country_code": "AU", "country": "Australia", "region": "NSW"}
@@ -53,14 +55,15 @@ def cache_file(tmp_path):
 @pytest.fixture
 def rows(test_db):
     people = [
-        (1, "Paris", "DE"),  # cache says FR -> different
+        (1, "Boston Area", "US"),  # cache says CO -> cache (not written, K12)
         (2, "Xqzv Plomb", "GB"),  # never geocoded, no rule -> not_in_cache
         (3, "Berlin", "DE"),  # unchanged
         (4, "Nowhere Land", "NL"),  # cache explicitly has no country -> untouched
-        (5, "Korea, South", "AU"),  # mapping names KR and outranks the cache -> different
+        (5, "Korea, South", "AU"),  # mapping names KR and outranks the cache -> mapping
         (6, "Lyon, FR", "FR"),  # not cached, text rule gives FR -> unchanged
-        (7, "Georgia", "GE"),  # bare "Georgia" counts as the US state (E9) -> different
+        (7, "Georgia", "GE"),  # bare "Georgia" counts as the US state (E9) -> georgia
         (8, "Remote, Korea, South", "AU"),  # cleaned like geocode() does -> mapping KR
+        (9, "Leeds, FR", "GB"),  # not cached, text rule gives FR -> rules (not written)
     ]
     with session_scope(test_db.session_factory) as session:
         for row_id, location, code in people:
@@ -74,7 +77,7 @@ def rows(test_db):
                     region="r",
                 )
             )
-        session.add(Organization(id=20, login="org", location="Paris", country_code="DE"))
+        session.add(Organization(id=20, login="org", location="Boston Area", country_code="US"))
     return test_db
 
 
@@ -89,8 +92,13 @@ def test_find_stale_groups_rows(module, rows, cache_file, test_db):
         stale = module.find_stale(
             conn, "contributors", GeocodingCache(cache_file), HeuristicResolver()
         )
-    assert sorted(stale["different"]) == [1, 5, 7, 8]
-    assert stale["not_in_cache"] == [2]
+    assert stale == {
+        "mapping": [5, 8],
+        "georgia": [7],
+        "cache": [1],
+        "rules": [9],
+        "not_in_cache": [2],
+    }
 
 
 def test_dry_run_changes_nothing(module, rows, cache_file, test_db, tmp_path):
@@ -100,20 +108,25 @@ def test_dry_run_changes_nothing(module, rows, cache_file, test_db, tmp_path):
     assert not list(tmp_path.glob("*.csv"))
 
 
-def test_write_resets_both_groups_and_backs_them_up(module, rows, cache_file, test_db, tmp_path):
+def test_write_resets_only_the_trusted_groups_and_backs_them_up(
+    module, rows, cache_file, test_db, tmp_path
+):
+    # E11: the cache is often wrong itself (K12), and the text rules carry conventions that
+    # are wrong for new places; their differences are reported, not written.
     args = ["--cache-file", str(cache_file), "--backup-dir", str(tmp_path), "--write"]
     assert module.main(args) == 0
     countries = _countries(test_db, Contributor)
-    assert {k: countries[k] for k in (1, 2, 5, 7, 8)} == dict.fromkeys((1, 2, 5, 7, 8))
-    assert (countries[3], countries[4], countries[6]) == ("DE", "NL", "FR")
-    assert _countries(test_db, Organization)[20] is None
+    assert {k: countries[k] for k in (2, 5, 7, 8)} == dict.fromkeys((2, 5, 7, 8))
+    assert [countries[k] for k in (1, 3, 4, 6, 9)] == ["US", "DE", "NL", "FR", "GB"]
+    assert _countries(test_db, Organization)[20] == "US"
 
     backup = tmp_path / next(p.name for p in tmp_path.glob("*contributors*.csv"))
     with backup.open(encoding="utf-8", newline="") as f:
         saved = {int(r["id"]): r for r in csv.DictReader(f)}
-    assert set(saved) == {1, 2, 5, 7, 8}
-    assert saved[1]["country_code"] == "DE" and saved[1]["location"] == "Paris"
-    assert saved[1]["region"] == "r"
+    assert set(saved) == {2, 5, 7, 8}
+    assert saved[5]["country_code"] == "AU" and saved[5]["location"] == "Korea, South"
+    assert saved[5]["region"] == "r"
+    assert not list(tmp_path.glob("*organizations*.csv"))
 
 
 def test_write_is_refused_without_a_cache(module, rows, test_db, tmp_path):

@@ -13,6 +13,9 @@ Notable changes to this project are recorded here. The format follows
   population (forks are excluded), the reference date, the measures and limits regarding
   completeness, the limits and the validation of geocoding, and the rules for counting accounts
   and assigning a country to a repository.
+- `scripts/maintenance/reset_stale_countries.py` resets the country of rows whose location changed
+  after geocoding: where the mapping table names another country, for the bare location
+  `Georgia`, and where the location was never geocoded. A CSV backup is written first.
 - `scripts/diagnostics/count_excluded_forks.py` and `scripts/diagnostics/methodology_checks.sql`
   provide figures that support these documents.
 - `update_location_geocoding.py --retry-empty` asks again for locations that an earlier run

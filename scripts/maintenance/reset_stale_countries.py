@@ -9,11 +9,17 @@ das Land, das die Geokodierung heute für den Ort liefern würde, ohne einen Die
 2. sonst der Geocoding-Cache,
 3. sonst die Textregeln.
 
-Zwei Gruppen werden zurückgesetzt (`country_code` und `region` auf NULL), damit
-`update_location_geocoding.py` sie neu bestimmt:
+Zeilen, deren heutiges Ergebnis ein anderes Land nennt, werden nach der Quelle dieses
+Ergebnisses gruppiert. Zurückgesetzt (`country_code` und `region` auf NULL, damit
+`update_location_geocoding.py` sie neu bestimmt) werden nur drei Gruppen (Entscheidung E11):
 
-- "different": das heutige Ergebnis nennt ein anderes Land,
+- "mapping": die kuratierte Zuordnung nennt ein anderes Land,
+- "georgia": die bloße Angabe "Georgia", nach der dokumentierten Regel der US-Bundesstaat (E9),
 - "not_in_cache": der Ort wurde nie geokodiert und keine Regel entscheidet ihn.
+
+Nur gezählt werden "cache" und "rules": Der Cache enthält selbst falsche Treffer und
+veraltete Einträge (Befund K12), die Textregeln Konventionen, die für neue Orte falsch sein
+können; ein Zurücksetzen würde dort oft ein richtiges Land durch ein falsches ersetzen.
 
 Unberührt bleiben Zeilen, deren Ort laut Cache oder Zuordnung ausdrücklich kein Land hat.
 
@@ -32,7 +38,7 @@ import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -61,6 +67,10 @@ SELECT_ROWS = """
 NO_COUNTRY = ""
 UNKNOWN = None
 
+GROUPS = ("mapping", "georgia", "cache", "rules", "not_in_cache")
+# Gruppen, die mit --write zurückgesetzt werden (E11)
+WRITE_GROUPS = ("mapping", "georgia", "not_in_cache")
+
 
 def current_country(location: str, cache: GeocodingCache, rules: HeuristicResolver):
     """Land, das die Geokodierung heute für den Ort liefern würde, ohne Dienst-Anfrage.
@@ -69,39 +79,48 @@ def current_country(location: str, cache: GeocodingCache, rules: HeuristicResolv
     Bereinigung (z. B. "Remote, Korea, South" -> "korea, south").
 
     Returns:
-        Ländercode, NO_COUNTRY (ausdrücklich kein Land) oder UNKNOWN (nie geokodiert).
+        (Ergebnis, Quelle). Ergebnis ist ein Ländercode, NO_COUNTRY (ausdrücklich kein Land)
+        oder UNKNOWN (nie geokodiert); Quelle ist "mapping", "cache" oder "rules".
     """
     processed = preprocess_location(location)
     normalized = normalize_location(processed) if processed else ""
     mapped = rules.resolve_mapping(normalized) if normalized else None
     if mapped:
-        return (mapped.get("country_code") or "").upper()
+        return (mapped.get("country_code") or "").upper(), "mapping"
     cached = cache.get(location)
     if cached is not None:
-        return (cached.get("country_code") or "").upper()
+        return (cached.get("country_code") or "").upper(), "cache"
     if not normalized or mapped is not None:
-        return NO_COUNTRY
+        return NO_COUNTRY, "mapping"
     code, _region = rules.extract_country_from_text(normalized)
-    return code.upper() if code else UNKNOWN
+    return (code.upper() if code else UNKNOWN), "rules"
+
+
+def is_bare_georgia(location: str) -> bool:
+    processed = preprocess_location(location)
+    return bool(processed) and normalize_location(processed) == "georgia"
 
 
 def find_stale(
     conn, table: str, cache: GeocodingCache, rules: HeuristicResolver
 ) -> Dict[str, List[int]]:
     """IDs der Zeilen, deren gespeichertes Land nicht mehr zum Ort passt, nach Gruppe."""
-    stale: Dict[str, List[int]] = {"different": [], "not_in_cache": []}
-    known: Dict[str, Optional[str]] = {}
+    stale: Dict[str, List[int]] = {group: [] for group in GROUPS}
+    known: Dict[str, Tuple[Optional[str], str]] = {}
     result = conn.execution_options(stream_results=True).execute(
         text(SELECT_ROWS.format(table=table))
     )
     for row_id, location, stored in result:
         if location not in known:
-            known[location] = current_country(location, cache, rules)
-        now = known[location]
+            now, source = current_country(location, cache, rules)
+            if source != "mapping" and is_bare_georgia(location):
+                source = "georgia"
+            known[location] = (now, source)
+        now, source = known[location]
         if now is UNKNOWN:
             stale["not_in_cache"].append(row_id)
         elif now != NO_COUNTRY and now != stored.upper():
-            stale["different"].append(row_id)
+            stale[source].append(row_id)
     return stale
 
 
@@ -165,11 +184,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     for table in tables:
         with engine.connect() as conn:
             stale = find_stale(conn, table, cache, rules)
-        ids = stale["different"] + stale["not_in_cache"]
+        ids = [row_id for group in WRITE_GROUPS for row_id in stale[group]]
         counts = Counter({group: len(group_ids) for group, group_ids in stale.items()})
         print(
-            f"{table}: anderes Land {counts['different']:,}, "
-            f"nie geokodiert {counts['not_in_cache']:,}, zusammen {len(ids):,}"
+            f"{table}: anderes Land laut Zuordnung {counts['mapping']:,}, "
+            f"bloßes Georgia {counts['georgia']:,}, nie geokodiert {counts['not_in_cache']:,}, "
+            f"zurückzusetzen {len(ids):,}"
+        )
+        print(
+            f"  nur gezählt (K12): laut Cache {counts['cache']:,}, "
+            f"laut Textregeln {counts['rules']:,}"
         )
         if not args.write or not ids:
             continue
