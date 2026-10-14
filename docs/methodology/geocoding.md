@@ -109,22 +109,21 @@ the geocoder answered every request:
 | | Entries | Share |
 |---|---:|---:|
 | Entries in the list | 1,068 | |
-| Result as expected | 1,013 | 94.9% |
-| Expected country assigned | 942 of 997 | 94.5% |
-| No country assigned although one was expected | 36 of 997 | 3.6% |
+| Result as expected | 1,014 | 94.9% |
+| Expected country assigned | 943 of 997 | 94.6% |
+| No country assigned although one was expected | 35 of 997 | 3.5% |
 | A different country assigned | 19 of 997 | 1.9% |
 | Correctly without a country (not a place) | 71 of 71 | 100% |
 
-Of the 961 entries to which the procedure assigned a country, 942 (98.0%)
+Of the 962 entries to which the procedure assigned a country, 943 (98.0%)
 carried the expected one. By stage: the table of special cases resolved 75
-entries, all as expected; the text rules 148, of which 144 as expected;
-Nominatim 738, of which 723 as expected.
+entries, all as expected; the text rules 162, of which 158 as expected;
+Nominatim 725, of which 710 as expected.
 
 A run on the same day before the rules for ambiguous US state endings were
 changed gave 1,012 entries as expected: the change corrected two entries
 that had been assigned to the United States (expected: Canada and
-Georgia), and one US location that the text rules had resolved is no
-longer resolved by the geocoder.
+Georgia).
 
 Two properties of the list limit what this figure means.
 
