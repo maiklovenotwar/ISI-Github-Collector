@@ -139,9 +139,9 @@ Orbis data changed between runs.
 | watchers_count | Integer | Watcher count |
 | forks_count | Integer | Fork count |
 | open_issues_count | Integer | Open issue count |
-| contributors_count | Integer | Number of contributors |
-| commits_count | Integer | Number of commits |
-| pull_requests_count | Integer | Number of pull requests |
+| contributors_count | Integer | Not collected; `NULL` (until 2026-10-14 filled with 0, see `docs/methodology/repository_collection.md`) |
+| commits_count | Integer | Number of commits on the default branch |
+| pull_requests_count | Integer | Number of pull requests (open, closed, and merged) |
 | created_at | DateTime | Repository creation date |
 | updated_at | DateTime | Repository last-update date |
 | pushed_at | DateTime | Last push date |
@@ -212,7 +212,9 @@ Access goes through the `GitHubDatabase` class, an abstraction over
 SQLAlchemy. Selected methods:
 
 - `insert_contributor(contributor_data)` / `update_contributor(contributor, contributor_data)`
-- `insert_organization(org_data)` / `update_organization(organization, org_data)`
+- `insert_organization(org_data)` / `update_organization(organization, org_data)`;
+  both update methods set `country_code` and `region` to `NULL` when the new
+  data change the location and carry no country code themselves
 - `insert_repository(repo_data)` / `update_repository(repo, repo_data)`
 - `get_contributors(limit=None)` / `get_all_contributor_logins()`
 - `get_all_organization_logins()`
@@ -222,8 +224,11 @@ SQLAlchemy. Selected methods:
 `GitHubDatabase` also exposes generic helpers backed by an internal model
 registry:
 
-- `get_data_for_export(table_name, limit=None)`: table-based records for CSV
-  export (e.g. `"contributors"`, `"organizations"`, `"repositories"`)
+- `iter_rows_for_export(table_name, limit=None, chunk_size=10_000)`: the rows
+  of a table (`"contributors"`, `"organizations"`, `"repositories"`) as
+  dictionaries, read in blocks ordered by `id`; used by the CSV export
+- `get_data_for_export(table_name, limit=None)`: the same as ORM objects,
+  loaded at once (suitable for small tables only)
 - `get_entities_without_location(entity_type, limit=None)`: contributors or
   organizations with a location string but no country code; used by the
   geocoding CLI
@@ -259,11 +264,12 @@ selects and the columns it writes.
 |--------|-------|---------------|-----------------|
 | `collect_repository_contributors.py` | `repository_contributors` | Repositories in the requested star range without a row in `repository_contributors` (all in range with `--force`) | All columns; `contributor_id` only where the account already exists in `contributors` |
 | `add_missing_contributors.py` | `contributors`, `repository_contributors` | Accounts in `repository_contributors` that are not anonymous, not of type `Bot`, and absent from `contributors` | `contributors.id`, `login`, `type` (new rows); `repository_contributors.contributor_id` |
-| `enrich_repository_stats.py` | `repositories` | At least one of the three statistics columns `NULL` | `commits_count`, `pull_requests_count`; `contributors_count` is set to 0, because the script does not collect it |
+| `enrich_repository_stats.py` | `repositories` | `commits_count` or `pull_requests_count` `NULL` | `commits_count`, `pull_requests_count`, after each batch; `contributors_count` is not written |
 | `enrich_org_data_graphql.py` | `organizations` | `name`, `blog`, `email`, `location`, `created_at`, and `country_code` all `NULL`, and `enrichment_checked_at` `NULL` | `name`, `email`, `blog`, `location`, `bio`, `created_at`, `updated_at` (each only if previously `NULL`); `enrichment_checked_at` (also for organizations GitHub no longer knows) |
-| `enrich_contributor_profiles.py` | `contributors` | `enrichment_checked_at` `NULL`; restricted by `--scope` to contributors referenced in `repository_contributors` (`new`), all others (`gap`), or both (`all`, default) | `login`, `name`, `email`, `blog`, `location`, `bio`, `company`, `twitter_username`, `public_repos`, `public_gists`, `followers`, `following`, `created_at`, `updated_at` (overwritten with the values reported by GitHub), `enrichment_checked_at`; for accounts GitHub no longer knows only `enrichment_checked_at` |
+| `enrich_contributor_profiles.py` | `contributors` | `enrichment_checked_at` `NULL`; restricted by `--scope` to contributors referenced in `repository_contributors` (`new`), all others (`gap`), or both (`all`, default) | `login`, `name`, `email`, `blog`, `location`, `bio`, `company`, `twitter_username`, `public_repos`, `public_gists`, `followers`, `following`, `created_at`, `updated_at` (overwritten with the values reported by GitHub), `enrichment_checked_at`; `country_code` and `region` are set to `NULL` where the location changed; for accounts GitHub no longer knows only `enrichment_checked_at` |
 | `update_location_geocoding.py` | `contributors`, `organizations` | Rows with a `location` and no `country_code` (all rows with `--force`) | `country_code`, `region` |
-| `enrich_cctld.py` | `organizations` (default) or `contributors` (`--entity contributors`) | `country_code` and `country_code_cctld` empty and a `blog` or `email` present; for organizations additionally `country_code_orbis` empty | `country_code_cctld`, `cctld_source`, `cctld_enriched_at`, `cctld_run_id` |
+| `enrich_cctld.py` | `organizations` (default) or `contributors` (`--entity contributors`) | `country_code` and `country_code_cctld` empty and a `blog` or `email` present; for organizations additionally `country_code_orbis` empty. With `--recheck`: all rows with `country_code_cctld` set | `country_code_cctld`, `cctld_source`, `cctld_enriched_at`, `cctld_run_id` (with `--recheck` only where the result differs) |
+| `reset_stale_countries.py` | `contributors`, `organizations` | Rows with a country whose location now resolves to another country, or was never geocoded | `country_code`, `region` set to `NULL` (after a CSV backup) |
 | `orbis_matching_pipeline.py` | `organizations`, `orbis_enrichments` | `country_code_orbis` `NULL` and a non-empty `name` or `login`; alternatively an explicit list of logins | `organizations.bvd_id`, `country_code_orbis`, `orbis_enriched_at`, `current_orbis_enrichment_id`; one row per match in `orbis_enrichments` |
 
 Three properties of these write paths are relevant when interpreting the
