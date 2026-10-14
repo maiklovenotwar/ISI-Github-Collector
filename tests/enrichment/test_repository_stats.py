@@ -94,23 +94,67 @@ def test_repository_with_counts_is_not_selected_again(script, repos):
     assert selected == {102, 103}
 
 
-def test_aborted_run_keeps_the_first_batch(script, repos, monkeypatch):
+def _fake_handler(behaviour):
     class FakeHandler:
         def __init__(self, batch_size=None):
             self.calls = 0
 
         def fetch_repo_stats(self, batch):
             self.calls += 1
-            if self.calls == 2:
-                raise RuntimeError("GitHub down")
-            return [_stat(r["id"]) for r in batch], []
+            return behaviour(self.calls, batch)
 
-    monkeypatch.setattr(script, "GraphQLHandler", FakeHandler)
+    return FakeHandler
+
+
+def _run(script, monkeypatch, tmp_path, behaviour):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(script, "GraphQLHandler", _fake_handler(behaviour))
     monkeypatch.setattr(sys, "argv", ["enrich_repository_stats.py", "--batch-size", "1"])
-    assert script.main() == 1
+    return script.main()
+
+
+def test_aborted_run_keeps_the_first_batch(script, repos, monkeypatch, tmp_path):
+    def behaviour(call, batch):
+        if call == 2:
+            raise KeyboardInterrupt
+        return [_stat(r["id"]) for r in batch], []
+
+    with pytest.raises(KeyboardInterrupt):
+        _run(script, monkeypatch, tmp_path, behaviour)
     stats = _stats(repos)
     assert stats[101] == (None, 5, 2)
     assert stats[102] == (None, None, None)
+
+
+def test_lost_batch_ends_with_exit_code_1(script, repos, monkeypatch, tmp_path):
+    def behaviour(call, batch):
+        if call == 2:
+            raise graphql_handler.GraphQLBatchError("GitHub down")
+        return [_stat(r["id"]) for r in batch], []
+
+    assert _run(script, monkeypatch, tmp_path, behaviour) == 1
+    assert _stats(repos)[103] == (None, 5, 2)
+
+
+def test_repository_unknown_to_github_does_not_fail_the_run(script, repos, monkeypatch, tmp_path):
+    def behaviour(call, batch):
+        if batch[0]["id"] == 102:  # deleted or renamed: GitHub answers null
+            return [], [batch]
+        return [_stat(r["id"]) for r in batch], []
+
+    assert _run(script, monkeypatch, tmp_path, behaviour) == 0
+    assert (tmp_path / next(p.name for p in tmp_path.glob("failed_repo_ids_*.txt"))).exists()
+
+
+def test_handler_raises_when_every_attempt_fails(tmp_path, monkeypatch):
+    def broken(*args, **kwargs):
+        raise graphql_handler.requests.exceptions.ConnectionError("offline")
+
+    monkeypatch.setattr(graphql_handler.requests.Session, "post", broken)
+    monkeypatch.setattr(graphql_handler.time, "sleep", lambda seconds: None)
+    handler = graphql_handler.GraphQLHandler(github_token="x", batch_size=1)
+    with pytest.raises(graphql_handler.GraphQLBatchError):
+        handler.fetch_repo_stats([{"id": 101, "owner": "o", "name": "n"}])
 
 
 def test_leftover_checkpoint_does_not_skip_a_batch(tmp_path, monkeypatch):

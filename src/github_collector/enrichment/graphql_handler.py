@@ -15,6 +15,10 @@ from github_collector.config import BATCH_CONFIG, GITHUB_API
 from github_collector.utils.secrets import SecretManager
 
 
+class GraphQLBatchError(Exception):
+    """Ein Batch blieb nach allen Versuchen ohne Antwort (Netz, Server, Rate-Limit)."""
+
+
 class GraphQLHandler:
     """
     Handler für die Kommunikation mit der GitHub GraphQL API zur Anreicherung
@@ -65,8 +69,9 @@ class GraphQLHandler:
         indem er die Ergebnisse jedes Aufrufs sofort schreibt.
 
         :param repos: Liste von Dictionaries mit owner und name der Repositories
-        :return: Tuple (Liste mit Ergebnis-Dicts, Liste der fehlgeschlagenen
-            Batches)
+        :return: Tuple (Liste mit Ergebnis-Dicts, Listen der Repositories, für die
+            GitHub keine Daten lieferte)
+        :raises GraphQLBatchError: wenn ein Batch nach allen Versuchen ohne Antwort blieb
 
         Jedes Ergebnis-Dict enthält: ``repo_id``, ``calculated_pr_count``,
         ``calculated_commit_count``, ``calculated_contributor_count`` (immer None:
@@ -226,11 +231,14 @@ class GraphQLHandler:
                     )
                     time.sleep(2**attempt)
             if not success:
-                logger.error(
+                # Ein ganzer Batch ohne Antwort ist ein echter Fehler und wird gemeldet.
+                # Einzelne Repositories, die GitHub nicht kennt (gelöscht, umbenannt,
+                # privat), stehen dagegen in failed_batches und beenden den Lauf nicht
+                # mit Fehler.
+                raise GraphQLBatchError(
                     "Batch endgültig fehlgeschlagen: "
                     f"{[r['owner'] + '/' + r['name'] for r in batch]}"
                 )
-                failed_batches.append(batch)
         logger.debug(f"Alle extrahierten results (gesamt): {results}")
         return results, failed_batches
 

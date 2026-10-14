@@ -42,6 +42,7 @@ from sqlalchemy import bindparam, text  # noqa: E402
 from github_collector import config  # noqa: E402
 from github_collector.database.engine import make_engine  # noqa: E402
 from github_collector.geocoding.cache import GeocodingCache  # noqa: E402
+from github_collector.geocoding.geocoding_service import preprocess_location  # noqa: E402
 from github_collector.geocoding.heuristics import HeuristicResolver  # noqa: E402
 from github_collector.geocoding.normalization import normalize_location  # noqa: E402
 
@@ -64,19 +65,21 @@ UNKNOWN = None
 def current_country(location: str, cache: GeocodingCache, rules: HeuristicResolver):
     """Land, das die Geokodierung heute für den Ort liefern würde, ohne Dienst-Anfrage.
 
+    Bildet die Reihenfolge von GeocodingService.geocode() nach, einschließlich der
+    Bereinigung (z. B. "Remote, Korea, South" -> "korea, south").
+
     Returns:
         Ländercode, NO_COUNTRY (ausdrücklich kein Land) oder UNKNOWN (nie geokodiert).
     """
-    normalized = normalize_location(location)
-    if not normalized:
-        return NO_COUNTRY
-    mapped = rules.resolve_mapping(normalized)
+    processed = preprocess_location(location)
+    normalized = normalize_location(processed) if processed else ""
+    mapped = rules.resolve_mapping(normalized) if normalized else None
     if mapped:
         return (mapped.get("country_code") or "").upper()
     cached = cache.get(location)
     if cached is not None:
         return (cached.get("country_code") or "").upper()
-    if mapped is not None:
+    if not normalized or mapped is not None:
         return NO_COUNTRY
     code, _region = rules.extract_country_from_text(normalized)
     return code.upper() if code else UNKNOWN
@@ -152,6 +155,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     engine = make_engine(config.DB_URL)
     tables = (args.table,) if args.table else TABLES
     print(f"Modus: {'SCHREIBEN' if args.write else 'PROBELAUF'}")
+    print(f"Geocoding-Cache: {len(cache.cache):,} Einträge")
+    # Ein leerer Cache (falscher Pfad, unlesbare Datei) machte fast jede Zeile zu "nie
+    # geokodiert" und setzte Millionen Länder zurück.
+    if args.write and not cache.cache:
+        print("ABBRUCH: Der Geocoding-Cache ist leer; ohne ihn wird nichts zurückgesetzt.")
+        return 1
 
     for table in tables:
         with engine.connect() as conn:

@@ -43,6 +43,9 @@ def cache_file(tmp_path):
     cache.set("Berlin", {"country_code": "DE", "country": "Germany", "region": None})
     cache.set("Nowhere Land", {"country_code": "", "country": None})
     cache.set("Korea, South", {"country_code": "AU", "country": "Australia", "region": "NSW"})
+    cache.set(
+        "Remote, Korea, South", {"country_code": "AU", "country": "Australia", "region": "NSW"}
+    )
     cache.save()
     return tmp_path / "cache.json"
 
@@ -57,6 +60,7 @@ def rows(test_db):
         (5, "Korea, South", "AU"),  # mapping names KR and outranks the cache -> different
         (6, "Lyon, FR", "FR"),  # not cached, text rule gives FR -> unchanged
         (7, "Georgia", "GE"),  # bare "Georgia" counts as the US state (E9) -> different
+        (8, "Remote, Korea, South", "AU"),  # cleaned like geocode() does -> mapping KR
     ]
     with session_scope(test_db.session_factory) as session:
         for row_id, location, code in people:
@@ -85,7 +89,7 @@ def test_find_stale_groups_rows(module, rows, cache_file, test_db):
         stale = module.find_stale(
             conn, "contributors", GeocodingCache(cache_file), HeuristicResolver()
         )
-    assert sorted(stale["different"]) == [1, 5, 7]
+    assert sorted(stale["different"]) == [1, 5, 7, 8]
     assert stale["not_in_cache"] == [2]
 
 
@@ -100,13 +104,23 @@ def test_write_resets_both_groups_and_backs_them_up(module, rows, cache_file, te
     args = ["--cache-file", str(cache_file), "--backup-dir", str(tmp_path), "--write"]
     assert module.main(args) == 0
     countries = _countries(test_db, Contributor)
-    assert {k: countries[k] for k in (1, 2, 5, 7)} == {1: None, 2: None, 5: None, 7: None}
+    assert {k: countries[k] for k in (1, 2, 5, 7, 8)} == dict.fromkeys((1, 2, 5, 7, 8))
     assert (countries[3], countries[4], countries[6]) == ("DE", "NL", "FR")
     assert _countries(test_db, Organization)[20] is None
 
     backup = tmp_path / next(p.name for p in tmp_path.glob("*contributors*.csv"))
     with backup.open(encoding="utf-8", newline="") as f:
         saved = {int(r["id"]): r for r in csv.DictReader(f)}
-    assert set(saved) == {1, 2, 5, 7}
+    assert set(saved) == {1, 2, 5, 7, 8}
     assert saved[1]["country_code"] == "DE" and saved[1]["location"] == "Paris"
     assert saved[1]["region"] == "r"
+
+
+def test_write_is_refused_without_a_cache(module, rows, test_db, tmp_path):
+    # A wrong path or an unreadable file gives an empty cache; every row would then count
+    # as "never geocoded" and be reset.
+    before = _countries(test_db, Contributor)
+    args = ["--cache-file", str(tmp_path / "missing.json"), "--backup-dir", str(tmp_path)]
+    assert module.main(args + ["--write"]) == 1
+    assert _countries(test_db, Contributor) == before
+    assert not list(tmp_path.glob("*.csv"))

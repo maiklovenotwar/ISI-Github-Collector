@@ -79,3 +79,31 @@ def test_export_tables_reports_failures(tmp_path, monkeypatch):
 
     monkeypatch.setattr(csv_export, "export_table_to_csv", failing)
     assert csv_export.export_tables(db, ["contributors"], str(tmp_path)) == (0, ["contributors"])
+
+
+def test_table_failing_midway_leaves_no_file_and_exit_code_1(tmp_path, monkeypatch):
+    db = _db_with_contributors(tmp_path, 3)
+    real = GitHubDatabase.iter_rows_for_export
+
+    def failing_after_first_row(self, table_name, limit=None, chunk_size=10_000):
+        rows = real(self, table_name, limit=limit, chunk_size=1)
+        yield next(rows)
+        raise RuntimeError("connection lost")
+
+    monkeypatch.setattr(GitHubDatabase, "iter_rows_for_export", failing_after_first_row)
+    out_dir = tmp_path / "exp"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "export",
+            "--db-path",
+            db.db_url,
+            "--output-dir",
+            str(out_dir),
+            "--tables",
+            "contributors",
+        ],
+    )
+    assert export_command.main() == 1
+    assert list(out_dir.iterdir()) == []

@@ -44,13 +44,22 @@ def export_table_to_csv(db, table_name: str, output_file: str, limit: Optional[i
     if directory:
         os.makedirs(directory, exist_ok=True)
 
+    # Erst in eine Teildatei schreiben und nur bei Erfolg umbenennen: eine abgebrochene
+    # Tabelle soll nicht als vollständige CSV-Datei unter ihrem Namen liegen bleiben.
+    partial_file = output_file + ".part"
     exported = 0
-    with open(output_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(columns)
-        for row in db.iter_rows_for_export(table_name, limit=limit):
-            writer.writerow([row.get(column) for column in columns])
-            exported += 1
+    try:
+        with open(partial_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(columns)
+            for row in db.iter_rows_for_export(table_name, limit=limit):
+                writer.writerow([row.get(column) for column in columns])
+                exported += 1
+    except BaseException:
+        if os.path.exists(partial_file):
+            os.remove(partial_file)
+        raise
+    os.replace(partial_file, output_file)
 
     logger.info(f"{exported} Zeilen aus Tabelle {table_name} nach {output_file} exportiert")
     return exported

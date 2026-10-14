@@ -98,12 +98,13 @@ Notable changes to this project are recorded here. The format follows
   they are now stored under `data/cache/` and `logs/`.
 - The CSV export loaded a whole table into memory and ended with success even when a table
   could not be exported. Tables are now read in blocks and written as they are read; a failed
-  table makes the script end with exit code 1.
+  table leaves no file under its name and makes the script end with exit code 1.
 - `enrich_repository_stats.py` wrote 0 into `contributors_count`, which it does not collect; the
   column now stays `NULL`. Results are written after each batch instead of once at the end, so an
   aborted run keeps them. A database error is no longer reported as one updated repository, a
   checkpoint file left in the working directory no longer skips a batch, and the script ends
-  with exit code 1 if a batch failed.
+  with exit code 1 if a whole batch got no answer (repositories that GitHub no longer knows are
+  listed in the file of failed IDs but do not fail the run).
 - When a profile or an owner was stored again with a different location, the country determined
   for the old location was kept. A changed location now resets `country_code` and `region`, so
   that the geocoding determines them anew.

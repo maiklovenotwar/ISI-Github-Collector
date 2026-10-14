@@ -22,6 +22,55 @@ from github_collector.geocoding.rate_limiter import RateLimiter
 logger = logging.getLogger(__name__)
 
 
+def preprocess_location(location: str) -> Optional[str]:
+    """
+    Normalisiere und bereinige Standortangaben für bessere Erkennung.
+    Entfernt nur überflüssige Leerzeichen und gibt None zurück, wenn leer.
+    Kann erweitert werden, um häufige Muster zu bereinigen.
+    """
+    if not location or not isinstance(location, str):
+        return None
+
+    location = location.strip()
+
+    if not location:
+        return None
+
+    # Entferne gängige, nichtssagende Zusätze (optional, aber kann helfen)
+    location = re.sub(
+        r"\s*,?\s*(remote|home office|anywhere|on the internet|cloud)\s*$",
+        "",
+        location,
+        flags=re.IGNORECASE,
+    ).strip()
+    location = re.sub(
+        r"^\s*(remote|home office|anywhere|on the internet|cloud)\s*,?\s*",
+        "",
+        location,
+        flags=re.IGNORECASE,
+    ).strip()
+
+    # Entferne URLs
+    location = re.sub(r"https?://\S+", "", location).strip()
+
+    # Entferne E-Mail-Adressen
+    location = re.sub(r"\S+@\S+", "", location).strip()
+
+    # Entferne typische Platzhalter/ungültige Zeichen, die Probleme machen könnten
+    location = location.replace("[", "").replace("]", "").replace("(", "").replace(")", "")
+    location = location.replace('"', "").replace("'", "")
+
+    # Ersetze mehrere Leerzeichen/Kommas durch ein einzelnes Leerzeichen/Komma
+    location = re.sub(r"\s+", " ", location).strip()
+    location = re.sub(r",+", ",", location).strip()
+    location = re.sub(r"\s*?,\s*", ", ", location).strip()  # Einheitliches Format Komma+Leerzeichen
+
+    if not location:  # Erneut prüfen nach Bereinigung
+        return None
+
+    return location
+
+
 class GeocodingService:
 
     def __init__(
@@ -179,54 +228,8 @@ class GeocodingService:
         }
 
     def _preprocess_location(self, location: str) -> Optional[str]:
-        """
-        Normalisiere und bereinige Standortangaben für bessere Erkennung.
-        Entfernt nur überflüssige Leerzeichen und gibt None zurück, wenn leer.
-        Kann erweitert werden, um häufige Muster zu bereinigen.
-        """
-        if not location or not isinstance(location, str):
-            return None
-
-        location = location.strip()
-
-        if not location:
-            return None
-
-        # Entferne gängige, nichtssagende Zusätze (optional, aber kann helfen)
-        location = re.sub(
-            r"\s*,?\s*(remote|home office|anywhere|on the internet|cloud)\s*$",
-            "",
-            location,
-            flags=re.IGNORECASE,
-        ).strip()
-        location = re.sub(
-            r"^\s*(remote|home office|anywhere|on the internet|cloud)\s*,?\s*",
-            "",
-            location,
-            flags=re.IGNORECASE,
-        ).strip()
-
-        # Entferne URLs
-        location = re.sub(r"https?://\S+", "", location).strip()
-
-        # Entferne E-Mail-Adressen
-        location = re.sub(r"\S+@\S+", "", location).strip()
-
-        # Entferne typische Platzhalter/ungültige Zeichen, die Probleme machen könnten
-        location = location.replace("[", "").replace("]", "").replace("(", "").replace(")", "")
-        location = location.replace('"', "").replace("'", "")
-
-        # Ersetze mehrere Leerzeichen/Kommas durch ein einzelnes Leerzeichen/Komma
-        location = re.sub(r"\s+", " ", location).strip()
-        location = re.sub(r",+", ",", location).strip()
-        location = re.sub(
-            r"\s*?,\s*", ", ", location
-        ).strip()  # Einheitliches Format Komma+Leerzeichen
-
-        if not location:  # Erneut prüfen nach Bereinigung
-            return None
-
-        return location
+        """Bereinigt eine Standortangabe; siehe preprocess_location."""
+        return preprocess_location(location)
 
     def _extract_country_from_text(self, location: str) -> Tuple[Optional[str], Optional[str]]:
         """Diese Methode wird nun vom HeuristicResolver abgedeckt."""

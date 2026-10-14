@@ -328,8 +328,10 @@ python scripts/export/export_tables_to_csv.py --tables repositories organization
 
 The tables are read in blocks of 10,000 rows ordered by `id` and written
 as they are read, so that even `repositories` does not have to fit into
-memory. If the export of a table fails, the other tables are still
-exported and the script ends with exit code 1.
+memory. Each file is written under a temporary name and renamed when the
+table is complete. If the export of a table fails, no file is left under
+its name, the other tables are still exported, and the script ends with
+exit code 1.
 
 ### Content of the Export Files
 - **repositories.csv**: repository metadata and statistics

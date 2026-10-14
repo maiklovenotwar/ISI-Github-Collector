@@ -83,7 +83,7 @@ def main(argv=None):  # noqa: C901
     in das Logfile `logs/enrich_repository_stats.log`.
 
     Returns:
-        0 bei Erfolg, 1 wenn ein Batch fehlschlug oder das Schreiben scheiterte.
+        0 bei Erfolg, 1 wenn ein ganzer Batch ohne Antwort blieb oder das Schreiben scheiterte.
 
     Besonderheiten:
     - contributors_count wird aktuell nicht gesammelt (Performance-Limit der API)
@@ -137,6 +137,7 @@ def main(argv=None):  # noqa: C901
 
     handler = GraphQLHandler(batch_size=args.batch_size)
     engine = make_engine(db_url)
+    lost_batches = 0
     db_id_set = {r["id"] for r in repos}
     updated = 0
     all_stats = []
@@ -163,6 +164,7 @@ def main(argv=None):  # noqa: C901
                 batch_fail_counts.append(len(batch_fails) if batch_fails else 0)
             except Exception as e:
                 logger.error(f"Fehler in Batch {idx+1}/{len(batches)}: {e}")
+                lost_batches += 1
                 failed_batches.append(batch)
                 batch_success_counts.append(0)
                 batch_fail_counts.append(len(batch))
@@ -235,7 +237,12 @@ def main(argv=None):  # noqa: C901
                     ids.append(str(r))
             logger.info(ids)
     logger.info("Enrichment-Prozess abgeschlossen.")
-    return 1 if failed_batches else 0
+    # Exit-Code 1 nur, wenn ein ganzer Batch verloren ging. Repositories, die GitHub nicht
+    # (mehr) kennt, stehen in der Datei der fehlgeschlagenen IDs, sind aber kein Fehler des
+    # Laufs: sonst endete jeder Lauf mit 1.
+    if lost_batches:
+        logger.error(f"{lost_batches} Batches ohne Antwort; Exit-Code 1.")
+    return 1 if lost_batches else 0
 
 
 if __name__ == "__main__":
