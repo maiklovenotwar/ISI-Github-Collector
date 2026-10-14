@@ -124,6 +124,14 @@ class TestServiceDomainsAndFreeTlds:
             "hex.pm",
             "foo.tf",
             "foo.st",
+            "foo.cx",
+            "foo.ax",
+            "foo.gs",
+            "foo.yt",
+            "foo.wf",
+            "foo.tl",
+            "foo.lc",
+            "foo.ag",
         ],
     )
     def test_service_domains_and_free_tlds_give_no_country(self, domain: str) -> None:

@@ -62,6 +62,17 @@ FILTERED_TLDS = frozenset(
         "pm",
         "tf",
         "st",
+        # Weitere Wortspiel- und Marken-Endungen (Befund K11, Entscheidung E10): .ag wird
+        # meist als "Aktiengesellschaft" oder "Agentur" genutzt, .cx, .gs, .tl, .lc u. a. als
+        # Kürzel; echte Fälle aus diesen Ländern sind selten.
+        "cx",
+        "ax",
+        "gs",
+        "yt",
+        "wf",
+        "tl",
+        "lc",
+        "ag",
     }
 )
 

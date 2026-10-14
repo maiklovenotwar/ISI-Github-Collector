@@ -114,7 +114,8 @@ Estonia (`EE`), `notion.so` for 165 of the 313 accounts assigned to
 Somalia (`SO`), and `youtu.be` for 135 of the 867 accounts assigned to
 Belgium (`BE`). Free or very cheap endings (`.tk`, `.ml`, `.ga`, `.cf`,
 `.gq`, `.pw`) and endings used mostly for word play (`.re`, `.pm`, `.tf`,
-`.st`, e.g. `frida.re`, `hex.pm`) showed the same pattern. In total,
+`.st`, `.cx`, `.ax`, `.gs`, `.yt`, `.wf`, `.tl`, `.lc`, `.ag`, e.g. `frida.re`,
+`hex.pm`; `.ag` is mostly read as *Aktiengesellschaft* or *agency*) showed the same pattern. In total,
 an estimated 4,000 to 5,000 of about 96,000 assignments (about 5%) were affected.
 The procedure therefore yields no country for these endings, nor for the
 service domains `linktr.ee`, `buymeacoff.ee`, `coff.ee`, `lin.ee`,
