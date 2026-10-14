@@ -35,6 +35,7 @@ from sqlalchemy.exc import OperationalError
 
 from github_collector import config
 from github_collector.database.models import Contributor
+from github_collector.geocoding.normalization import normalize_location
 from github_collector.utils.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
@@ -197,6 +198,24 @@ def _upsert_statement(engine: Engine, rows: List[Dict[str, Any]]):
     return stmt.on_duplicate_key_update(**{c: stmt.inserted[c] for c in columns})
 
 
+def ids_with_changed_location(conn, table: str, rows: List[Dict[str, Any]]) -> List[int]:
+    """IDs der Zeilen, deren neuer Ort (normalisiert) vom gespeicherten abweicht.
+
+    Zeilen ohne gespeicherte Zeile (neue Konten) zählen nicht: sie haben noch kein Land.
+    """
+    new_locations = {row["id"]: normalize_location(row.get("location")) for row in rows}
+    stmt = text(f"SELECT id, location FROM {table} WHERE id IN :ids").bindparams(
+        bindparam("ids", expanding=True)
+    )
+    ids = list(new_locations)
+    changed = []
+    for i in range(0, len(ids), 500):
+        for row_id, stored in conn.execute(stmt, {"ids": ids[i : i + 500]}):
+            if normalize_location(stored) != new_locations[row_id]:
+                changed.append(row_id)
+    return changed
+
+
 @retry_with_backoff(
     max_attempts=5, initial_delay=2.0, backoff_factor=2.0, exceptions=OperationalError
 )
@@ -206,8 +225,20 @@ def flush_batch(engine: Engine, rows: List[Dict[str, Any]]) -> None:
         return
     step = _SQLITE_ROWS_PER_STATEMENT if engine.dialect.name == "sqlite" else len(rows)
     with engine.begin() as conn:
+        # Hat sich der Ort geändert, passt das gespeicherte Land nicht mehr; es wird geleert,
+        # damit die Geokodierung es neu bestimmt (Befund K3). Eigenes UPDATE in derselben
+        # Transaktion statt country_code im Upsert: so wird kein Land überschrieben, das
+        # eine parallel laufende Geokodierung für einen unveränderten Ort gesetzt hat.
+        changed = ids_with_changed_location(conn, Contributor.__tablename__, rows)
         for i in range(0, len(rows), step):
             conn.execute(_upsert_statement(engine, rows[i : i + step]))
+        if changed:
+            conn.execute(
+                text(
+                    "UPDATE contributors SET country_code = NULL, region = NULL WHERE id IN :ids"
+                ).bindparams(bindparam("ids", expanding=True)),
+                {"ids": changed},
+            )
 
 
 def flush_rows(engine: Engine, rows: List[Dict[str, Any]]) -> int:

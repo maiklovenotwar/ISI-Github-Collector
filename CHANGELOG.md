@@ -91,6 +91,9 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- When a profile or an owner was stored again with a different location, the country determined
+  for the old location was kept. A changed location now resets `country_code` and `region`, so
+  that the geocoding determines them anew.
 - Geocoding read the cache before the table of special cases, so a corrected entry never took
   effect for a string that was already cached: `Korea, South` stayed assigned to Australia
   through an old geocoder match. An entry of the table that names a country now takes precedence

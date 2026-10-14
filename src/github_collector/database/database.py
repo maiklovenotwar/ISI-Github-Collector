@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from github_collector.config import DB_CONFIG, DB_URL
+from github_collector.geocoding.normalization import normalize_location
 from github_collector.monitoring import record_db_operation
 from github_collector.utils.retry import retry_with_backoff
 
@@ -123,6 +124,18 @@ def _missing_country_filter(model, include_marked_empty: bool):
     if include_marked_empty:
         return or_(model.country_code.is_(None), model.country_code == "")
     return model.country_code.is_(None)
+
+
+def _location_changed(row, data: dict) -> bool:
+    """True, wenn `data` einen anderen Ort bringt und selbst kein Land setzt.
+
+    Dann passt das gespeicherte Land nicht mehr zum Ort und wird geleert, damit die
+    Geokodierung es neu bestimmt (Befund K3). Die Geokodierung übergibt immer
+    `country_code` und ist davon nicht betroffen.
+    """
+    if "location" not in data or "country_code" in data:
+        return False
+    return normalize_location(data["location"]) != normalize_location(row.location)
 
 
 class GitHubDatabase:
@@ -600,6 +613,7 @@ class GitHubDatabase:
         def _operation(sess: Session) -> Contributor:
             # Stelle sicher, dass der Contributor an die aktuelle Session gebunden ist
             managed_contributor = sess.merge(contributor)
+            moved = _location_changed(managed_contributor, contributor_data)
 
             # Felder aktualisieren
             managed_contributor.login = contributor_data.get("login", managed_contributor.login)
@@ -639,6 +653,10 @@ class GitHubDatabase:
             managed_contributor.updated_at = self._parse_datetime(
                 contributor_data.get("updated_at", managed_contributor.updated_at)
             )
+
+            if moved:
+                managed_contributor.country_code = None
+                managed_contributor.region = None
 
             logger.debug(f"Contributor {managed_contributor.login} aktualisiert")
             return managed_contributor
@@ -718,6 +736,7 @@ class GitHubDatabase:
         def _operation(sess: Session) -> Organization:
             # Stelle sicher, dass die Organisation an die aktuelle Session gebunden ist
             managed_org = sess.merge(organization)
+            moved = _location_changed(managed_org, org_data)
 
             # Felder aktualisieren
             managed_org.login = org_data.get("login", managed_org.login)
@@ -742,6 +761,10 @@ class GitHubDatabase:
             managed_org.updated_at = self._parse_datetime(
                 org_data.get("updated_at", managed_org.updated_at)
             )
+
+            if moved:
+                managed_org.country_code = None
+                managed_org.region = None
 
             logger.debug(f"Organisation {managed_org.login} aktualisiert")
             return managed_org

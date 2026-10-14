@@ -19,6 +19,23 @@ country. The result is stored in `country_code` (ISO 3166-1
 alpha-2) and `region`; see `country_attribution.md` for how this value is
 used.
 
+### Time of the Location
+
+The location is read at the time a profile is retrieved, and the country
+refers to that location. The repositories and their owners were retrieved
+between 2025-11-28 and January 2026. The profiles of all user accounts
+were retrieved again between 2026-08-28 and 2026-09-06; this overwrote
+`location` with the current value but left `country_code` as it was. A
+country is determined only for rows without one, so where an account
+holder had changed the location in between, the stored country no longer
+matched the stored location. A read-only comparison on 2026-10-14 found
+this for at most about 1.5% of the accounts with a country and a location
+(17,624 with a different country, 30,005 whose current location had never
+been geocoded) and 2.5% of the organizations. Since 2026-10-14, a changed
+location resets `country_code` and `region` when a profile or an owner is
+stored again, so that the geocoding determines them anew. No column
+records when a location or a country was determined.
+
 ## Procedure
 
 A location is resolved in five stages. The first stage that yields a

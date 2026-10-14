@@ -313,3 +313,47 @@ class TestFlushRows:
 
     def test_empty_input_is_a_no_op(self, engine):
         assert profiles.flush_rows(engine, []) == 0
+
+
+class TestLocationChangeResetsCountry:
+    """A new location makes the stored country stale; it is reset for the geocoding (K3)."""
+
+    @staticmethod
+    def _store_location(test_db, location, country_code="DE", region="Berlin"):
+        with session_scope(test_db.session_factory) as session:
+            owner = session.get(Contributor, OWNER)
+            owner.location = location
+            owner.country_code = country_code
+            owner.region = region
+
+    @staticmethod
+    def _flush_profile(engine, location):
+        row = profiles.parse_user_data(
+            _profile("owner", location=location), {"id": OWNER, "login": "owner"}
+        )
+        assert profiles.flush_rows(engine, [row]) == 1
+
+    def test_changed_location_resets_country(self, engine, test_db):
+        self._store_location(test_db, "Berlin")
+        self._flush_profile(engine, "Paris")
+        owner = _contributor(test_db, OWNER)
+        assert owner.location == "Paris"
+        assert owner.country_code is None
+        assert owner.region is None
+
+    def test_same_location_keeps_country(self, engine, test_db):
+        self._store_location(test_db, "Berlin")
+        self._flush_profile(engine, " berlin ")
+        owner = _contributor(test_db, OWNER)
+        assert owner.country_code == "DE"
+        assert owner.region == "Berlin"
+
+    def test_location_removed_resets_country(self, engine, test_db):
+        self._store_location(test_db, "Berlin")
+        self._flush_profile(engine, None)
+        assert _contributor(test_db, OWNER).country_code is None
+
+    def test_new_account_without_stored_row_gets_no_country(self, engine, test_db):
+        row = profiles.parse_user_data(_profile("newbie"), {"id": 99, "login": "newbie"})
+        assert profiles.flush_rows(engine, [row]) == 1
+        assert _contributor(test_db, 99).country_code is None
