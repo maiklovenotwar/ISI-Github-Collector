@@ -30,7 +30,7 @@ collector database.
 | `enrichment/enrich_org_data_graphql.py` | Fetches the profile of organizations whose profile fields are empty. | `organizations` (profile columns, `enrichment_checked_at`) | GitHub API |
 | `enrichment/enrich_contributor_profiles.py` | Fetches the profile of contributors that have not been fetched before. | `contributors` (profile columns, `enrichment_checked_at`) | GitHub API |
 | `enrichment/update_location_geocoding.py` | Resolves the free-text location of contributors and organizations to a country and region. | `contributors`, `organizations` (`country_code`, `region`) | geocoding service |
-| `enrichment/enrich_cctld.py` | Derives a country code from the country-code top-level domain of the website or e-mail address; dry run unless `--write` is given. | `country_code_cctld` and three accompanying columns of `organizations` or `contributors` | none |
+| `enrichment/enrich_cctld.py` | Derives a country code from the country-code top-level domain of the website or e-mail address; `--recheck` recomputes stored assignments under the current rules; dry run unless `--write` is given. | `country_code_cctld` and three accompanying columns of `organizations` or `contributors` | none |
 | `enrichment/orbis_matching_pipeline.py` | Matches organizations to companies in the Orbis database and resolves the headquarters country. | `organizations` (Orbis columns), `orbis_enrichments` | Orbis database (VPN) |
 
 ## `export/`

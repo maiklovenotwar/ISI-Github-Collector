@@ -15,6 +15,8 @@ Usage:
     python scripts/enrichment/enrich_cctld.py --write                 # Live-Import
     python scripts/enrichment/enrich_cctld.py --limit 100             # Nur 100 Zeilen verarbeiten
     python scripts/enrichment/enrich_cctld.py --validate-only         # Nur Validierung, kein Import
+    python scripts/enrichment/enrich_cctld.py --recheck               # Gespeicherte Zuordnungen neu berechnen (Dry-Run)
+    python scripts/enrichment/enrich_cctld.py --recheck --write       # ... und Abweichungen schreiben
 """
 import argparse
 import sys
@@ -221,6 +223,76 @@ def run_validation(conn, entity: EntityConfig) -> dict:  # noqa: C901
 
 
 # ============================================================
+# NEUBERECHNUNG GESPEICHERTER ZUORDNUNGEN
+# ============================================================
+
+
+def run_recheck(conn, entity: EntityConfig, dry_run: bool, run_id: str) -> Counter:
+    """Berechne gespeicherte ccTLD-Zuordnungen mit den aktuellen Regeln neu.
+
+    Liest alle Zeilen mit gesetztem country_code_cctld, bestimmt Land und Quelle neu und
+    schreibt nur abweichende Zeilen (neues Land oder NULL). Gibt die Übergänge zurück,
+    z. B. {"EE -> -": 2173, "EE -> DE": 12}. Schreibt nur mit dry_run=False.
+    """
+    print("\n" + "=" * 70)
+    print(f"NEUBERECHNUNG {'(DRY-RUN)' if dry_run else '(LIVE)'} - {entity.label}")
+    print("=" * 70)
+
+    rows = conn.execute(
+        text(
+            f"""
+        SELECT id, blog, email, country_code_cctld, cctld_source
+        FROM {entity.table}
+        WHERE country_code_cctld IS NOT NULL AND country_code_cctld != ''
+        ORDER BY id
+    """
+        )
+    ).fetchall()
+    print(f"Gespeicherte Zuordnungen: {len(rows):,}")
+
+    transitions = Counter()
+    changes = []
+    for row_id, blog, email, old_cc, old_source in rows:
+        cc, source = extract_cctld(blog, email)
+        if cc == old_cc and source == old_source:
+            continue
+        if cc != old_cc:
+            transitions[f"{old_cc} -> {cc or '-'}"] += 1
+        changes.append({"row_id": row_id, "cc": cc, "source": source})
+
+    print(f"Abweichend: {len(changes):,} (davon mit anderem Land: {sum(transitions.values()):,})")
+    for transition, cnt in transitions.most_common(30):
+        print(f"  {transition}: {cnt:,}")
+
+    if dry_run:
+        print("\n[DRY-RUN] Keine Aenderungen geschrieben. Verwende --write zum Schreiben.")
+        return transitions
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    update_sql = text(
+        f"""
+        UPDATE {entity.table}
+        SET country_code_cctld = :cc,
+            cctld_source = :source,
+            cctld_enriched_at = :now,
+            cctld_run_id = :run_id
+        WHERE id = :row_id
+    """
+    )
+    batch_size = 1000
+    for start in range(0, len(changes), batch_size):
+        batch = [{**c, "now": now, "run_id": run_id} for c in changes[start : start + batch_size]]
+        conn.execute(update_sql, batch)
+        conn.commit()
+    print(f"\nGeschrieben: {len(changes):,} {entity.label}, Run-ID: {run_id}")
+    print(
+        "Hinweis: Ein Revert über cctld_run_id stellt die alten Werte nicht wieder her; "
+        "dafür ist die vorher angelegte Sicherung da."
+    )
+    return transitions
+
+
+# ============================================================
 # ENRICHMENT
 # ============================================================
 
@@ -405,6 +477,12 @@ def parse_args() -> argparse.Namespace:
         help="Nur Validierung gegen Geocoding, kein Enrichment",
     )
     parser.add_argument(
+        "--recheck",
+        action="store_true",
+        help="Gespeicherte Zuordnungen mit den aktuellen Regeln neu berechnen "
+        "(ohne --write nur zählen)",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=None,
@@ -450,6 +528,11 @@ def main() -> int:
 
     if args.validate_only:
         print("\n[VALIDATE-ONLY] Enrichment uebersprungen.")
+        conn.close()
+        return 0
+
+    if args.recheck:
+        run_recheck(conn, entity, dry_run, run_id)
         conn.close()
         return 0
 

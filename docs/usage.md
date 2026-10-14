@@ -254,10 +254,18 @@ python scripts/enrichment/enrich_cctld.py --validate-only
 
 # Write the results for at most 1,000 organizations
 python scripts/enrichment/enrich_cctld.py --write --limit 1000
+
+# Recompute stored assignments under the current rules (dry run, then write)
+python scripts/enrichment/enrich_cctld.py --entity contributors --recheck
+python scripts/enrichment/enrich_cctld.py --entity contributors --recheck --write
 ```
 
 Each writing run prints the SQL statement that reverts it, identified by the
-run identifier stored in `cctld_run_id`.
+run identifier stored in `cctld_run_id`. `--recheck` reports each change of
+country (for example `EE -> -`) and writes only rows whose result differs.
+Its run identifier marks the changed rows, but resetting them would not
+restore the previous values; a copy of the affected rows taken before the
+run is needed for that.
 
 The columns written by each enrichment script are listed in
 `docs/architecture/database.md` ("Write Paths of the Enrichment Scripts").
