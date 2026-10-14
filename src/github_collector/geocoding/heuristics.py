@@ -358,6 +358,14 @@ class HeuristicResolver:
             "longitude": None,
             "formatted_address": "South Korea",
         },
+        "south, korea": {
+            "country_code": "KR",
+            "country": "South Korea",
+            "region": None,
+            "latitude": None,
+            "longitude": None,
+            "formatted_address": "South Korea",
+        },
         "uk": {
             "country_code": "GB",
             "country": "United Kingdom",

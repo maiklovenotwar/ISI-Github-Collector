@@ -71,6 +71,34 @@ class GeocodingService:
             self.cache.set(location, entry)
         return entry if result else {}
 
+    def _mapping_over_cache(self, location: str, mapped: Dict[str, Any]) -> Dict[str, Any]:
+        """Gib die Zuordnung zurück; ein Cache-Eintrag mit anderem Land wird ersetzt."""
+        if self.cache is not None:
+            cached_result = self.cache.get(location)
+            if cached_result is not None and cached_result.get("country_code") == mapped.get(
+                "country_code"
+            ):
+                return cached_result
+        return self._remember(location, mapped, "mapping")
+
+    def _heuristic_result(self, location: str, normalized: str) -> Optional[Dict[str, Any]]:
+        """Ergebnis der Textregeln oder None, wenn sie kein Land bestimmen."""
+        code, region = self.heuristics.extract_country_from_text(normalized)
+        if not code:
+            return None
+        country_name = self._get_country_name(code)
+        result = {
+            "country_code": code,
+            "country": country_name,
+            "region": region,
+            "latitude": None,
+            "longitude": None,
+            "formatted_address": country_name,
+        }
+        if self.enable_quality_logging:
+            logger.debug("Heuristic match for '%s': %s", location, result)
+        return result
+
     def geocode(self, location: str) -> Dict[str, Any]:
         """Bestimme Land und Region für eine Freitext-Ortsangabe.
 
@@ -81,40 +109,37 @@ class GeocodingService:
         """
         self.last_request_unanswered = False
 
-        # 1. Cache-Prüfung (nur wenn Cache aktiviert)
+        # 1. Vorverarbeitung & Normalisierung
+        processed_location = self._preprocess_location(location)
+        normalized = normalize_location(processed_location) if processed_location else ""
+        mapped = self.heuristics.resolve_mapping(normalized) if normalized else None
+
+        # 2. Eine kuratierte Zuordnung, die ein Land nennt, ist eine bewusste Korrektur und
+        # geht einem älteren Cache-Eintrag vor (Befund K10: "Korea, South" stand als alter
+        # Nominatim-Treffer in Australien im Cache). "Kein Ort"-Zuordnungen und Textregeln
+        # bleiben hinter dem Cache, dort schützt er oft richtige Werte (z. B. "de" -> DE).
+        if mapped:
+            return self._mapping_over_cache(location, mapped)
+
+        # 3. Cache-Prüfung (nur wenn Cache aktiviert)
         if self.cache is not None:
             cached_result = self.cache.get(location)
             if cached_result is not None:
                 return {} if GeocodingCache.is_empty_result(cached_result) else cached_result
 
-        # 2. Vorverarbeitung & Normalisierung
-        processed_location = self._preprocess_location(location)
-        normalized = normalize_location(processed_location) if processed_location else ""
         if not processed_location or not normalized:
             return self._remember(location, {}, "no_result")
 
-        # 3. Heuristische Mappings (Problemfälle & Aliase)
-        mapped = self.heuristics.resolve_mapping(normalized)
+        # 4. Übrige Zuordnungen ("kein Ort")
         if mapped is not None:
-            return self._remember(location, mapped or {}, "mapping")
+            return self._remember(location, {}, "mapping")
 
-        # 4. Textbasierte Heuristiken VOR Nominatim (verhindert False Positives)
-        code, region = self.heuristics.extract_country_from_text(normalized)
-        if code:
-            country_name = self._get_country_name(code)
-            result = {
-                "country_code": code,
-                "country": country_name,
-                "region": region,
-                "latitude": None,
-                "longitude": None,
-                "formatted_address": country_name,
-            }
-            if self.enable_quality_logging:
-                logger.debug("Heuristic match for '%s': %s", location, result)
-            return self._remember(location, result, "heuristic")
+        # 5. Textbasierte Heuristiken VOR Nominatim (verhindert False Positives)
+        heuristic = self._heuristic_result(location, normalized)
+        if heuristic:
+            return self._remember(location, heuristic, "heuristic")
 
-        # 5. Nominatim-Geocoding (nur wenn Heuristiken nichts finden)
+        # 6. Nominatim-Geocoding (nur wenn Heuristiken nichts finden)
         self.rate_limiter.wait_for_api()
         try:
             api_result = self.nominatim_client.geocode(processed_location)

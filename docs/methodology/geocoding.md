@@ -25,7 +25,14 @@ A location is resolved in five stages. The first stage that yields a
 result ends the procedure.
 
 1. **Cache.** Results are stored in a local file keyed by the normalised
-   location string, so that each distinct string is resolved once.
+   location string, so that each distinct string is resolved once. One
+   exception: if the table of special cases (stage 3) assigns the string
+   to a country, that entry takes precedence over the cache and replaces
+   the cached result. The table is a deliberate correction; before
+   2026-10-14 an older geocoder result in the cache could hide it, so that
+   `Korea, South` remained assigned to Australia (about 2,800 accounts and
+   4,200 organizations). Entries of the table that mark a string as not a
+   place, and the text rules, do not override the cache.
 2. **Cleaning.** Additions without geographic meaning (`remote`,
    `home office`, `anywhere`, and similar), URLs, e-mail addresses, and
    brackets are removed. A string that is empty afterwards has no
@@ -145,7 +152,8 @@ drawn.
 The cache stores one entry per normalised location string. Entries
 written since 2026-10-12 record how the result was obtained (`source`:
 table of special cases, text rule, Nominatim, or no result) and when
-(`cached_at`). Entries have no expiry date.
+(`cached_at`). Entries have no expiry date, so a change of the text rules
+does not affect strings that are already cached.
 `scripts/diagnostics/inspect_geocoding_cache.py` summarises the cache
 without sending requests.
 

@@ -91,6 +91,10 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Geocoding read the cache before the table of special cases, so a corrected entry never took
+  effect for a string that was already cached: `Korea, South` stayed assigned to Australia
+  through an old geocoder match. An entry of the table that names a country now takes precedence
+  over the cache.
 - The ccTLD step assigned countries to service domains and to endings without a link to a
   country: `linktr.ee` made most of the accounts assigned to Estonia, `notion.so` many of those
   assigned to Somalia, and `youtu.be` part of those assigned to Belgium. Service domains
