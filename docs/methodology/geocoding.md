@@ -166,3 +166,12 @@ account with the same location string then received no country. Entries
 that arose in this way cannot be distinguished from genuine misses.
 `update_location_geocoding.py --retry-empty` removes all cache entries
 without a country and processes the rows marked as not geocodable again.
+
+The extent of such entries was estimated on 2026-10-13. Of the 74,032
+cache entries without a country, a random sample of 500 was sent to
+Nominatim again, and every request was answered. 17 of the 500 (3.4%)
+now yielded a country, about five of them evidently wrong (for example
+`84 market street` assigned to Australia). The entries without a country
+are therefore almost entirely strings that cannot be resolved, not
+failures of the geocoder. `--retry-empty` was not run on the project
+database.
