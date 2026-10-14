@@ -30,9 +30,7 @@ def text_rule(resolver, location):
         "Georgia, Tbilisi",
         "Perth, WA",
         "Fremantle WA",
-        "London, CA",
-        "Toronto, CA",
-        "Fresno, CA",  # a US place, but not one the rules know: the geocoder decides
+        "Bellevue, WA",  # a US place the rules do not know: the geocoder decides
     ],
 )
 def test_ambiguous_ending_with_unknown_prefix_is_left_to_the_geocoder(resolver, location):
@@ -52,6 +50,23 @@ def test_ambiguous_ending_with_unknown_prefix_is_left_to_the_geocoder(resolver, 
     ],
 )
 def test_known_us_city_or_state_before_an_ambiguous_ending_is_us(resolver, location):
+    assert text_rule(resolver, location) == "US"
+
+
+@pytest.mark.parametrize(
+    "location",
+    ["Montreal, CA", "Montréal, CA", "Toronto, CA", "Edmonton, AB, CA", "London, CA"],
+)
+def test_canadian_city_or_province_before_ca_is_canada(resolver, location):
+    assert text_rule(resolver, location) == "CA"
+
+
+@pytest.mark.parametrize(
+    "location",
+    # Californian places a geocoder reads as Canada or Venezuela when given ", CA"
+    ["Tracy, CA", "Carmichael, CA", "Valencia, CA", "Fresno, CA", "Ontario, CA"],
+)
+def test_other_places_before_ca_are_california(resolver, location):
     assert text_rule(resolver, location) == "US"
 
 

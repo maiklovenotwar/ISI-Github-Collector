@@ -82,6 +82,11 @@ that runs for several weeks therefore combines repositories observed on
 different days. Star counts, fork counts, and issue counts are states at
 the time of retrieval; the collector does not record their history.
 
+In the project database on 2026-10-13, the 27,498,495 repositories had
+been retrieved between 2025-11-28 and January 2026 (16.8 million in
+December 2025). For 5,294,213 of them (19%) no time of retrieval is
+recorded; they were stored before the column was introduced.
+
 ## Completeness
 
 The collector takes the following measures against silent loss.
@@ -150,13 +155,27 @@ incomplete.
    page**, so that the remaining pages of that period were never
    requested.
 
-In addition, `repositories.organization_id` was not set for repositories
-found through the search; see `country_attribution.md`.
+In addition, `repositories.organization_id` was not set when a repository
+was stored from a search result; see `country_attribution.md`.
 
 Affected collections can be recognised by periods with markedly fewer
 repositories than their neighbours. `scripts/diagnostics/methodology_checks.sql`
 contains a query that counts the collected repositories per month of
 creation.
+
+In the project database on 2026-10-13 this count showed no such period:
+every month from January 2008 to December 2025 is present, and no month
+lies markedly below both of its neighbours. It shows one break. Among
+the repositories created from January to July 2012, about 51,300 per
+month have fewer than five stars; among those created from August to
+December 2012, about 17,900 per month. The number of repositories with
+at least ten stars does not change (about 5,300 and 5,500 per month).
+The break coincides with the introduction of stars on GitHub in August
+2012, when the earlier "watching" of a repository, which included the
+creator's own, was converted into stars. This explanation has not been
+verified against a second source. Star counts of one or a few stars are
+therefore not comparable between repositories created before and after
+that month.
 
 ## Fields Not Collected
 

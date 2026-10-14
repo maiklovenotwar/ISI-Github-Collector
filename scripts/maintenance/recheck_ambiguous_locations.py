@@ -8,8 +8,9 @@ Endungen der Geocoder, sofern der Text davor kein bekannter US-Ort ist.
 
 Dieses Skript wendet die korrigierte Regel auf die vorhandenen Zeilen an:
 
-1. Es wählt Contributors und Organisationen, deren Standort auf "georgia", "wa" oder "ca"
-   endet.
+1. Es wählt Contributors und Organisationen, deren Standort nach einem Komma oder
+   Leerzeichen auf "georgia", "wa" oder "ca" endet. Die bloße Angabe "Georgia" ist nicht
+   entscheidbar und wird nicht angefasst.
 2. Für jede verschiedene Ortsangabe bestimmt es das Land neu. Entscheiden die Textregeln
    weiterhin (bekannter US-Ort davor), wird der Geocoder nicht gefragt. Sonst wird der
    Cache-Eintrag verworfen und der Geocoder gefragt.
@@ -50,7 +51,7 @@ SELECT_ROWS = """
     SELECT id, location, country_code
     FROM {table}
     WHERE location IS NOT NULL
-      AND (LOWER(location) LIKE '%georgia'
+      AND (LOWER(location) LIKE '%, georgia' OR LOWER(location) LIKE '% georgia'
            OR LOWER(location) LIKE '%, wa' OR LOWER(location) LIKE '% wa'
            OR LOWER(location) LIKE '%, ca' OR LOWER(location) LIKE '% ca')
 """

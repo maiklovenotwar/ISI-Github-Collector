@@ -814,10 +814,32 @@ class HeuristicResolver:
     # US-Ort ist - sonst entscheidet der Geocoder.
     _AMBIGUOUS_STATE_NAMES = {"georgia"}
 
-    # Kürzel von US-Bundesstaaten, die ohne bekannten US-Ort davor weder als Bundesstaat
-    # noch als Ländercode gewertet werden: "CA" ist Kalifornien oder Kanada, "WA" ist
-    # Washington oder Western Australia. Auch hier entscheidet dann der Geocoder.
-    _DEFERRED_ABBRS = {"ca", "wa"}
+    # "WA" ist Washington oder Western Australia: ohne bekannten US-Ort davor entscheidet
+    # der Geocoder.
+    _DEFERRED_ABBRS = {"wa"}
+
+    # "CA" ist Kalifornien oder Kanada. Kalifornien ist der weitaus häufigere Fall, und der
+    # Geocoder liest "…, CA" als Ländercode: ein Probelauf legte kalifornische Orte wie
+    # "Tracy, CA" nach Kanada und "Valencia, CA" nach Venezuela. Deshalb gilt "CA" als
+    # Kalifornien, außer der Text davor nennt eine kanadische Stadt oder Provinz.
+    # "Ontario" fehlt bewusst: es gibt die Provinz und die Stadt in Kalifornien.
+    _CANADIAN_PLACES = {
+        "montreal", "montréal", "toronto", "vancouver", "ottawa", "calgary", "edmonton",
+        "winnipeg", "quebec", "québec", "quebec city", "halifax", "saskatoon", "regina",
+        "mississauga", "kitchener", "waterloo", "london", "british columbia", "alberta",
+        "manitoba", "saskatchewan", "nova scotia", "new brunswick", "newfoundland",
+    }  # fmt: skip
+    _CANADIAN_PROVINCE_ABBRS = {"on", "qc", "bc", "ab", "mb", "sk", "ns", "nb", "nl", "pe"}
+
+    def _is_canadian_place(self, prefix: str) -> bool:
+        """True, wenn der Text vor ", CA" eine kanadische Stadt oder Provinz nennt."""
+        parts = [part.strip() for part in prefix.strip().rstrip(",").lower().split(",")]
+        parts = [part for part in parts if part]
+        if not parts:
+            return False
+        if parts[-1] in self._CANADIAN_PROVINCE_ABBRS and len(parts) > 1:
+            return True
+        return any(part in self._CANADIAN_PLACES for part in parts)
 
     def _is_known_us_place(self, prefix: str) -> bool:
         """True, wenn der Text vor einem Bundesstaat ein bekannter US-Ort oder -Staat ist."""
@@ -863,6 +885,8 @@ class HeuristicResolver:
         abbr = next((grp.lower() for grp in abbr_match.groups() if grp is not None), None)
         if not abbr or abbr not in self._US_STATE_ABBR:
             return None
+        if abbr == "ca" and self._is_canadian_place(text[: abbr_match.start()]):
+            return "CA", None
 
         # Konflikt-Check: Ist das Abbr auch ein ISO-Ländercode oder eine Region anderswo?
         if abbr in self._ISO_CONFLICT_ABBRS or abbr in self._DEFERRED_ABBRS:
@@ -889,7 +913,6 @@ class HeuristicResolver:
             return None
         code = match.group(1).upper()
         if code.lower() in self._DEFERRED_ABBRS:
-            # "…, CA" ohne bekannten US-Ort davor: weder Kalifornien noch Kanada annehmen
             return None
         if code in self._country_aliases.values():
             return code, None

@@ -11,7 +11,11 @@ the accuracy. The procedure is implemented in
 The only input is the profile field `location`. It is optional free text
 written by the account holder, for example `Karlsruhe, Germany`,
 `Bay Area`, `Earth`, or `Berlin / NYC`. Accounts without a location
-receive no country. The result is stored in `country_code` (ISO 3166-1
+receive no country. In the project database on 2026-10-13, 35.7% of the
+9,034,973 user accounts and 33.3% of the 735,242 organizations stated a
+location; 34.4% and 31.6% respectively had a country. Of the accounts
+with a location, 96.2% of the users and 94.8% of the organizations had a
+country. The result is stored in `country_code` (ISO 3166-1
 alpha-2) and `region`; see `country_attribution.md` for how this value is
 used.
 
@@ -35,14 +39,16 @@ result ends the procedure.
    string, after a comma, or as a separate word; a two-letter US state
    abbreviation at the end; one of 56 large US cities at the beginning; a
    country alias as the whole string; a two-letter country code at the
-   end. Three kinds of endings are ambiguous and are decided by these
-   rules only if the preceding text is a known US city or state:
-   sixteen abbreviations that are both a US state and a country code (for
-   example `DE`, `IN`, `CO`); the abbreviations `CA` (California or
-   Canada) and `WA` (Washington or Western Australia); and the name
-   `Georgia`. Otherwise the sixteen abbreviations are read as a country
-   code, and strings ending in `CA`, `WA`, or `Georgia` are passed to the
-   geocoder. `Georgia` as the whole string is assigned to the US state.
+   end. Four kinds of endings are ambiguous and are treated separately.
+   Sixteen abbreviations that are both a US state and a country code (for
+   example `DE`, `IN`, `CO`) count as a US state only if the preceding
+   text is a known US city or state, and as a country code otherwise.
+   `CA` counts as California unless the preceding text names a Canadian
+   city or province, in which case it counts as Canada. Strings ending in
+   `WA` (Washington or Western Australia) or in the name `Georgia` are
+   decided by these rules only if the preceding text is a known US city
+   or state, and are otherwise passed to the geocoder. `Georgia` as the
+   whole string is assigned to the US state.
 5. **Nominatim.** All remaining strings are sent to the Nominatim
    geocoder of OpenStreetMap, one request per second, with English
    output. The first result is used; its country code and
@@ -69,12 +75,17 @@ stays open, and the run ends with exit code 1.
 - **Ambiguous names follow fixed rules.** The text rules for US states
   run before the geocoder and take precedence. A string that ends in the
   name or abbreviation of a US state is assigned to the United States,
-  with the exceptions listed under stage 4. Two conventions remain:
+  with the exceptions listed under stage 4. Three conventions remain:
   `Georgia` as the whole string is assigned to the US state, not to the
-  country, and a string that ends in one of the sixteen abbreviations
+  country; a string ending in `CA` is assigned to California unless a
+  Canadian city or province from a short list precedes it, so that
+  `Ontario, CA` and smaller Canadian places are assigned to the United
+  States; and a string that ends in one of the sixteen abbreviations
   without a known US place before it is read as a country code (`…, IN`
-  as India). For all other ambiguous names the first result of Nominatim
-  decides.
+  as India). `CA` is not passed to the geocoder, because Nominatim reads
+  it as the country code of Canada: in a trial it placed Californian
+  towns such as `Tracy, CA` in Canada and `Valencia, CA` in Venezuela.
+  For all other ambiguous names the first result of Nominatim decides.
 - **Unresolved strings.** In the same cache, 74,032 of 289,920 distinct
   location strings (25.5%) had no country; 5,491 of them are recognised
   as not a place by the current rules. About a quarter of the strings

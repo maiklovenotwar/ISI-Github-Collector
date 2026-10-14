@@ -22,6 +22,10 @@ GROUP BY SUBSTR(CAST(collected_at AS CHAR), 1, 7)
 ORDER BY retrieval_month;
 
 -- 3. Repositories per month of creation (repository_collection.md, "Completeness").
+--    created_at has no index. On 27 million rows this query exceeded the temporary
+--    table limit of the server (MySQL 8.0.23); restrict it to one year at a time if that
+--    happens (add: WHERE created_at >= '2024-01-01' AND created_at < '2025-01-01'), or group
+--    by numbers on MySQL: EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at).
 --    A month that is markedly lower than its neighbours indicates a gap in the collection.
 SELECT SUBSTR(CAST(created_at AS CHAR), 1, 7) AS creation_month, COUNT(*) AS repositories
 FROM repositories
@@ -117,6 +121,8 @@ ORDER BY organizations DESC
 LIMIT 15;
 
 -- 12. Repositories owned by an organization, and how many of them carry organization_id.
+--     This query joins the whole repositories table twice and ran for about 100 minutes
+--     on 27 million rows.
 --     Collections made before 2026-10-13 did not set this column for repositories found
 --     through the search; the owner's account type is the reliable criterion.
 SELECT SUM(CASE WHEN c.type = 'Organization' THEN 1 ELSE 0 END) AS owned_by_organization,

@@ -51,6 +51,10 @@ Notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- The methodology documents state the figures measured in the project database on 2026-10-13:
+  retrieval dates, share of accounts and repositories with a country, the two rows per
+  organization, the ccTLD step, `repositories.organization_id`, and repositories per month of
+  creation.
 - The two remaining workstreams are named `workstreams/entity_classification/` and
   `workstreams/orbis_matching/` (previously prefixed with `github_`). Their scripts are named
   after what they produce: `build_goldstandard_samples.py` (was `merge_goldstandard.py`),
@@ -97,9 +101,10 @@ Notable changes to this project are recorded here. The format follows
   is imported.
 - Geocoding assigned every location ending in `Georgia`, `WA`, or `CA` to the United States
   before the geocoder was asked, including `Tbilisi, Georgia`, `Perth, WA` (Western Australia),
-  and `Toronto, CA`. These endings are now decided by the text rules only if a known US city or
-  state precedes them; otherwise the geocoder decides.
-  `scripts/maintenance/recheck_ambiguous_locations.py` applies the corrected rule to stored
+  and `Toronto, CA`. `Georgia` and `WA` are now decided by the text rules only if a known US
+  city or state precedes them, otherwise by the geocoder. `CA` remains California unless a
+  Canadian city or province precedes it.
+  `scripts/maintenance/recheck_ambiguous_locations.py` applies the corrected rules to stored
   rows (dry run unless `--write` is given).
 - Errors while writing a page of repositories to the database were logged and ignored; the
   page counted as collected. They now end the collection, like a failed search.
@@ -110,7 +115,7 @@ Notable changes to this project are recorded here. The format follows
   collection after a finished one and is refused while one is unfinished.
 - A collection resumed with `--limit` ended the open period after one page, because the limit
   was compared with the running total of the state file instead of the current run.
-- `repositories.organization_id` was never set for repositories found through the search,
+- `repositories.organization_id` was not set when a repository was stored from a search result,
   because the search result carries no `organization` field. It is now derived from the type
   of the owner.
 - A page size other than 100 (`GITHUB_PAGE_SIZE`) ended every period after the first page, and

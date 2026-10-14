@@ -30,8 +30,11 @@ The following rules avoid double counting.
   statement about "contributors" has to say which of the two groups it
   refers to.
 
-`scripts/diagnostics/methodology_checks.sql` (query 7) counts how many
-organizations carry different countries in their two rows.
+`scripts/diagnostics/methodology_checks.sql` (query 7) compares the two
+rows of each organization. In the project database on 2026-10-13, 735,205
+organizations had both rows. For 120,677 of them only the row in
+`organizations` carried a country, for 399 only the placeholder row, and
+for 66 the two rows carried different countries.
 
 ## Country of a Repository
 
@@ -53,10 +56,15 @@ LEFT JOIN organizations o ON o.id = r.owner_id;
 ```
 
 The rule uses the account type of the owner, not the column
-`repositories.organization_id`. Collections made before 2026-10-13 left
-that column empty for repositories found through the search; it is set by
-later collections. Query 12 of `scripts/diagnostics/methodology_checks.sql`
-shows how many repositories carry it.
+`repositories.organization_id`. Versions before 2026-10-13 did not set
+that column when a repository was stored from a search result. In the
+project database on 2026-10-13, 1,271,276 of the 2,951,091 repositories
+owned by an organization carried it (query 12 of
+`scripts/diagnostics/methodology_checks.sql`).
+
+By this rule, 12,663,064 of the 24,547,404 repositories owned by a user
+(51.6%) and 1,289,838 of the 2,951,091 repositories owned by an
+organization (43.7%) had a country on that day.
 
 A repository whose owner has no country has no country. The CSV export
 writes the three tables separately and does not apply this rule; it has
@@ -91,6 +99,13 @@ distribution towards countries whose own domain is in common use.
 The effect of this source is reported separately: results are computed
 once from `country_code` alone and once with `country_code_cctld` added
 where `country_code` is missing, and the difference is stated.
+
+The project database illustrates the shift. On 2026-10-13 the United
+States led the organizations with a geocoded country by a wide margin
+(57,098, followed by Germany with 15,618), but did not appear among the
+fifteen most frequent countries assigned by the ccTLD step, neither for
+organizations (led by Germany with 1,087) nor for the accounts in
+`contributors` (led by China with 9,127).
 
 Two further limits apply to this source.
 
