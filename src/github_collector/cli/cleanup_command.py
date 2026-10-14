@@ -34,14 +34,16 @@ def parse_arguments() -> argparse.Namespace:
     # Datenbankoptionen
     parser.add_argument("--db-path", help="Pfad zur SQLite-Datenbankdatei")
 
-    # Bereinigungsoptionen
+    # Bereinigungsoptionen. Ohne --write ist jeder Lauf ein Probelauf.
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="Verwaiste Einträge wirklich löschen (ohne diese Option: nur zählen)",
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help=(
-            "Simulationsmodus: Zeigt an, welche Einträge entfernt würden, "
-            "ohne Änderungen vorzunehmen"
-        ),
+        help="Nur zählen, nichts löschen (Standard; nur aus Kompatibilität vorhanden)",
     )
 
     return parser.parse_args()
@@ -76,16 +78,13 @@ def main() -> int:
         # Initialisiere Datenbank
         db = GitHubDatabase(str(db_url))
 
-        # Bereinige verwaiste Owner-Einträge
-        removed_contributors, removed_organizations = cleanup_orphaned_owners(
-            db, dry_run=args.dry_run
-        )
+        dry_run = args.dry_run or not args.write
 
-        # Schließe Datenbankverbindung
-        db.close()
+        # Bereinige verwaiste Owner-Einträge
+        removed_contributors, removed_organizations = cleanup_orphaned_owners(db, dry_run=dry_run)
 
         # Ausgabe der Ergebnisse
-        if args.dry_run:
+        if dry_run:
             logger.info(
                 "Simulationsmodus: %d Contributors und %d Organisationen " "würden entfernt werden",
                 removed_contributors,

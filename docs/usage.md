@@ -432,7 +432,7 @@ python scripts/maintenance/reset_and_collect.py --yes
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/maintenance/cleanup_orphaned_owners.py` | Removes contributors and organizations that are no longer referenced by any repository |
+| `scripts/maintenance/cleanup_orphaned_owners.py` | Removes contributors and organizations that are no longer referenced by any repository; reports only, unless `--write` is given |
 | `scripts/maintenance/manage_gold_standard.py` | Samples and labels locations for the geocoding gold standard (`tests/resources/geocoding_gold_standard.json`) |
 | `scripts/maintenance/benchmark_geocoding.py` | Measures the accuracy of the geocoding service against the gold standard |
 | `scripts/diagnostics/diagnose_hq_signals.py` | Reports the distribution of headquarters-resolution signals; requires Orbis access |

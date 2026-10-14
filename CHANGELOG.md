@@ -91,6 +91,12 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- `cleanup_orphaned_owners.py` treated an organization as orphaned when no repository named it in
+  `organization_id`. That column is not set for repositories stored from a search result before
+  2026-10-13, so the script would have deleted organizations that own repositories (410,884 in
+  the project database). Ownership through `owner_id` now counts as well. The script deletes
+  only with `--write` and otherwise reports the number of rows it would remove; it also no
+  longer ends with an error after a successful run.
 - The collector wrote repositories through the global database session, which is bound to the
   database of the configuration, instead of the database it was created for. With `--db-path`,
   or in a test with its own database, the rows went to the configured database. The collector

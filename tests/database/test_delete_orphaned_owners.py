@@ -5,8 +5,10 @@ role. An account that owns no collected repository is still needed when it is
 referenced by ``repository_contributors`` (the per-repository contributor
 network), and must therefore not be treated as orphaned.
 
-Organizations are orphaned when no repository refers to them. Repositories of user
-accounts carry no organization and must not prevent that detection.
+Organizations are orphaned when no repository refers to them, neither as owner
+(``owner_id``) nor through ``organization_id``. Older collections did not set
+``organization_id``; ownership must therefore be read from ``owner_id`` as well.
+Repositories of user accounts carry no organization and must not prevent that detection.
 """
 
 from datetime import datetime, timezone
@@ -80,10 +82,10 @@ def test_collaborator_links_survive_the_cleanup(populated_db):
         assert link.contributor_id == COLLABORATOR
 
 
-def test_dry_run_removes_nothing(populated_db):
-    removed_contributors, removed_organizations = populated_db.delete_orphaned_owners(dry_run=True)
+def test_dry_run_reports_the_orphans_and_removes_nothing(populated_db):
+    found_contributors, found_organizations = populated_db.delete_orphaned_owners(dry_run=True)
 
-    assert (removed_contributors, removed_organizations) == (0, 0)
+    assert (found_contributors, found_organizations) == (1, 0)
     assert _contributor_ids(populated_db) == {OWNER, COLLABORATOR, UNLINKED_COLLABORATOR, ORPHAN}
 
 
@@ -115,7 +117,11 @@ def db_with_organizations(test_db):
     with session_scope(test_db.session_factory) as session:
         session.add(Contributor(id=OWNER, login="owner", type="User"))
         session.add_all(
-            [Organization(id=20, login="active-org"), Organization(id=21, login="orphaned-org")]
+            [
+                Organization(id=20, login="active-org"),
+                Organization(id=21, login="orphaned-org"),
+                Organization(id=22, login="owning-org"),
+            ]
         )
         session.flush()
         session.add_all(
@@ -123,6 +129,9 @@ def db_with_organizations(test_db):
                 Repository(
                     id=10, name="a", full_name="active-org/a", owner_id=OWNER, organization_id=20
                 ),
+                # Owned by an organization, but stored without organization_id, as all
+                # repositories found through the search before 2026-10-13.
+                Repository(id=12, name="c", full_name="owning-org/c", owner_id=22),
                 # A repository of a user account has no organization.
                 Repository(id=11, name="b", full_name="owner/b", owner_id=OWNER),
             ]
@@ -134,11 +143,15 @@ def test_organization_without_repository_is_removed(db_with_organizations):
     _, removed_organizations = db_with_organizations.delete_orphaned_owners()
 
     assert removed_organizations == 1
-    assert _organization_logins(db_with_organizations) == {"active-org"}
+    assert _organization_logins(db_with_organizations) == {"active-org", "owning-org"}
 
 
 def test_dry_run_reports_orphaned_organizations_without_removing_them(db_with_organizations):
-    _, removed_organizations = db_with_organizations.delete_orphaned_owners(dry_run=True)
+    _, found_organizations = db_with_organizations.delete_orphaned_owners(dry_run=True)
 
-    assert removed_organizations == 0
-    assert _organization_logins(db_with_organizations) == {"active-org", "orphaned-org"}
+    assert found_organizations == 1
+    assert _organization_logins(db_with_organizations) == {
+        "active-org",
+        "orphaned-org",
+        "owning-org",
+    }

@@ -1781,6 +1781,8 @@ class GitHubDatabase:
 
         Contributors, die über `repository_contributors` als Mitwirkende eines
         Repositories referenziert werden, gelten nicht als verwaist.
+        Eine Organisation gilt nur als verwaist, wenn kein Repository sie als Besitzer
+        (`owner_id`) oder über `organization_id` nennt.
 
         Args:
             dry_run: Wenn True, werden keine Änderungen vorgenommen, sondern nur
@@ -1788,7 +1790,8 @@ class GitHubDatabase:
             session: Optionale bestehende Session.
 
         Returns:
-            Tuple mit der Anzahl der entfernten Contributors und Organisationen.
+            Tuple mit der Anzahl der entfernten Contributors und Organisationen; im
+            Probelauf die Anzahl derer, die entfernt würden.
         """
 
         def _operation(sess: Session) -> Tuple[int, int]:
@@ -1831,12 +1834,15 @@ class GitHubDatabase:
             else:
                 logger.info("Keine verwaisten Contributors gefunden")
 
-            # Finde Organisationen ohne zugehörige Repositories. Der NULL-Filter ist nötig:
-            # Repositories von Nutzerkonten haben keine organization_id, und ein NULL in der
-            # Unterabfrage würde NOT IN für alle Zeilen unentscheidbar machen - es würde
-            # dann nie eine verwaiste Organisation gefunden.
+            # Finde Organisationen ohne zugehörige Repositories. Besitz zählt über owner_id:
+            # Repositories, die vor 2026-10-13 über die Suche gesammelt wurden, haben keine
+            # organization_id; nur über diese Spalte zu prüfen, hielt auf der Produktion
+            # 410.884 Organisationen mit Repositories für verwaist. Der NULL-Filter ist
+            # nötig: Repositories von Nutzerkonten haben keine organization_id, und ein NULL
+            # in der Unterabfrage würde NOT IN für alle Zeilen unentscheidbar machen.
             orphaned_organizations = (
                 sess.query(Organization)
+                .filter(~Organization.id.in_(sess.query(Repository.owner_id)))
                 .filter(
                     ~Organization.id.in_(
                         sess.query(Repository.organization_id).filter(
@@ -1886,6 +1892,7 @@ class GitHubDatabase:
                     orphaned_contributors_count,
                     orphaned_organizations_count,
                 )
+                return orphaned_contributors_count, orphaned_organizations_count
 
             return removed_contributors, removed_organizations
 
