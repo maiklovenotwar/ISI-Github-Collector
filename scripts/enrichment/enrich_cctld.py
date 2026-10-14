@@ -109,6 +109,10 @@ def run_validation(conn, entity: EntityConfig) -> dict:  # noqa: C901
     agree_by_source = Counter()
     disagree_by_source = Counter()
     total_by_source = Counter()
+    # Je ccTLD-Land: ausgewertet und übereinstimmend. Die Gesamtquote verdeckt Länder, bei
+    # denen fast alle Zuordnungen falsch sind (z. B. EE durch linktr.ee).
+    total_by_country = Counter()
+    agree_by_country = Counter()
     blog_agree = 0
     blog_disagree = 0
     blog_total = 0
@@ -124,11 +128,13 @@ def run_validation(conn, entity: EntityConfig) -> dict:  # noqa: C901
             continue
 
         total_by_source[source] += 1
+        total_by_country[cc] += 1
         geocoding_upper = geocoding_cc.upper()
 
         if cc == geocoding_upper:
             agree += 1
             agree_by_source[source] += 1
+            agree_by_country[cc] += 1
         else:
             disagree += 1
             disagree_by_source[source] += 1
@@ -183,6 +189,15 @@ def run_validation(conn, entity: EntityConfig) -> dict:  # noqa: C901
         for (ext_cc, geo_cc), cnt in disagree_pairs.most_common(15):
             print(f"    {ext_cc} -> {geo_cc}: {cnt:,}")
 
+    by_country = {cc: (agree_by_country.get(cc, 0), n) for cc, n in total_by_country.items()}
+    weakest = sorted(
+        ((a / n, cc, a, n) for cc, (a, n) in by_country.items() if n >= 20),
+    )[:15]
+    if weakest:
+        print("\n  15 Länder mit der niedrigsten Übereinstimmung (ab 20 Fällen):")
+        for rate, cc, a, n in weakest:
+            print(f"    {cc}: {a:,}/{n:,} = {rate * 100:.1f}%")
+
     # Schwellwert prüfen
     threshold = 80.0
     passed = agree_rate >= threshold
@@ -201,6 +216,7 @@ def run_validation(conn, entity: EntityConfig) -> dict:  # noqa: C901
         "blog_total": blog_total,
         "email_agree": email_agree,
         "email_total": email_total,
+        "by_country": by_country,
     }
 
 

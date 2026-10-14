@@ -107,6 +107,24 @@ fifteen most frequent countries assigned by the ccTLD step, neither for
 organizations (led by Germany with 1,087) nor for the accounts in
 `contributors` (led by China with 9,127).
 
+Several country-code domains are used mainly by services or for word play
+rather than by holders in that country. A measurement on 2026-10-14 found
+that `linktr.ee` accounted for 2,173 of the 2,373 accounts assigned to
+Estonia (`EE`), `notion.so` for 165 of the 313 accounts assigned to
+Somalia (`SO`), and `youtu.be` for 135 of the 867 accounts assigned to
+Belgium (`BE`). Free or very cheap endings (`.tk`, `.ml`, `.ga`, `.cf`,
+`.gq`, `.pw`) and endings used mostly for word play (`.re`, `.pm`, `.tf`,
+`.st`, e.g. `frida.re`, `hex.pm`) showed the same pattern. In total,
+an estimated 4,000 to 5,000 of about 96,000 assignments (about 5%) were affected.
+The procedure therefore yields no country for these endings, nor for the
+service domains `linktr.ee`, `buymeacoff.ee`, `coff.ee`, `lin.ee`,
+`notion.so`, and `youtu.be` and their subdomains (a different domain that
+merely ends in the same letters, such as `mynotion.so`, still counts).
+Two endings remain in use but are uncertain: `.rs` (Serbia) is frequent
+among Rust projects (`serde.rs`), and `.is` (Iceland) is also used for
+word play. Results for these two countries, and for small countries in
+general, should be read with caution.
+
 Two further limits apply to this source.
 
 - A country-code domain states where a domain is registered, not where
@@ -116,7 +134,10 @@ Two further limits apply to this source.
   In a dry run on 2026-10-09 the agreement was 91.8% for organizations
   (48,435 rows with both values) and 84.4% for accounts in `contributors`
   (254,219 rows). This is the agreement of two estimates, not the
-  accuracy of either: both can be wrong in the same way.
+  accuracy of either: both can be wrong in the same way. The overall rate
+  can also hide countries for which almost every assignment is wrong; the
+  validation therefore also reports the fifteen countries with the lowest
+  agreement among those with at least 20 evaluated rows.
 
 ## Orbis
 

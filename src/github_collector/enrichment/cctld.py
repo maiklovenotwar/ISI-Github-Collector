@@ -49,6 +49,35 @@ FILTERED_TLDS = frozenset(
         "gd",
         "bz",
         "eu",
+        # Kostenlose bzw. sehr billige Endungen ohne Landesbezug (Freenom u. a.)
+        "tk",
+        "ml",
+        "ga",
+        "cf",
+        "gq",
+        "pw",
+        # Überwiegend Wortspiel-Domains (frida.re, hex.pm). .rs (Serbien, oft Rust-Projekte)
+        # und .is (Island) bleiben bewusst gewertet, sie gelten als unsicher (Doku).
+        "re",
+        "pm",
+        "tf",
+        "st",
+    }
+)
+
+# Dienste-Domains: Die Endung gehört zu einem Land, die Adresse aber zu einem weltweit
+# genutzten Dienst (Messung 2026-10-14: linktr.ee bei 2.173 von 2.373 EE-Konten,
+# notion.so bei 165 von 313 SO-Konten, youtu.be bei 135 von 867 BE-Konten).
+# Gilt auch für Unterdomains (user.notion.so), nicht für fremde Domains mit gleichem
+# Ende (mynotion.so).
+SERVICE_DOMAINS = frozenset(
+    {
+        "linktr.ee",
+        "buymeacoff.ee",
+        "coff.ee",
+        "lin.ee",
+        "notion.so",
+        "youtu.be",
     }
 )
 
@@ -213,6 +242,7 @@ def domain_to_country_code(domain: str) -> Optional[str]:
     """Leite Country Code aus Domain ab.
 
     Prüft in dieser Reihenfolge:
+    0. Dienste-Domains (linktr.ee, notion.so, …) → None
     1. Compound-TLD (.co.uk → GB)
     2. Spezial-Mapping (.uk → GB)
     3. Einfache TLD gegen Filter und ISO-Validierung
@@ -221,6 +251,10 @@ def domain_to_country_code(domain: str) -> Optional[str]:
         ISO-2 Country Code (uppercase) oder None
     """
     if not domain:
+        return None
+
+    # 0. Dienste-Domains und ihre Unterdomains
+    if any(domain == d or domain.endswith("." + d) for d in SERVICE_DOMAINS):
         return None
 
     parts = domain.split(".")

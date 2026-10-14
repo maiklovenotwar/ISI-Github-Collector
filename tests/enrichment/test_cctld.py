@@ -91,3 +91,55 @@ class TestExtractCctld:
 
     def test_no_country_signal(self) -> None:
         assert extract_cctld("https://firma.io", "info@gmail.com") == (None, None)
+
+
+class TestServiceDomainsAndFreeTlds:
+    """Dienste-Domains und Gratis-Endungen tragen kein Land (Messung 2026-10-14, K2)."""
+
+    @pytest.mark.parametrize(
+        "domain",
+        [
+            "linktr.ee",
+            "buymeacoff.ee",
+            "coff.ee",
+            "notion.so",
+            "www.notion.so",
+            "user.notion.so",
+            "youtu.be",
+            "foo.tk",
+            "foo.ml",
+            "foo.ga",
+            "foo.cf",
+            "foo.gq",
+            "foo.pw",
+            "frida.re",
+            "hex.pm",
+            "foo.tf",
+            "foo.st",
+        ],
+    )
+    def test_service_domains_and_free_tlds_give_no_country(self, domain: str) -> None:
+        assert domain_to_country_code(domain) is None
+
+    @pytest.mark.parametrize("blog", ["HTTPS://LINKTR.EE./someone", "www.Notion.so/page"])
+    def test_service_domains_are_recognised_in_raw_urls(self, blog: str) -> None:
+        assert extract_cctld(blog, None) == (None, None)
+
+    @pytest.mark.parametrize(
+        "domain,expected",
+        [
+            ("mynotion.so", "SO"),
+            ("ria.ee", "EE"),
+            ("ugent.be", "BE"),
+            ("kuleuven.be", "BE"),
+            ("serde.rs", "RS"),
+            ("hi.is", "IS"),
+        ],
+    )
+    def test_other_domains_of_the_same_country_still_count(
+        self, domain: str, expected: str
+    ) -> None:
+        assert domain_to_country_code(domain) == expected
+
+    def test_extract_cctld_ignores_a_linktree_blog_and_uses_the_email(self) -> None:
+        assert extract_cctld("https://linktr.ee/someone", "a@uni-bremen.de") == ("DE", "email")
