@@ -197,3 +197,20 @@ def test_dry_run_sends_no_request_and_writes_nothing(enricher, test_db):
     assert result == {"dry_run": True, "target_count": 1}
     post.assert_not_called()
     assert _org(test_db, "example").enrichment_checked_at is None
+
+
+def test_cache_and_log_are_not_written_to_the_working_directory(tmp_path, monkeypatch):
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.chdir(work)
+    spec = importlib.util.spec_from_file_location("enrich_org_paths_under_test", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module.config, "CACHE_DIR", tmp_path / "cache")
+
+    cache = module.OrganizationCache()
+    cache.save_cache()
+
+    assert cache.cache_file == tmp_path / "cache" / "org_cache.json"
+    assert cache.cache_file.exists()
+    assert list(work.iterdir()) == []

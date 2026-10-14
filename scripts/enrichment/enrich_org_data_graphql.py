@@ -23,16 +23,18 @@ from sqlalchemy import bindparam, create_engine, text
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from github_collector import config
 from github_collector.config import DB_URL
 from github_collector.utils.secrets import SecretManager
 
-# Logger konfigurieren
+# Logger konfigurieren. Log- und Cache-Datei liegen unter config.LOG_DIR bzw.
+# config.CACHE_DIR, nicht im aktuellen Arbeitsordner (Befund K7).
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("org_data_graphql.log"),
+        logging.FileHandler(config.LOG_DIR / "org_data_graphql.log", encoding="utf-8"),
     ],
 )
 logger = logging.getLogger(__name__)
@@ -41,14 +43,14 @@ logger = logging.getLogger(__name__)
 class OrganizationCache:
     """Lokaler Cache für Organisationsdaten."""
 
-    def __init__(self, cache_file: str = "org_cache.json"):
+    def __init__(self, cache_file: Optional[str] = None):
         """
         Initialisiere Cache.
 
         Args:
-            cache_file: Pfad zur Cache-Datei
+            cache_file: Pfad zur Cache-Datei (Standard: config.CACHE_DIR / org_cache.json)
         """
-        self.cache_file = Path(cache_file)
+        self.cache_file = Path(cache_file) if cache_file else config.CACHE_DIR / "org_cache.json"
         self.cache: Dict[str, Dict[str, Any]] = {}
         self.load_cache()
 
@@ -68,6 +70,7 @@ class OrganizationCache:
     def save_cache(self) -> None:
         """Speichere Cache in Datei."""
         try:
+            self.cache_file.parent.mkdir(parents=True, exist_ok=True)
             with open(self.cache_file, "w", encoding="utf-8") as f:
                 json.dump(self.cache, f, indent=2, ensure_ascii=False)
             logger.info(f"Cache gespeichert: {len(self.cache)} Einträge")
@@ -249,7 +252,7 @@ class GraphQLOrganizationEnricher:
     def __init__(
         self,
         token: str,
-        cache_file: str = "org_cache.json",
+        cache_file: Optional[str] = None,
         batch_size: int = 100,
     ):
         """
@@ -567,8 +570,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--cache-file",
-        default="org_cache.json",
-        help="Cache-Datei Pfad",
+        default=None,
+        help="Cache-Datei Pfad (Standard: data/cache/org_cache.json)",
     )
 
     args = parser.parse_args()

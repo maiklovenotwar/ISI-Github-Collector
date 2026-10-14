@@ -91,6 +91,8 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- `enrich_org_data_graphql.py` wrote its cache and log file into the current working directory;
+  they are now stored under `data/cache/` and `logs/`.
 - The CSV export loaded a whole table into memory and ended with success even when a table
   could not be exported. Tables are now read in blocks and written as they are read; a failed
   table makes the script end with exit code 1.
@@ -197,6 +199,9 @@ Notable changes to this project are recorded here. The format follows
 
 ### Removed
 
+- `src/github_collector/cli/collect_command.py` and `cli/reset_command.py`, an older second
+  collection and reset interface that no script used; the collection is run by
+  `scripts/collection/collect_repositories.py`.
 - `scripts/enrich_cctld_contributors.py`, a near-identical copy of `scripts/enrichment/enrich_cctld.py`;
   use `scripts/enrichment/enrich_cctld.py --entity contributors` instead.
 - `scripts/enrich_contributor_data_graphql.py`, superseded by

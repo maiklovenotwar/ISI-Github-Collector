@@ -72,6 +72,22 @@ Three properties follow from this query.
 Search responses are cached locally for 24 hours. A repeated request
 within that time returns the stored response, including its star counts.
 
+An owner whose account is already in the database is not retrieved again
+when a further repository of that owner is collected. The profile of an
+owner, including its location, is therefore as old as its first retrieval
+or as the later profile enrichment, whichever is more recent. If the
+retrieval of an owner fails, the owner is treated as known for the rest of
+the run and the repository is stored without an owner row; on 2026-10-14
+no repository was stored without one. Organizations are looked up by
+login, so an organization that was renamed is not found under its new
+name.
+
+The profile enrichment of organizations
+(`scripts/enrichment/enrich_org_data_graphql.py`) fills only organizations
+whose name, website, e-mail address, location, creation date, and country
+are all empty and that have not been checked before; it does not
+overwrite existing values.
+
 ## Reference Date
 
 The collection is not a snapshot of a single day. Each repository carries

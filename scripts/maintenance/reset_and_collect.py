@@ -24,9 +24,6 @@ from sqlalchemy.engine.url import make_url
 
 from github_collector import config
 from github_collector.database.database import init_db
-
-# reset_command.main wird nicht verwendet, da dieses Skript eine eigene, erweiterte Reset-Logik hat.
-# from github_collector.cli.reset_command import main as reset_command_main
 from github_collector.utils.logging_config import setup_logging
 
 logger = setup_logging(log_file=config.LOG_CONFIG["files"]["reset"])

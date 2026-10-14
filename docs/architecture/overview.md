@@ -109,13 +109,12 @@ Console output for progress and statistics:
 
 ### 10. Command-Line Interface (`cli/`)
 
-Implements the application's CLI commands:
+Implements the logic behind several scripts in `scripts/`; the repository
+collection itself is run by `scripts/collection/collect_repositories.py`:
 
-- Repository collection (`collect_command.py`)
 - Export (`export_command.py`)
 - Geocoding (`geocoding_command.py`)
 - Cleanup (`cleanup_command.py`)
-- Reset (`reset_command.py`)
 
 ### 11. Utilities (`utils/`)
 
