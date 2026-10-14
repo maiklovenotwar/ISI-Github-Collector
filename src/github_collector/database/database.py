@@ -4,9 +4,9 @@ import logging
 import os
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Callable, Dict, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, Union
 
-from sqlalchemy import and_, create_engine, desc, exists, func, or_
+from sqlalchemy import and_, create_engine, desc, exists, func, or_, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
@@ -1660,6 +1660,36 @@ class GitHubDatabase:
             return list(query.all())
 
         return self._run_in_session(_operation, session=session)
+
+    def iter_rows_for_export(
+        self, table_name: str, limit: Optional[int] = None, chunk_size: int = 10_000
+    ) -> Iterator[Dict[str, Any]]:
+        """Liefert die Zeilen einer Tabelle als Dicts, blockweise nach `id` (Keyset).
+
+        Anders als get_data_for_export lädt sie nie die ganze Tabelle in den Speicher
+        (27,5 Mio. Repositories, Befund K5) und erzeugt keine ORM-Objekte.
+        """
+        if table_name not in _MODEL_REGISTRY:
+            raise ValueError(f"Unbekannte Tabelle für Export: {table_name}")
+        table = _MODEL_REGISTRY[table_name].__table__
+        engine = self.session_factory.kw["bind"]
+        last_id = None
+        remaining = limit
+        while remaining is None or remaining > 0:
+            size = chunk_size if remaining is None else min(chunk_size, remaining)
+            stmt = select(table).order_by(table.c.id).limit(size)
+            if last_id is not None:
+                stmt = stmt.where(table.c.id > last_id)
+            with engine.connect() as conn:
+                rows = [dict(row._mapping) for row in conn.execute(stmt)]
+            if not rows:
+                return
+            yield from rows
+            last_id = rows[-1]["id"]
+            if remaining is not None:
+                remaining -= len(rows)
+            if len(rows) < size:
+                return
 
     # --- Geocoding / Location-Hilfen ---
 

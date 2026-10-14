@@ -323,14 +323,26 @@ python scripts/export/export_tables_to_csv.py --output-dir exports/
 
 **Export specific tables:**
 ```bash
-python scripts/export/export_tables_to_csv.py --tables repositories,organizations --output-dir exports/
+python scripts/export/export_tables_to_csv.py --tables repositories organizations --output-dir exports/
 ```
 
-### Available Export Formats
-- **repositories.csv**: Repository metadata and statistics
-- **organizations.csv**: Organization information
-- **contributors.csv**: Contributor data
-- **orbis_enrichments.csv**: Orbis matching/enrichment results (if available)
+The tables are read in blocks of 10,000 rows ordered by `id` and written
+as they are read, so that even `repositories` does not have to fit into
+memory. If the export of a table fails, the other tables are still
+exported and the script ends with exit code 1.
+
+### Content of the Export Files
+- **repositories.csv**: repository metadata and statistics
+- **organizations.csv**: organization information
+- **contributors.csv**: account data
+
+The files contain the raw columns of these tables. They include personal
+data that account holders entered in their GitHub profiles (name, e-mail
+address, biography, location); handle and share them accordingly. They do
+not contain `repository_contributors`, and they do not contain a country
+per repository: the rule that assigns a country to a repository is
+described in `docs/methodology/country_attribution.md` and has to be
+applied to the exported columns.
 
 ---
 

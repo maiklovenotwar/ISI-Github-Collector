@@ -91,6 +91,9 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- The CSV export loaded a whole table into memory and ended with success even when a table
+  could not be exported. Tables are now read in blocks and written as they are read; a failed
+  table makes the script end with exit code 1.
 - `enrich_repository_stats.py` wrote 0 into `contributors_count`, which it does not collect; the
   column now stays `NULL`. Results are written after each batch instead of once at the end, so an
   aborted run keeps them. A database error is no longer reported as one updated repository, a

@@ -87,8 +87,8 @@ def main() -> int:
         else:
             tables = args.tables
 
-        # Exportiere die Tabellen
-        export_tables(
+        # Exportiere die Tabellen; eine fehlgeschlagene Tabelle ergibt Exit-Code 1
+        _exported, failed = export_tables(
             db=db,
             tables=tables,
             output_dir=args.output_dir,
@@ -96,7 +96,7 @@ def main() -> int:
             with_timestamp=args.with_timestamp,
         )
 
-        return 0
+        return 1 if failed else 0
 
     except Exception as e:
         logger.exception(f"Fehler beim Export der Datenbanktabellen: {e}")

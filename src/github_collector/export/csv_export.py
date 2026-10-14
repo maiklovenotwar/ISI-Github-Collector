@@ -2,13 +2,19 @@
 CSV-Export-Funktionalität für den GitHub Data Collector.
 
 Dieses Modul bietet Funktionen zum Exportieren von Datenbanktabellen in CSV-Dateien.
+Die Tabellen werden blockweise gelesen und gestreamt geschrieben; eine Tabelle, deren
+Export scheitert, wird gemeldet (Befund K5: früher endete der Export trotzdem mit Erfolg).
+
+Die Ausgabe enthält die Rohspalten, darunter personenbezogene Angaben (Name, E-Mail, Bio).
 """
 
 import csv
 import logging
 import os
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
+
+from github_collector.database.database import _MODEL_REGISTRY
 
 logger = logging.getLogger(__name__)
 
@@ -18,48 +24,36 @@ def export_table_to_csv(db, table_name: str, output_file: str, limit: Optional[i
     Exportiere eine Tabelle in eine CSV-Datei.
 
     Args:
-        db: Datenbankverbindung
+        db: Datenbankverbindung (GitHubDatabase)
         table_name: Name der zu exportierenden Tabelle
         output_file: Pfad zur Ausgabedatei
         limit: Maximale Anzahl zu exportierender Zeilen
 
     Returns:
         Anzahl der exportierten Zeilen
+
+    Raises:
+        ValueError bei unbekannter Tabelle; Datenbank- und Schreibfehler werden nicht
+        verschluckt.
     """
-    # Hole die Daten über die generische Export-Hilfsmethode des Datenbank-Layers
-    try:
-        results = db.get_data_for_export(table_name, limit=limit)
-    except ValueError as e:
-        logger.error(f"Unbekannte Tabelle für Export: {e}")
-        return 0
+    if table_name not in _MODEL_REGISTRY:
+        raise ValueError(f"Unbekannte Tabelle für Export: {table_name}")
+    columns = [column.name for column in _MODEL_REGISTRY[table_name].__table__.columns]
 
-    if not results:
-        logger.warning(f"Keine Daten in Tabelle {table_name} gefunden")
-        return 0
+    directory = os.path.dirname(output_file)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
 
-    # Hole die Spalten aus dem ersten Ergebnisobjekt per SQLAlchemy-Mapping
-    from sqlalchemy import inspect
-
-    mapper = inspect(results[0].__class__)
-    columns = [column.key for column in mapper.columns]
-
-    # Erstelle das Ausgabeverzeichnis, falls es nicht existiert
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-
-    # Schreibe die CSV-Datei
+    exported = 0
     with open(output_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-
-        # Schreibe die Kopfzeile
         writer.writerow(columns)
+        for row in db.iter_rows_for_export(table_name, limit=limit):
+            writer.writerow([row.get(column) for column in columns])
+            exported += 1
 
-        # Schreibe die Daten
-        for result in results:
-            row = [getattr(result, column, None) for column in columns]
-            writer.writerow(row)
-
-    logger.info(f"{len(results)} Zeilen aus Tabelle {table_name} nach {output_file} exportiert")
-    return len(results)
+    logger.info(f"{exported} Zeilen aus Tabelle {table_name} nach {output_file} exportiert")
+    return exported
 
 
 def export_tables(
@@ -68,7 +62,7 @@ def export_tables(
     output_dir: str,
     limit: Optional[int] = None,
     with_timestamp: bool = False,
-) -> int:
+) -> Tuple[int, List[str]]:
     """
     Exportiere mehrere Tabellen in CSV-Dateien.
 
@@ -80,31 +74,28 @@ def export_tables(
         with_timestamp: Zeitstempel zum Dateinamen hinzufügen
 
     Returns:
-        Gesamtanzahl der exportierten Zeilen
+        (Gesamtanzahl der exportierten Zeilen, Namen der fehlgeschlagenen Tabellen)
     """
-    # Erstelle das Ausgabeverzeichnis, falls es nicht existiert
     os.makedirs(output_dir, exist_ok=True)
 
-    # Zeitstempel für Dateinamen, falls gewünscht
     timestamp = ""
     if with_timestamp:
         timestamp = f"_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-    # Exportiere jede Tabelle
     total_exported = 0
+    failed: List[str] = []
 
     for table_name in tables:
         output_file = os.path.join(output_dir, f"{table_name}{timestamp}.csv")
-
         try:
-            rows_exported = export_table_to_csv(
+            total_exported += export_table_to_csv(
                 db=db, table_name=table_name, output_file=output_file, limit=limit
             )
-
-            total_exported += rows_exported
-
         except Exception as e:
             logger.error(f"Fehler beim Exportieren der Tabelle {table_name}: {e}")
+            failed.append(table_name)
 
     logger.info(f"Export abgeschlossen. Insgesamt {total_exported} Zeilen exportiert.")
-    return total_exported
+    if failed:
+        logger.error(f"Nicht exportiert: {', '.join(failed)}")
+    return total_exported, failed
