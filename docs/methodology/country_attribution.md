@@ -30,7 +30,7 @@ The following rules avoid double counting.
   statement about "contributors" has to say which of the two groups it
   refers to.
 
-`scripts/diagnostics/methodology_checks.sql` (query 7) compares the two
+`scripts/diagnostics/methodology_checks.sql` (query 5) compares the two
 rows of each organization. In the project database on 2026-10-13, 735,205
 organizations had both rows. For 120,677 of them only the row in
 `organizations` carried a country, for 399 only the placeholder row, and
@@ -59,7 +59,7 @@ The rule uses the account type of the owner, not the column
 `repositories.organization_id`. Versions before 2026-10-13 did not set
 that column when a repository was stored from a search result. In the
 project database on 2026-10-13, 1,271,276 of the 2,951,091 repositories
-owned by an organization carried it (query 12 of
+owned by an organization carried it (query 6 of
 `scripts/diagnostics/methodology_checks.sql`).
 
 By this rule, 12,663,064 of the 24,547,404 repositories owned by a user

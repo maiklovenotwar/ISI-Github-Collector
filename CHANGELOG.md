@@ -51,6 +51,9 @@ Notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- `scripts/diagnostics/methodology_checks.sql` reads the `repositories` table in full twice
+  instead of seven times: one statement counts everything that needs no join, one joins the
+  owners. Months are grouped by number, which the server can handle on the full table.
 - The methodology documents state the figures measured in the project database on 2026-10-13:
   retrieval dates, share of accounts and repositories with a country, the two rows per
   organization, the ccTLD step, `repositories.organization_id`, and repositories per month of

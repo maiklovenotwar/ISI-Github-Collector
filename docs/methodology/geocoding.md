@@ -89,7 +89,7 @@ stays open, and the run ends with exit code 1.
 - **The location is voluntary.** Accounts that state no location are
   absent from every analysis by country. Whether they are distributed
   like the accounts that do state one is unknown. The share of accounts
-  with a location can be obtained with query 5 of
+  with a location can be obtained with query 3 of
   `scripts/diagnostics/methodology_checks.sql`.
 - **The location is self-reported.** It states where the account holder
   says they are. It is not a nationality, an employer, or a registered
