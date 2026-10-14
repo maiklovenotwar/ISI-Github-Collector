@@ -94,7 +94,8 @@ Notable changes to this project are recorded here. The format follows
 - The ccTLD step assigned countries to service domains and to endings without a link to a
   country: `linktr.ee` made most of the accounts assigned to Estonia, `notion.so` many of those
   assigned to Somalia, and `youtu.be` part of those assigned to Belgium. Service domains
-  (`linktr.ee`, `buymeacoff.ee`, `coff.ee`, `lin.ee`, `notion.so`, `youtu.be`) and the endings
+  (`linktr.ee`, `buymeacoff.ee`, `coff.ee`, `lin.ee`, `notion.so`, `youtu.be`, link shorteners
+  and free hosting such as `rb.gy`, `sr.ht`, and `free.nf`) and the endings
   `.tk`, `.ml`, `.ga`, `.cf`, `.gq`, `.pw`, `.re`, `.pm`, `.tf`, and `.st` now yield no country.
   The validation of `enrich_cctld.py` also reports the countries with the lowest agreement.
 - `cleanup_orphaned_owners.py` treated an organization as orphaned when no repository named it in

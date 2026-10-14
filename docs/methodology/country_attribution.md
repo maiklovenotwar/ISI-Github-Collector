@@ -118,7 +118,9 @@ Belgium (`BE`). Free or very cheap endings (`.tk`, `.ml`, `.ga`, `.cf`,
 an estimated 4,000 to 5,000 of about 96,000 assignments (about 5%) were affected.
 The procedure therefore yields no country for these endings, nor for the
 service domains `linktr.ee`, `buymeacoff.ee`, `coff.ee`, `lin.ee`,
-`notion.so`, and `youtu.be` and their subdomains (a different domain that
+`notion.so`, and `youtu.be`, the link shorteners `rb.gy`, `short.gy`, and
+`surl.li`, the hosting services `sr.ht`, `self.so`, `free.nf`, and `co.nf`,
+and their subdomains (a different domain that
 merely ends in the same letters, such as `mynotion.so`, still counts).
 Two endings remain in use but are uncertain: `.rs` (Serbia) is frequent
 among Rust projects (`serde.rs`), and `.is` (Iceland) is also used for

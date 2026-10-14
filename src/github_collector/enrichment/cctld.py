@@ -78,6 +78,15 @@ SERVICE_DOMAINS = frozenset(
         "lin.ee",
         "notion.so",
         "youtu.be",
+        # Kurz-URLs, Code-Hosting und Gratis-Hosting (Prüfung je Land 2026-10-14:
+        # rb.gy 51 von 97 GY-Konten, sr.ht 69 von 87 HT-Konten, free.nf/co.nf 87 von 96 NF)
+        "rb.gy",
+        "short.gy",
+        "sr.ht",
+        "surl.li",
+        "self.so",
+        "free.nf",
+        "co.nf",
     }
 )
 
