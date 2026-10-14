@@ -97,3 +97,6 @@ SQL files:
   on `contributors`.
 - `add_organizations_enrichment_checked_at.sql` (2026-10-09): column
   `enrichment_checked_at` on `organizations`.
+- `clear_repositories_contributors_count.sql` (2026-10-14): sets the uncollected
+  `contributors_count` from 0 to `NULL`, in blocks over the primary key (data change, not a
+  schema change).
