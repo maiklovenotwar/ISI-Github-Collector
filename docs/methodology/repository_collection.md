@@ -179,12 +179,18 @@ that month.
 
 ## Fields Not Collected
 
-- `repositories.contributors_count` is not collected.
-  `scripts/enrichment/enrich_repository_stats.py` writes 0 into this
-  column. The contributors of a repository are recorded separately, see
+- `repositories.contributors_count` is not collected and is `NULL`.
+  Until 2026-10-14, `scripts/enrichment/enrich_repository_stats.py` wrote
+  0 into this column; on that day all 27,465,002 repositories with
+  statistics carried 0, which would read as "no contributors". The
+  contributors of a repository are recorded separately, see
   `contributor_network.md`.
 - `commits_count` and `pull_requests_count` are filled only by that
-  enrichment step and are `NULL` before it has run.
+  enrichment step and are `NULL` before it has run. `pull_requests_count`
+  counts open, closed, and merged pull requests together;
+  `commits_count` counts the commits on the default branch only. The time
+  at which the counts were retrieved is not stored. On 2026-10-14,
+  27,465,002 of 27,498,495 repositories (99.9%) had both counts.
 
 ## Outlook: Relations Between Repositories and Accounts
 

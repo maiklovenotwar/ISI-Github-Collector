@@ -2,11 +2,12 @@
 GraphQL Handler für Repository Stats Enrichment via GitHub GraphQL API
 """
 
+import json
 import logging
-import os
 import time
 from typing import Any, Dict, List, Optional
 
+import requests
 from gql import Client
 from gql.transport.requests import RequestsHTTPTransport
 
@@ -59,43 +60,27 @@ class GraphQLHandler:
         Fragt für eine Liste von Repositories (owner/name) die gewünschten
         Statistiken per GitHub GraphQL API ab.
 
-        Führt die Abfrage in Batches durch, behandelt Rate-Limits, implementiert
-        Retry-Logik (3 Versuche) mit exponentiellem Backoff und speichert den
-        Fortschritt in einer Checkpoint-Datei.
+        Führt die Abfrage in Batches durch, behandelt Rate-Limits und implementiert
+        Retry-Logik mit exponentiellem Backoff. Den Fortschritt hält der Aufrufer fest,
+        indem er die Ergebnisse jedes Aufrufs sofort schreibt.
 
         :param repos: Liste von Dictionaries mit owner und name der Repositories
         :return: Tuple (Liste mit Ergebnis-Dicts, Liste der fehlgeschlagenen
             Batches)
 
         Jedes Ergebnis-Dict enthält: ``repo_id``, ``calculated_pr_count``,
-        ``calculated_commit_count``, ``calculated_contributor_count``. Bei
-        Fehlern werden die betroffenen Batches gesammelt und zurückgegeben.
-        Fortschritt kann über die Checkpoint-Datei wieder aufgenommen werden.
+        ``calculated_commit_count``, ``calculated_contributor_count`` (immer None:
+        wird nicht erhoben). Bei Fehlern werden die betroffenen Batches gesammelt und
+        zurückgegeben.
         """
-        import json
-
-        import requests
-
         logger = logging.getLogger(__name__)
         results = []
         failed_batches = []
-        checkpoint_path = "enrich_checkpoint.txt"
-        # Checkpoint laden
-        start_batch_idx = 0
-        if os.path.exists(checkpoint_path):
-            try:
-                with open(checkpoint_path, "r") as f:
-                    start_batch_idx = int(f.read().strip())
-                logger.info(f"Checkpoint gefunden: Starte ab Batch-Index {start_batch_idx}.")
-            except Exception as e:
-                logger.warning(
-                    f"Checkpoint-Datei konnte nicht gelesen werden: {e}. Ignoriere Checkpoint."
-                )
-                start_batch_idx = 0
+        # Früher stand hier eine Checkpoint-Datei im Arbeitsordner. Das Skript ruft diese
+        # Methode je Batch auf; ein liegengebliebener Checkpoint ließ dann den Batch still
+        # aus (Befund K4). Fortschritt entsteht jetzt durch Schreiben je Batch im Skript.
         all_batches = list(self._batch(repos, self.batch_size))
         for batch_idx, batch in enumerate(all_batches):
-            if batch_idx < start_batch_idx:
-                continue  # Überspringe bereits verarbeitete Batches
             query, variables = self._build_batch_query(batch)
             success = False
             max_attempts = GITHUB_API["retry_count"]
@@ -204,7 +189,7 @@ class GraphQLHandler:
                                     "totalCount", 0
                                 ),
                                 "calculated_commit_count": history.get("totalCount", 0),
-                                "calculated_contributor_count": 0,
+                                "calculated_contributor_count": None,
                             }
                         )
                     if failed_repos_in_batch:
@@ -240,18 +225,12 @@ class GraphQLHandler:
                         exc_info=True,
                     )
                     time.sleep(2**attempt)
-            # Checkpoint nach jedem Batch schreiben
-            with open(checkpoint_path, "w") as f:
-                f.write(str(batch_idx + 1))
             if not success:
                 logger.error(
                     "Batch endgültig fehlgeschlagen: "
                     f"{[r['owner'] + '/' + r['name'] for r in batch]}"
                 )
                 failed_batches.append(batch)
-        # Checkpoint entfernen, wenn alles erfolgreich
-        if os.path.exists(checkpoint_path):
-            os.remove(checkpoint_path)
         logger.debug(f"Alle extrahierten results (gesamt): {results}")
         return results, failed_batches
 

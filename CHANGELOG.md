@@ -91,6 +91,11 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- `enrich_repository_stats.py` wrote 0 into `contributors_count`, which it does not collect; the
+  column now stays `NULL`. Results are written after each batch instead of once at the end, so an
+  aborted run keeps them. A database error is no longer reported as one updated repository, a
+  checkpoint file left in the working directory no longer skips a batch, and the script ends
+  with exit code 1 if a batch failed.
 - When a profile or an owner was stored again with a different location, the country determined
   for the old location was kept. A changed location now resets `country_code` and `region`, so
   that the geocoding determines them anew.

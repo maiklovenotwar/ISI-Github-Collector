@@ -2,7 +2,8 @@
 
 - Holt zu aktualisierende Repos aus der DB
 - Ruft den GraphQLHandler in Batches auf
-- Übergibt Ergebnisse an updater.py
+- Schreibt die Ergebnisse jedes Batches sofort (updater.py), damit ein Abbruch nichts verliert
+- Endet mit Exit-Code 1, wenn ein Batch fehlschlug oder das Schreiben scheiterte
 - Unterstützt --dry-run, --limit, --batch-size, --force
 - Zeigt Fortschritt und Zusammenfassung
 
@@ -20,6 +21,7 @@ from sqlalchemy import create_engine, text
 from tqdm import tqdm
 
 from github_collector import config
+from github_collector.database.engine import make_engine
 from github_collector.enrichment.graphql_handler import GraphQLHandler
 from github_collector.enrichment.updater import map_and_update_stats
 from github_collector.utils.logging_config import setup_logging
@@ -34,7 +36,8 @@ def get_repos_to_enrich(db_url, limit=None, force=False):
     Holt Repos aus der DB, die angereichert werden sollen.
     :param db_url: SQLAlchemy-DB-URL
     :param limit: maximale Anzahl
-    :param force: Wenn True, ignoriere NULL-Check (alle Repos)
+    :param force: Wenn True, ignoriere NULL-Check (alle Repos). contributors_count zählt
+        nicht: die Spalte wird nicht erhoben und bleibt NULL.
     :return: Liste von Dicts mit id, owner, name
     """
     engine = create_engine(db_url)
@@ -56,7 +59,7 @@ def get_repos_to_enrich(db_url, limit=None, force=False):
                 FROM repositories r
                 LEFT JOIN organizations o ON r.owner_id = o.id
                 LEFT JOIN contributors c ON r.owner_id = c.id
-                WHERE r.contributors_count IS NULL OR r.commits_count IS NULL OR r.pull_requests_count IS NULL
+                WHERE r.commits_count IS NULL OR r.pull_requests_count IS NULL
             """
             )
             params = {}
@@ -68,14 +71,19 @@ def get_repos_to_enrich(db_url, limit=None, force=False):
     return [{"id": r[0], "owner": r[1], "name": r[2]} for r in rows]
 
 
-def main():  # noqa: C901
+def main(argv=None):  # noqa: C901
     """
     Einstiegspunkt für das Enrichment der Repository-Statistiken.
 
     Parsed die Kommandozeilenargumente, lädt die zu verarbeitenden Repositories,
     ruft den GraphQLHandler für die Anreicherung auf und aktualisiert die Datenbank.
-    Unterstützt Checkpointing (Fortsetzung ab Abbruch), Retry-Logik für fehlgeschlagene Repositories
-    und schreibt alle relevanten Informationen in das Logfile `logs/enrich_repository_stats.log`.
+    Schreibt jeden Batch sofort (ein abgebrochener Lauf behält die bis dahin abgerufenen
+    Zahlen; ein neuer Lauf wählt nur Repositories ohne Zahlen), unterstützt einen
+    Retry-Lauf für fehlgeschlagene Repositories und schreibt alle relevanten Informationen
+    in das Logfile `logs/enrich_repository_stats.log`.
+
+    Returns:
+        0 bei Erfolg, 1 wenn ein Batch fehlschlug oder das Schreiben scheiterte.
 
     Besonderheiten:
     - contributors_count wird aktuell nicht gesammelt (Performance-Limit der API)
@@ -99,7 +107,7 @@ def main():  # noqa: C901
         default=None,
         help="Pfad zu einer Datei mit Repo-IDs (eine pro Zeile) für gezielten Retry-Lauf",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Ermittle Datenbank-URL wie in den anderen Skripten: bevorzugt --db-path, sonst zentrale DB_URL
     db_url = args.db_path or str(config.DB_URL)
@@ -113,7 +121,7 @@ def main():  # noqa: C901
         retry_path = args.retry_failed
         if not os.path.exists(retry_path):
             logger.error(f"Retry-Datei nicht gefunden: {retry_path}")
-            sys.exit(1)
+            return 1
         with open(retry_path, "r") as f:
             retry_ids = {line.strip() for line in f if line.strip()}
         # Hole alle Repos aus DB, filtere auf die IDs
@@ -125,9 +133,12 @@ def main():  # noqa: C901
         logger.info(f"{len(repos)} Repositories für Enrichment ausgewählt.")
     if not repos:
         logger.info("Keine Repositories zum Anreichern gefunden. Beende.")
-        sys.exit(0)
+        return 0
 
     handler = GraphQLHandler(batch_size=args.batch_size)
+    engine = make_engine(db_url)
+    db_id_set = {r["id"] for r in repos}
+    updated = 0
     all_stats = []
     failed_batches = []
     batches = [repos[i : i + args.batch_size] for i in range(0, len(repos), args.batch_size)]
@@ -144,6 +155,8 @@ def main():  # noqa: C901
             try:
                 stats, batch_fails = handler.fetch_repo_stats(batch)
                 all_stats.extend(stats)
+                # Mapping: database_id (API) <-> id (DB); "repo_id" ist eine Node-ID.
+                for_update = [s for s in stats if s.get("database_id") in db_id_set]
                 if batch_fails:
                     failed_batches.extend(batch_fails)
                 batch_success_counts.append(len(stats))
@@ -153,6 +166,12 @@ def main():  # noqa: C901
                 failed_batches.append(batch)
                 batch_success_counts.append(0)
                 batch_fail_counts.append(len(batch))
+            else:
+                try:
+                    updated += map_and_update_stats(engine, for_update, dry_run=args.dry_run)
+                except Exception as e:
+                    logger.error(f"Schreiben von Batch {idx+1} fehlgeschlagen, Abbruch: {e}")
+                    return 1
             batch_duration = time.time() - batch_start
             batch_durations.append(batch_duration)
             batch_indices.append(idx)
@@ -163,16 +182,6 @@ def main():  # noqa: C901
     logger.info(f"{len(all_stats)} Repositories erfolgreich via GraphQL abgefragt.")
     if failed_batches:
         logger.warning(f"{len(failed_batches)} Batches konnten nicht verarbeitet werden.")
-
-    # Mapping: database_id (API) <-> id (DB).
-    # Wichtig: Die "repo_id" aus der API ist eine Node-ID (Base64-String), die DB nutzt aber die numerische database_id/id.
-    stats_for_update = []
-    db_id_set = {r["id"] for r in repos}
-    for stat in all_stats:
-        if "database_id" in stat and stat["database_id"] in db_id_set:
-            stats_for_update.append(stat)
-
-    updated = map_and_update_stats(db_url, stats_for_update, dry_run=args.dry_run)
 
     logger.info("==== Zusammenfassung ====")
     logger.info(f"Repos ausgewählt: {len(repos)}")
@@ -226,7 +235,8 @@ def main():  # noqa: C901
                     ids.append(str(r))
             logger.info(ids)
     logger.info("Enrichment-Prozess abgeschlossen.")
+    return 1 if failed_batches else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
