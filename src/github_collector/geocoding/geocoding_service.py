@@ -18,6 +18,7 @@ from github_collector.geocoding.nominatim_client import (
 )
 from github_collector.geocoding.normalization import normalize_location
 from github_collector.geocoding.rate_limiter import RateLimiter
+from github_collector.geocoding.territories import apply_territory
 
 logger = logging.getLogger(__name__)
 
@@ -136,17 +137,42 @@ class GeocodingService:
         if not code:
             return None
         country_name = self._get_country_name(code)
-        result = {
-            "country_code": code,
-            "country": country_name,
-            "region": region,
-            "latitude": None,
-            "longitude": None,
-            "formatted_address": country_name,
-        }
+        result = apply_territory(
+            {
+                "country_code": code,
+                "country": country_name,
+                "region": region,
+                "latitude": None,
+                "longitude": None,
+                "formatted_address": country_name,
+            }
+        )
         if self.enable_quality_logging:
             logger.debug("Heuristic match for '%s': %s", location, result)
         return result
+
+    def _curated_or_cached(
+        self, location: str, normalized: str, mapped: Optional[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        """Ergebnis aus kuratierten Einträgen oder dem Cache; None, wenn beide nichts wissen."""
+        # Eine kuratierte Zuordnung, die ein Land nennt, ist eine bewusste Korrektur und
+        # geht einem älteren Cache-Eintrag vor (Befund K10: "Korea, South" stand als alter
+        # Nominatim-Treffer in Australien im Cache). "Kein Ort"-Zuordnungen und Textregeln
+        # bleiben hinter dem Cache, dort schützt er oft richtige Werte (z. B. "de" -> DE).
+        if mapped:
+            return self._mapping_over_cache(location, mapped)
+        # Eine Korrektur "kein Land" ist ebenfalls eine bewusste Entscheidung gegen einen
+        # falschen Treffer im Cache ("Antarctica" stand in Kanada, Befund K12).
+        if normalized and self.heuristics.resolve_correction(normalized) == {}:
+            return self._remember(location, {}, "mapping")
+        if self.cache is None:
+            return None
+        cached_result = self.cache.get(location)
+        if cached_result is None:
+            return None
+        if GeocodingCache.is_empty_result(cached_result):
+            return {}
+        return apply_territory(cached_result)
 
     def geocode(self, location: str) -> Dict[str, Any]:
         """Bestimme Land und Region für eine Freitext-Ortsangabe.
@@ -163,18 +189,10 @@ class GeocodingService:
         normalized = normalize_location(processed_location) if processed_location else ""
         mapped = self.heuristics.resolve_mapping(normalized) if normalized else None
 
-        # 2. Eine kuratierte Zuordnung, die ein Land nennt, ist eine bewusste Korrektur und
-        # geht einem älteren Cache-Eintrag vor (Befund K10: "Korea, South" stand als alter
-        # Nominatim-Treffer in Australien im Cache). "Kein Ort"-Zuordnungen und Textregeln
-        # bleiben hinter dem Cache, dort schützt er oft richtige Werte (z. B. "de" -> DE).
-        if mapped:
-            return self._mapping_over_cache(location, mapped)
-
-        # 3. Cache-Prüfung (nur wenn Cache aktiviert)
-        if self.cache is not None:
-            cached_result = self.cache.get(location)
-            if cached_result is not None:
-                return {} if GeocodingCache.is_empty_result(cached_result) else cached_result
+        # 2./3. Kuratierte Einträge, dann der Cache
+        known = self._curated_or_cached(location, normalized, mapped)
+        if known is not None:
+            return known
 
         if not processed_location or not normalized:
             return self._remember(location, {}, "no_result")
@@ -218,14 +236,16 @@ class GeocodingService:
         country_name = api_result.get("country", "")
         if not country_code or len(country_code) != 2 or country_name.lower() == "earth":
             return {}
-        return {
-            "country_code": country_code,
-            "country": country_name,
-            "region": self._extract_region(api_result.get("address", {})),
-            "latitude": api_result.get("latitude"),
-            "longitude": api_result.get("longitude"),
-            "formatted_address": api_result.get("formatted_address"),
-        }
+        return apply_territory(
+            {
+                "country_code": country_code,
+                "country": country_name,
+                "region": self._extract_region(api_result.get("address", {})),
+                "latitude": api_result.get("latitude"),
+                "longitude": api_result.get("longitude"),
+                "formatted_address": api_result.get("formatted_address"),
+            }
+        )
 
     def _preprocess_location(self, location: str) -> Optional[str]:
         """Bereinigt eine Standortangabe; siehe preprocess_location."""

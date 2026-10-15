@@ -15,6 +15,7 @@ Ergebnisses gruppiert. Zurückgesetzt (`country_code` und `region` auf NULL, dam
 
 - "mapping": die kuratierte Zuordnung nennt ein anderes Land,
 - "georgia": die bloße Angabe "Georgia", nach der dokumentierten Regel der US-Bundesstaat (E9),
+- "territory": das Gebiet hat einen eigenen ISO-Code (E15, z. B. Hongkong statt China),
 - "not_in_cache": der Ort wurde nie geokodiert und keine Regel entscheidet ihn.
 
 Nur gezählt werden "cache" und "rules": Der Cache enthält selbst falsche Treffer und
@@ -51,6 +52,7 @@ from github_collector.geocoding.cache import GeocodingCache  # noqa: E402
 from github_collector.geocoding.geocoding_service import preprocess_location  # noqa: E402
 from github_collector.geocoding.heuristics import HeuristicResolver  # noqa: E402
 from github_collector.geocoding.normalization import normalize_location  # noqa: E402
+from github_collector.geocoding.territories import apply_territory  # noqa: E402
 
 TABLES = ("contributors", "organizations")
 DEFAULT_BACKUP_DIR = Path(__file__).parent.parent.parent / "data" / "backups"
@@ -67,9 +69,9 @@ SELECT_ROWS = """
 NO_COUNTRY = ""
 UNKNOWN = None
 
-GROUPS = ("mapping", "georgia", "cache", "rules", "not_in_cache")
-# Gruppen, die mit --write zurückgesetzt werden (E11)
-WRITE_GROUPS = ("mapping", "georgia", "not_in_cache")
+GROUPS = ("mapping", "georgia", "territory", "cache", "rules", "not_in_cache")
+# Gruppen, die mit --write zurückgesetzt werden (E11, E15)
+WRITE_GROUPS = ("mapping", "georgia", "territory", "not_in_cache")
 
 
 def current_country(location: str, cache: GeocodingCache, rules: HeuristicResolver):
@@ -80,20 +82,32 @@ def current_country(location: str, cache: GeocodingCache, rules: HeuristicResolv
 
     Returns:
         (Ergebnis, Quelle). Ergebnis ist ein Ländercode, NO_COUNTRY (ausdrücklich kein Land)
-        oder UNKNOWN (nie geokodiert); Quelle ist "mapping", "cache" oder "rules".
+        oder UNKNOWN (nie geokodiert); Quelle ist "mapping", "cache", "rules" oder
+        "territory" (das Gebiet bekommt seinen eigenen Code statt des Staates).
     """
     processed = preprocess_location(location)
     normalized = normalize_location(processed) if processed else ""
     mapped = rules.resolve_mapping(normalized) if normalized else None
     if mapped:
         return (mapped.get("country_code") or "").upper(), "mapping"
+    # Eine Korrektur "kein Land" geht dem Cache vor (Befund K12, E14)
+    if normalized and rules.resolve_correction(normalized) == {}:
+        return NO_COUNTRY, "correction"
     cached = cache.get(location)
     if cached is not None:
-        return (cached.get("country_code") or "").upper(), "cache"
+        return _with_territory(cached, "cache")
     if not normalized or mapped is not None:
         return NO_COUNTRY, "mapping"
-    code, _region = rules.extract_country_from_text(normalized)
-    return (code.upper() if code else UNKNOWN), "rules"
+    code, region = rules.extract_country_from_text(normalized)
+    if not code:
+        return UNKNOWN, "rules"
+    return _with_territory({"country_code": code, "region": region}, "rules")
+
+
+def _with_territory(result, source: str):
+    code = (result.get("country_code") or "").upper()
+    own = (apply_territory(result).get("country_code") or "").upper()
+    return (own, "territory") if own != code else (code, source)
 
 
 def is_bare_georgia(location: str) -> bool:
@@ -119,6 +133,8 @@ def find_stale(
         now, source = known[location]
         if now is UNKNOWN:
             stale["not_in_cache"].append(row_id)
+        elif source == "correction":
+            stale["mapping"].append(row_id)  # gespeichert ist ein Land, korrigiert: keines
         elif now != NO_COUNTRY and now != stored.upper():
             stale[source].append(row_id)
     return stale
@@ -188,7 +204,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         counts = Counter({group: len(group_ids) for group, group_ids in stale.items()})
         print(
             f"{table}: anderes Land laut Zuordnung {counts['mapping']:,}, "
-            f"bloßes Georgia {counts['georgia']:,}, nie geokodiert {counts['not_in_cache']:,}, "
+            f"bloßes Georgia {counts['georgia']:,}, Gebiet {counts['territory']:,}, "
+            f"nie geokodiert {counts['not_in_cache']:,}, "
             f"zurückzusetzen {len(ids):,}"
         )
         print(

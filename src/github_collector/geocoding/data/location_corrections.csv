@@ -1,0 +1,400 @@
+location,country_code,reason
+$pwd,,not a single place or ambiguous
+-\_tsu_/-,,not a single place or ambiguous
+/bin/bash,,not a single place or ambiguous
+/dev/urandom,,not a single place or ambiguous
+/tmp,,not a single place or ambiguous
+aba,,not a single place or ambiguous
+abc,,not a single place or ambiguous
+"abidjan, cote d'ivoire",CI,wrong geocoder match
+"abidjan, cote divoire",CI,wrong geocoder match
+africa,,not a single place or ambiguous
+ahmdabad,IN,wrong geocoder match
+akihabara tokyo,JP,names the country
+alexandria,,not a single place or ambiguous
+america latina,,ambiguous or not a place
+americas,,not a single place or ambiguous
+anon,,not a single place or ambiguous
+antarctica,,not a single place or ambiguous
+antartica,,not a single place or ambiguous
+"aranjuez, madrid",ES,names the country
+arctic,,not a single place or ambiguous
+arg,AR,wrong geocoder match
+"argentina, bs as",AR,names the country
+atx,US,wrong geocoder match
+base,,not a single place or ambiguous
+bbsr,IN,wrong geocoder match
+beiing,CN,wrong geocoder match
+beijing chinese,CN,names the country
+beijing city,CN,names the country
+"beijing, china pr",CN,names the country
+"beijing, peoples republic of china",CN,names the country
+"beijing, pr china",CN,names the country
+"beijing, pr.china",CN,names the country
+berlin area,DE,names the country
+berlin metropolitan area,DE,names the country
+"berlin, europe",DE,names the country
+bethlehem,,not a single place or ambiguous
+"bethlehem, pa",US,wrong geocoder match
+bogota d.c. - colombia,CO,names the country
+bogota d.c. colombia,CO,names the country
+bogota dc - colombia,CO,names the country
+bouvet island,BV,names the country
+brasil - es,BR,names the country
+brasil - pe,BR,names the country
+brasil - pr,BR,names the country
+brasil brazil,BR,names the country
+brasil pr,BR,names the country
+"brasil, campo grande - ms",BR,names the country
+"brasil, curitiba / pr",BR,names the country
+"brasil, dourados ms",BR,names the country
+"brasil, es",BR,names the country
+"brasil, pe",BR,names the country
+"brasil, pr",BR,names the country
+"brasil, recife - pe",BR,names the country
+"brasil, recife pe",BR,names the country
+"brasil, sao luis - ma",BR,names the country
+brasil/brazil,BR,names the country
+brazil - curitiba - pr,BR,names the country
+brazil - pe,BR,names the country
+brazil - pr,BR,names the country
+"brazil, campo grande - ms",BR,names the country
+"brazil, curitiba - pr",BR,names the country
+"brazil, es",BR,names the country
+"brazil, pe",BR,names the country
+"brazil, pr",BR,names the country
+"brazil, recife - pe",BR,names the country
+"brazil, sao luis - ma",BR,names the country
+"brazil, vitoria - es",BR,names the country
+buenos aires,AR,names the country
+buenos aires - argentina,AR,names the country
+buenos aires - argentina.,AR,names the country
+buenos aires / argentina,AR,names the country
+buenos aires argentina,AR,names the country
+buenos aires- argentina,AR,names the country
+buenos aires-argentina,AR,names the country
+buenos aires. argentina,AR,names the country
+buenos aires. argentina.,AR,names the country
+buenos aires/ argentina,AR,names the country
+buenos aires/argentina,AR,names the country
+bzh,FR,wrong geocoder match
+c-137,,not a single place or ambiguous
+c:\,,not a single place or ambiguous
+can,,not a single place or ambiguous
+"capital region, denmark",DK,names the country
+"cario, egypt",EG,names the country
+"cd, china",CN,names the country
+cd.sc.china,CN,names the country
+cdc,,not a single place or ambiguous
+central florida,US,names the country
+"central, israel",IL,names the country
+"cheng du, china",CN,names the country
+"cheng du,china",CN,names the country
+china * beijing,CN,names the country
+china * shanghai,CN,names the country
+china - beijing,CN,names the country
+china - shanghai,CN,names the country
+china beijing,CN,names the country
+china beijing.,CN,names the country
+china guangxi,CN,names the country
+china harbin,CN,names the country
+china hongkong,HK,names the country
+china mainland,CN,names the country
+china nj,CN,names the country
+china peking,CN,names the country
+china pr,CN,names the country
+china shanghai,CN,names the country
+china sichuan,CN,names the country
+china*shanghai,CN,names the country
+china-beijing,CN,names the country
+china-shanghai,CN,names the country
+china. beijing,CN,names the country
+china. shanghai,CN,names the country
+china.beijing,CN,names the country
+china.shanghai,CN,names the country
+china.sichuan,CN,names the country
+china/beijing,CN,names the country
+china/shanghai,CN,names the country
+china_beijing,CN,names the country
+china_shanghai,CN,names the country
+chinese,CN,nationality word
+chn,CN,wrong geocoder match
+christmas island,CX,names the country
+cocos keeling islands,CC,names the country
+"colombia, bogota d.c.",CO,names the country
+columbia,,not a single place or ambiguous
+congo,,ambiguous or not a place
+congo dr,CD,names the country
+congo republique democratique du,CD,names the country
+cote d'ivoire,CI,names the country
+cote divoire,CI,names the country
+cuidad de mexico,MX,names the country
+cze,CZ,wrong geocoder match
+d.r.congo,CD,names the country
+dallas texas,US,names the country
+dallas/texas,US,names the country
+democratic republic of congo,CD,names the country
+"depok, jawa barat",ID,wrong geocoder match
+dmv,US,wrong geocoder match
+east coast,,not a single place or ambiguous
+east coast australia,AU,names the country
+egypt cario,EG,names the country
+el mundo,,not a single place or ambiguous
+error: unable to resolve,,not a single place or ambiguous
+europe/berlin,DE,names the country
+falkenberg,,not a single place or ambiguous
+formosa - argentina,AR,names the country
+france - paris,FR,names the country
+france / paris,FR,names the country
+france paris,FR,names the country
+france south,FR,names the country
+"france, south",FR,names the country
+france-paris,FR,names the country
+france/paris,FR,names the country
+free,,not a single place or ambiguous
+from china,CN,names the country
+fz.china,CN,names the country
+gdl,MX,wrong geocoder match
+georgia tbilisi,GE,wrong geocoder match
+github.com,,not a single place or ambiguous
+goa india,IN,names the country
+goa-india,IN,names the country
+guang dong,CN,wrong geocoder match
+"guang zhou, guang dong",CN,names the country
+"guatemala, city",GT,names the country
+"guatemala, guatemala, guatemala",GT,names the country
+ha noi - viet nam,VN,names the country
+ha noi -viet nam,VN,names the country
+ha noi viet nam,VN,names the country
+ha noi-viet nam,VN,names the country
+hangzhou in china,CN,names the country
+"hangzhou, zhejiang province, china",CN,names the country
+hanoi - vietnam,VN,names the country
+hanoi vietnam,VN,names the country
+hanoi-vietnam,VN,names the country
+hanoi. vietnam,VN,names the country
+hanoi/vietnam,VN,names the country
+havana - cuba,CU,names the country
+havana/cuba,CU,names the country
+horana,LK,wrong geocoder match
+htx,US,wrong geocoder match
+hunan china,CN,names the country
+hyperspace,,not a single place or ambiguous
+i.r.iran,IR,names the country
+idk,,not a single place or ambiguous
+idn,ID,wrong geocoder match
+in china,CN,names the country
+in front of my computer,,not a single place or ambiguous
+in korea,KR,names the country
+in the,,not a single place or ambiguous
+indian,IN,nationality word
+indoneisa,ID,wrong geocoder match
+interwebz,,not a single place or ambiguous
+istanbul,TR,names the country
+istanbul - turkey,TR,names the country
+istanbul / turkey,TR,names the country
+istanbul /turkey,TR,names the country
+istanbul \ turkey,TR,names the country
+istanbul turkey,TR,names the country
+istanbul-turkey,TR,names the country
+istanbul. turkey,TR,names the country
+istanbul/ turkey,TR,names the country
+istanbul/turkey,TR,names the country
+istanbul\turkey,TR,names the country
+j&k,IN,wrong geocoder match
+jalisco mexico,MX,names the country
+johannesburg south africa,ZA,names the country
+karaj,IR,wrong geocoder match
+kashmir india,IN,names the country
+kobe japan,JP,names the country
+kobe/japan,JP,names the country
+kochin,IN,wrong geocoder match
+konohagakure,,not a single place or ambiguous
+kor,KR,wrong geocoder match
+korea of republic,KR,names the country
+korea republic of,KR,names the country
+korea republic of.,KR,names the country
+"korea, north",KP,names the country
+"korea, republic of",KR,names the country
+"korea, republic of.",KR,names the country
+korea. republic of,KR,names the country
+l.a.,US,wrong geocoder match
+laniakea supercluster,,not a single place or ambiguous
+"laquila, italy",IT,names the country
+latino america,,ambiguous or not a place
+ldn,GB,wrong geocoder match
+leon,,not a single place or ambiguous
+lima -peru,PE,names the country
+lima / peru,PE,names the country
+lima-peru,PE,names the country
+lima. peru,PE,names the country
+lima.peru,PE,names the country
+lima/peru,PE,names the country
+london u.k.,GB,names the country
+"london, united kindgom",GB,names the country
+"london, united kindom",GB,names the country
+"los angeles, chile",CL,names the country
+m.p. india,IN,names the country
+m78,,not a single place or ambiguous
+made in china,CN,names the country
+"madison, wisconsin, united states",US,names the country
+"madrid, sp",ES,names the country
+mainland china,CN,names the country
+mainland of china,CN,names the country
+"mainland, china",CN,names the country
+malaga spain,ES,names the country
+mariana trench,,not a single place or ambiguous
+meta,,not a single place or ambiguous
+mo du,CN,wrong geocoder match
+moscow region,RU,names the country
+msk,RU,wrong geocoder match
+mtl,CA,wrong geocoder match
+mtv,US,wrong geocoder match
+"mumbai, ind",IN,names the country
+murica,US,wrong geocoder match
+nara,JP,wrong geocoder match
+"national capital region, canada",CA,names the country
+near paris,FR,names the country
+neo-tokyo,,ambiguous or not a place
+net,,not a single place or ambiguous
+"netherlands, the",NL,names the country
+new mumbai,IN,names the country
+new york / san francisco,US,names the country
+new york city area,US,names the country
+new york city metropolitan area,US,names the country
+new york metro,US,names the country
+new york metro area,US,names the country
+"ningbo, zhejiang province, china",CN,names the country
+"nj, china",CN,names the country
+norfolk island,NF,names the country
+north america,,not a single place or ambiguous
+north east of england,GB,names the country
+north italy,IT,names the country
+northeast england,GB,names the country
+northern italy,IT,names the country
+nw england,GB,names the country
+observable universe,,not a single place or ambiguous
+osaka - japan,JP,names the country
+osaka / japan,JP,names the country
+osaka japan,JP,names the country
+osaka/japan,JP,names the country
+palani,IN,wrong geocoder match
+palmira,,not a single place or ambiguous
+pan india,IN,names the country
+paris 15,FR,names the country
+paris 19,FR,names the country
+paris region,FR,names the country
+"paris region, france",FR,names the country
+peking china,CN,names the country
+"ph, nigeria",NG,names the country
+phillippines,PH,wrong geocoder match
+pku,CN,wrong geocoder match
+planet mars,,not a single place or ambiguous
+pluton,,not a single place or ambiguous
+pr china,CN,names the country
+pr. china,CN,names the country
+pwd,,not a single place or ambiguous
+quang nam,VN,wrong geocoder match
+r'lyeh,,not a single place or ambiguous
+rangpur,BD,wrong geocoder match
+"region centre, france",FR,names the country
+reno,US,wrong geocoder match
+republic of congo,CG,names the country
+republic of korea south,KR,names the country
+"republic of, korea",KR,names the country
+ring 0,,not a single place or ambiguous
+rio - brazil,BR,names the country
+rlyeh,,not a single place or ambiguous
+room,,not a single place or ambiguous
+saigon - vietnam,VN,names the country
+saigon vietnam,VN,names the country
+"saint-p, russia",RU,names the country
+san antonio texas,US,names the country
+"san antonio, chile",CL,names the country
+"san francisco de macoris, dominican republic",DO,names the country
+"san francisco, cordoba, argentina",AR,names the country
+"san francisco, cordoba, argentina.",AR,names the country
+san francisco/new york,US,names the country
+san jose costa rica,CR,names the country
+"san jose, costa rica.",CR,names the country
+san luis,,not a single place or ambiguous
+"santa clara, cuba",CU,names the country
+"santa clara, cuba.",CU,names the country
+"santa clara, villa clara, cuba",CU,names the country
+santiago of chile,CL,names the country
+"santo domingo, rd",DO,wrong geocoder match
+sanya,CN,wrong geocoder match
+sassenheim,NL,wrong geocoder match
+seattle area,US,wrong geocoder match
+"seattle, u.s.a.",US,names the country
+seattle-ish,US,wrong geocoder match
+seoul - korea,KR,names the country
+seoul / korea,KR,names the country
+seoul korea,KR,names the country
+seoul. korea,KR,names the country
+seoul. korea.,KR,names the country
+seoul.korea,KR,names the country
+seoul/korea,KR,names the country
+seoul_korea,KR,names the country
+sfba,US,wrong geocoder match
+shanghai city,CN,names the country
+"shanghai, chn",CN,names the country
+"shanghai, peoples republic of china",CN,names the country
+shen yang,CN,wrong geocoder match
+shengzheng,CN,wrong geocoder match
+"sj, costa rica",CR,names the country
+solan,IN,wrong geocoder match
+solna,SE,wrong geocoder match
+somewhere in africa,,not a single place or ambiguous
+somewhere in italy,IT,names the country
+somewhere in the universe,,not a single place or ambiguous
+somewhere in universe,,not a single place or ambiguous
+south africa johannesburg,ZA,names the country
+south america,,not a single place or ambiguous
+south china,CN,names the country
+south of brazil,BR,names the country
+south of france,FR,names the country
+south of korea,KR,names the country
+spb,RU,wrong geocoder match
+stl,US,wrong geocoder match
+sun,,not a single place or ambiguous
+sunny southern california,US,names the country
+tanta,EG,wrong geocoder match
+tay ninh,VN,wrong geocoder match
+terminal,,not a single place or ambiguous
+thai,TH,nationality word
+the czech republic,CZ,names the country
+the interwebz,,not a single place or ambiguous
+the multiverse,,not a single place or ambiguous
+the philippines,PH,names the country
+the russian federation,RU,names the country
+toronto - ca,CA,names the country
+toronto ca,CA,names the country
+"toronto, ca",CA,names the country
+"toronto, can",CA,names the country
+"toronto, on ca",CA,names the country
+"toronto, on, ca",CA,names the country
+tours - france,FR,names the country
+tours france,FR,names the country
+tula,,not a single place or ambiguous
+"tunisia, tn",TN,names the country
+u.s.a,US,wrong geocoder match
+"undefined, china",CN,names the country
+unitedstates,US,wrong geocoder match
+university of sydney,AU,names the country
+us-east-1,,not a single place or ambiguous
+vancouver ca,CA,names the country
+various,,not a single place or ambiguous
+venezuela - caracas,VE,names the country
+venice - italy,IT,names the country
+venice italy,IT,names the country
+vietnamese,VN,nationality word
+vinh phuc,VN,wrong geocoder match
+vitoria,,not a single place or ambiguous
+wels,AT,wrong geocoder match
+west korea,,ambiguous or not a place
+western sydney,AU,names the country
+word,,not a single place or ambiguous
+"wuhan, hubei province, china",CN,names the country
+zh-cn,,not a single place or ambiguous
+zhong guo si chuan,CN,names the country

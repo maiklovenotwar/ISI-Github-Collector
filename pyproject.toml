@@ -45,6 +45,9 @@ Changelog = "https://github.com/maiklovenotwar/ISI-Github-Collector/blob/main/CH
 where = ["src"]
 include = ["github_collector*"]
 
+[tool.setuptools.package-data]
+"github_collector.geocoding" = ["data/*.csv"]
+
 [project.optional-dependencies]
 dev = [
     "black>=23.11.0",

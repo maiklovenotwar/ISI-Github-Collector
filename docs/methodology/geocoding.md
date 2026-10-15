@@ -42,14 +42,16 @@ A location is resolved in five stages. The first stage that yields a
 result ends the procedure.
 
 1. **Cache.** Results are stored in a local file keyed by the normalised
-   location string, so that each distinct string is resolved once. One
-   exception: if the table of special cases (stage 3) assigns the string
-   to a country, that entry takes precedence over the cache and replaces
-   the cached result. The table is a deliberate correction; before
-   2026-10-14 an older geocoder result in the cache could hide it, so that
-   `Korea, South` remained assigned to Australia (about 2,800 accounts and
-   4,200 organizations). Entries of the table that mark a string as not a
-   place, and the text rules, do not override the cache.
+   location string, so that each distinct string is resolved once. Two
+   exceptions: if the table of special cases (stage 3) assigns the string
+   to a country, or the table of corrections (stage 3) contains the
+   string, that entry takes precedence over the cache and replaces the
+   cached result. Both tables are deliberate corrections; before
+   2026-10-14 an older geocoder result in the cache could hide them, so
+   that `Korea, South` remained assigned to Australia (about 2,800
+   accounts and 4,200 organizations). Entries of the table of special
+   cases that mark a string as not a place, and the text rules, do not
+   override the cache.
 2. **Cleaning.** Additions without geographic meaning (`remote`,
    `home office`, `anywhere`, and similar), URLs, e-mail addresses, and
    brackets are removed. A string that is empty afterwards has no
@@ -58,15 +60,21 @@ result ends the procedure.
    frequent or problematic strings to a country or marks them as not a
    place, and about 150 country names and aliases to their code. Strings
    that are a URL, a time zone, consist only of emoji or digits, or match
-   similar patterns are treated as not a place.
+   similar patterns are treated as not a place. A second table,
+   `src/github_collector/geocoding/data/location_corrections.csv`, lists
+   399 strings for which the geocoder had returned a wrong country, each
+   checked by hand and stored with the correct country or with none, and
+   with the reason (see "Check of Cached Geocoder Results").
 4. **Text rules.** In this order: the name of a US state as the whole
    string, after a comma, or as a separate word; a two-letter US state
    abbreviation at the end; one of 56 large US cities at the beginning; a
    country alias as the whole string; a two-letter country code at the
-   end. Four kinds of endings are ambiguous and are treated separately.
-   Sixteen abbreviations that are both a US state and a country code (for
-   example `DE`, `IN`, `CO`) count as a US state only if the preceding
-   text is a known US city or state, and as a country code otherwise.
+   end. Endings that are ambiguous are treated separately. An ending that
+   is both a country code and the abbreviation of a US state, a Brazilian
+   or Australian state, or a Canadian province (for example `DE`, `IN`,
+   `CO`, `ID`, `PE`, `PR`, `SA`) counts as a US state only if the
+   preceding text is a known US city or state; otherwise the string is
+   passed to the geocoder (`Recife - PE` is in Brazil, not in Peru).
    `CA` counts as California unless the preceding text names a Canadian
    city or province, in which case it counts as Canada. Strings ending in
    `WA` (Washington or Western Australia) or in the name `Georgia` are
@@ -77,6 +85,15 @@ result ends the procedure.
    geocoder of OpenStreetMap, one request per second, with English
    output. The first result is used; its country code and
    state/region are stored.
+
+Territories with their own ISO 3166-1 code keep that code, whichever
+stage produced the result. Nominatim reports Taiwan, Jersey, or Greenland
+under their own code, but Hong Kong and Macau under China, Puerto Rico
+and Guam under the United States, and the French overseas regions under
+France; the text rules list Puerto Rico and Guam among the US states. A
+result whose region or address names such a territory receives the
+territory's code (`HK`, `MO`, `PR`, `GU`, `RE`, `GP`, `MQ`, `NC`, `AW`,
+`CW`, and others; `src/github_collector/geocoding/territories.py`).
 
 A location that is not a place, or for which the geocoder returns no
 match, is marked with an empty country code, so that it is not requested again in later runs. If
@@ -99,17 +116,21 @@ stays open, and the run ends with exit code 1.
 - **Ambiguous names follow fixed rules.** The text rules for US states
   run before the geocoder and take precedence. A string that ends in the
   name or abbreviation of a US state is assigned to the United States,
-  with the exceptions listed under stage 4. Three conventions remain:
+  with the exceptions listed under stage 4. Two conventions remain:
   `Georgia` as the whole string is assigned to the US state, not to the
-  country; a string ending in `CA` is assigned to California unless a
+  country; and a string ending in `CA` is assigned to California unless a
   Canadian city or province from a short list precedes it, so that
   `Ontario, CA` and smaller Canadian places are assigned to the United
-  States; and a string that ends in one of the sixteen abbreviations
-  without a known US place before it is read as a country code (`…, IN`
-  as India). `CA` is not passed to the geocoder, because Nominatim reads
+  States. `CA` is not passed to the geocoder, because Nominatim reads
   it as the country code of Canada: in a trial it placed Californian
   towns such as `Tracy, CA` in Canada and `Valencia, CA` in Venezuela.
   For all other ambiguous names the first result of Nominatim decides.
+- **Geocoder matches are not all checked.** The frequent wrong matches
+  found in the check described below are corrected. Rare ones remain:
+  strings that name a country but were placed in another and occur only
+  once or twice (about 2,300 strings with about 2,600 stored rows), and
+  wrong matches for strings without a recognisable country name, which
+  cannot be found automatically.
 - **Unresolved strings.** In the same cache, 74,032 of 289,920 distinct
   location strings (25.5%) had no country; 5,491 of them are recognised
   as not a place by the current rules. About a quarter of the strings
@@ -127,8 +148,10 @@ expectation that no country applies, serves as a reference
 `scripts/maintenance/benchmark_geocoding.py` compares the result of the
 procedure with this list.
 
-Result of the run of 2026-10-13 with the current rules, without cache;
-the geocoder answered every request:
+Result of the run of 2026-10-13, without cache; the geocoder answered
+every request. The rule for ambiguous endings, the codes of territories,
+and the table of corrections were changed on 2026-10-15; the benchmark
+has not yet been repeated with these changes.
 
 | | Entries | Share |
 |---|---:|---:|
@@ -163,6 +186,45 @@ Two properties of the list limit what this figure means.
 An accuracy for the accounts as a whole would require a random sample of
 accounts labelled without that suggestion. Such a sample has not been
 drawn.
+
+## Check of Cached Geocoder Results
+
+On 2026-10-15 the cache (292,470 strings, 193,576 of them with a
+geocoder match) was compared with the stored locations, read-only.
+Three kinds of error were found.
+
+- **The string names a country, the geocoder returned another.**
+  2,688 strings with 11,027 stored rows, among them `Istanbul/Turkey`
+  in Italy (989 rows), `China Beijing` in the United States (677), and
+  `Seoul Korea` in Malaysia (247). They were found by searching the
+  strings for exactly one country name that differs from the cached
+  country. The search also flags strings in which a country name is part
+  of a place name (`New Jersey`, `London, Ontario`; 543 strings), which
+  were excluded.
+- **The string is not a single place, the geocoder returned a country.**
+  Continents (`Antarctica`, `Africa`, `North America` in Canada), jokes
+  (`/dev/urandom` in Oman), and abbreviations matched to an unrelated
+  place (`U.S.A` in the Philippines, `DMV` in India). These cannot be
+  found automatically; the most frequent strings among those whose words
+  do not occur in the geocoder's address were reviewed by hand.
+- **The rule for two-letter endings read state abbreviations as country
+  codes.** Compared with geocoder results for the same strings, it was
+  wrong more often than right for several endings: `PE` (Pernambuco,
+  Brazil) in 1,089 rows against 37, `PR` (Paraná) 1,077 against 58,
+  `ID` 699 against 225, `AR` 424 against 55. For the sixteen
+  abbreviations that are both a US state and a country code, without a
+  known US place before them, the geocoder placed 2,109 strings (22,450
+  rows) in the United States and 1,232 (4,230 rows) in the country of the
+  code. The rule was changed as described under stage 4.
+
+A general rule ("a separately written country name decides") was
+considered and rejected: in a sample it also fired for strings with
+several places (`Hamburg / Tokyo`) and for US places such as `Rome, GA`.
+Instead, the strings of the first kind with at least three stored rows
+(377) and the most frequent strings of the second kind were reviewed by
+hand; 399 corrections resulted. Strings that name several countries were
+left unchanged, as they are not an error of the geocoder (see "Several
+places in one string").
 
 ## Cache
 

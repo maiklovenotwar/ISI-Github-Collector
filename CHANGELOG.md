@@ -97,6 +97,16 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Geocoding: the cache held wrong geocoder matches for frequent strings (`Istanbul/Turkey` in
+  Italy, `China Beijing` in the United States, `Antarctica` in Canada). A table of 399
+  corrections checked by hand (`src/github_collector/geocoding/data/location_corrections.csv`)
+  now takes precedence over the cache, also where it states that a string has no country.
+- Geocoding: an ending that is both a country code and a state or province abbreviation
+  (`Recife - PE`, `Boise, ID`, `Curitiba, PR`) was read as the country code. Without a known US
+  place before it, such a string is now passed to the geocoder.
+- Geocoding: territories with their own ISO code (Hong Kong, Macau, Puerto Rico, Guam, the French
+  overseas regions, and others) were assigned to China, the United States, or France depending
+  on the source of the result. They now keep their own code.
 - The geocoding and export commands and the database layer wrote the database URL, including
   the password, to the log. They now log it with the password hidden.
 - `enrich_org_data_graphql.py` wrote its cache and log file into the current working directory;

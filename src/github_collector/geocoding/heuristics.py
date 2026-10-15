@@ -1,7 +1,19 @@
 from __future__ import annotations
 
+import csv
 import re
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
+
+# Von Hand geprüfte Korrekturen falscher Geocoder-Treffer (Befund K12, Entscheidung E14):
+# Ort (in der Form, in der der Dienst nachschlägt), Ländercode oder leer für "kein Land",
+# Begründung. Sie gehen dem Cache vor, auch dort, wo sie "kein Land" sagen.
+CORRECTIONS_FILE = Path(__file__).parent / "data" / "location_corrections.csv"
+
+
+def _load_corrections(path: Path = CORRECTIONS_FILE) -> Dict[str, str]:
+    with path.open(encoding="utf-8", newline="") as f:
+        return {row["location"]: row["country_code"] for row in csv.DictReader(f)}
 
 
 class HeuristicResolver:
@@ -720,9 +732,37 @@ class HeuristicResolver:
         "indy": "US",  # Indianapolis
     }
 
+    _corrections: Optional[Dict[str, str]] = None
+
+    @classmethod
+    def _correction_table(cls) -> Dict[str, str]:
+        if cls._corrections is None:
+            cls._corrections = _load_corrections()
+        return cls._corrections
+
+    def resolve_correction(self, normalized: str) -> Optional[Dict[str, Any]]:
+        """Korrektur aus der Tabelle: None ohne Eintrag, {} für "kein Land", sonst Ergebnis."""
+        code = self._correction_table().get(normalized) if normalized else None
+        if code is None:
+            return None
+        if not code:
+            return {}
+        return {
+            "country_code": code,
+            "country": "",  # Name wird im Service über pycountry bestimmt
+            "region": None,
+            "latitude": None,
+            "longitude": None,
+            "formatted_address": None,
+        }
+
     def resolve_mapping(self, normalized: str) -> Optional[Dict[str, Any]]:
         if not normalized:
             return None
+
+        correction = self.resolve_correction(normalized)
+        if correction is not None:
+            return correction
 
         # Filter Profil-URLs im Location-Feld frühzeitig aus.
         if normalized.startswith("http://") or normalized.startswith("https://"):
@@ -884,7 +924,24 @@ class HeuristicResolver:
         "ar",  # Arkansas vs. Argentinien
         "me",  # Maine vs. Montenegro
         "mt",  # Montana vs. Malta
+        "ms",  # Mississippi vs. Montserrat und Mato Grosso do Sul (Brasilien)
+        "pr",  # Puerto Rico vs. Paraná (Brasilien)
     }
+
+    # Endungen, die zugleich Ländercode und Kürzel eines Bundesstaats oder einer Provinz
+    # sind (USA, Brasilien, Australien, Kanada). Als Ländercode gelesen lagen sie im
+    # Vergleich mit Nominatim öfter falsch als richtig (Befund K14: "Recife - PE" ist
+    # Brasilien, nicht Peru; "Boise, ID" sind die USA, nicht Indonesien). Ohne bekannten
+    # US-Ort davor entscheidet deshalb der Geocoder.
+    _AMBIGUOUS_COUNTRY_SUFFIXES = _ISO_CONFLICT_ABBRS | {
+        # Brasilien
+        "al", "am", "ba", "es", "ma", "mg", "ms", "mt", "pa", "pe", "pr", "ro", "rs",
+        "sc", "se", "to",
+        # Australien
+        "sa",
+        # Kanada
+        "nl", "sk", "yt",
+    }  # fmt: skip
 
     def _match_us_abbr(self, text: str) -> Optional[Tuple[str, str]]:
         abbr_match = re.search(r",\s*([A-Za-z]{2})$|\s+([A-Za-z]{2})$", text)
@@ -920,7 +977,7 @@ class HeuristicResolver:
         if not match:
             return None
         code = match.group(1).upper()
-        if code.lower() in self._DEFERRED_ABBRS:
+        if code.lower() in self._DEFERRED_ABBRS or code.lower() in self._AMBIGUOUS_COUNTRY_SUFFIXES:
             return None
         if code in self._country_aliases.values():
             return code, None

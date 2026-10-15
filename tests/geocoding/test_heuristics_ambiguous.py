@@ -83,11 +83,51 @@ def test_bare_georgia_stays_with_the_us_state(resolver, location):
         ("Austin, TX", "US"),
         ("Cambridge, MA", "US"),
         ("Indiana", "US"),
-        ("Berlin, DE", "DE"),
-        ("Bangalore, IN", "IN"),
+        ("Paris, FR", "FR"),
+        ("Tokyo, JP", "JP"),
         ("Lima, Peru", None),
         ("Cambridge, UK", None),
     ],
 )
 def test_unambiguous_cases_are_unchanged(resolver, location, expected):
     assert text_rule(resolver, location) == expected
+
+
+@pytest.mark.parametrize(
+    "location",
+    [
+        # US states that share their abbreviation with a country code
+        "Boise, ID",
+        "Middlebury, IN",
+        "Golden, CO",
+        "Newark, DE",
+        "Fayetteville, AR",
+        # Brazilian states
+        "Recife - PE",
+        "Recife, PE",
+        "Curitiba - PR",
+        "Curitiba, PR",
+        "Campo Grande - MS",
+        "Aracaju - SE",
+        "Vila Velha - ES",
+        # Australian states and Canadian provinces
+        "Adelaide, SA",
+        "St. John's, NL",
+        # the same endings used as country codes are also left to the geocoder
+        "Berlin, DE",
+        "Bangalore, IN",
+        "San Juan, PR",
+    ],
+)
+def test_ending_that_is_both_a_subdivision_and_a_country_code_is_left_to_the_geocoder(
+    resolver, location
+):
+    # Compared with the geocoder for the same strings, reading these endings as a country
+    # code was wrong more often than right (finding K14: "- PE" 1,089 rows against 37,
+    # "- PR" 1,077 against 58).
+    assert text_rule(resolver, location) is None
+
+
+@pytest.mark.parametrize("location", ["Denver, CO", "Indianapolis, IN", "Chicago, IL"])
+def test_known_us_city_before_a_subdivision_ending_is_still_us(resolver, location):
+    assert text_rule(resolver, location) == "US"

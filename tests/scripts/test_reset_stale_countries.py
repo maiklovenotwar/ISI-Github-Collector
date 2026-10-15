@@ -44,6 +44,11 @@ def cache_file(tmp_path):
     cache.set("Nowhere Land", {"country_code": "", "country": None})
     # a wrong match of the kind found in K12
     cache.set("Boston Area", {"country_code": "CO", "country": "Colombia", "region": None})
+    # Nominatim reports Hong Kong under China (E15)
+    cache.set("Kowloon Tong", {"country_code": "CN", "country": "China", "region": "Kowloon"})
+    # wrong matches corrected by the table of corrections (E14)
+    cache.set("Antarctica", {"country_code": "CA", "country": "Canada", "region": None})
+    cache.set("Istanbul/Turkey", {"country_code": "IT", "country": "Italy", "region": None})
     cache.set("Korea, South", {"country_code": "AU", "country": "Australia", "region": "NSW"})
     cache.set(
         "Remote, Korea, South", {"country_code": "AU", "country": "Australia", "region": "NSW"}
@@ -64,6 +69,10 @@ def rows(test_db):
         (7, "Georgia", "GE"),  # bare "Georgia" counts as the US state (E9) -> georgia
         (8, "Remote, Korea, South", "AU"),  # cleaned like geocode() does -> mapping KR
         (9, "Leeds, FR", "GB"),  # not cached, text rule gives FR -> rules (not written)
+        (10, "Kowloon Tong", "CN"),  # cache CN, own ISO code HK -> territory
+        (11, "Recife - PE", "PE"),  # the suffix rule no longer decides (K14) -> not_in_cache
+        (12, "Antarctica", "CA"),  # correction: no country, outranks the cache -> mapping
+        (13, "Istanbul/Turkey", "IT"),  # correction: TR, outranks the cache -> mapping
     ]
     with session_scope(test_db.session_factory) as session:
         for row_id, location, code in people:
@@ -93,11 +102,12 @@ def test_find_stale_groups_rows(module, rows, cache_file, test_db):
             conn, "contributors", GeocodingCache(cache_file), HeuristicResolver()
         )
     assert stale == {
-        "mapping": [5, 8],
+        "mapping": [5, 8, 12, 13],
         "georgia": [7],
+        "territory": [10],
         "cache": [1],
         "rules": [9],
-        "not_in_cache": [2],
+        "not_in_cache": [2, 11],
     }
 
 
@@ -116,14 +126,15 @@ def test_write_resets_only_the_trusted_groups_and_backs_them_up(
     args = ["--cache-file", str(cache_file), "--backup-dir", str(tmp_path), "--write"]
     assert module.main(args) == 0
     countries = _countries(test_db, Contributor)
-    assert {k: countries[k] for k in (2, 5, 7, 8)} == dict.fromkeys((2, 5, 7, 8))
+    reset = (2, 5, 7, 8, 10, 11, 12, 13)
+    assert {k: countries[k] for k in reset} == dict.fromkeys(reset)
     assert [countries[k] for k in (1, 3, 4, 6, 9)] == ["US", "DE", "NL", "FR", "GB"]
     assert _countries(test_db, Organization)[20] == "US"
 
     backup = tmp_path / next(p.name for p in tmp_path.glob("*contributors*.csv"))
     with backup.open(encoding="utf-8", newline="") as f:
         saved = {int(r["id"]): r for r in csv.DictReader(f)}
-    assert set(saved) == {2, 5, 7, 8}
+    assert set(saved) == {2, 5, 7, 8, 10, 11, 12, 13}
     assert saved[5]["country_code"] == "AU" and saved[5]["location"] == "Korea, South"
     assert saved[5]["region"] == "r"
     assert not list(tmp_path.glob("*organizations*.csv"))
