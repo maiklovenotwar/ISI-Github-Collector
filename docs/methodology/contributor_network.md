@@ -67,18 +67,42 @@ Three kinds of entries are distinguished:
 
 ## Limits
 
-- **At most 2,000 contributors per repository.** Step 1 requests up to 20
+- **Only the first 500 author e-mail addresses are linked to accounts.**
+  GitHub identifies contributors by the e-mail address of the commit
+  author, and states that "only the first 500 author email addresses in
+  the repository link to GitHub users. The rest will appear as anonymous
+  contributors without associated GitHub user information." In a large
+  repository, contributors beyond that limit are therefore stored as
+  anonymous although they have an account. A read-only count on
+  2026-10-14 found no repository with 500 or more linked accounts; the
+  maximum was 490, and 190 repositories had 450 or more. The 4,131,585
+  anonymous rows (30% of all rows) partly result from this limit.
+  Statements about the country composition of large repositories are
+  restricted accordingly.
+- **At most 2,000 entries per repository.** Step 1 requests up to 20
   pages of 100 entries (`--max-pages`). GitHub returns contributors in
-  descending order of contributions, so for larger repositories the
-  contributors with the fewest contributions are missing.
+  descending order of contributions, so the entries with the fewest
+  contributions are missing. On 2026-10-14 three repositories reached this
+  limit.
 - **Repositories without a contributor list.** For some very large
   repositories GitHub does not return the list (HTTP 403, history or
   contributor list too large). These repositories have no rows. The script
   writes the repositories that failed in a run to
   `failed_repos_<run>.txt` in the log directory.
-- **Contributions are commit counts on the default branch**, as reported
-  by the endpoint. Other forms of contribution (issues, reviews,
-  discussions) are not included.
+- **Contributions are commit counts** as reported by the endpoint
+  ("number of commits per contributor"); GitHub does not state on which
+  branches they are counted. Other forms of contribution (issues,
+  reviews, discussions) are not included.
+- **Anonymous authors are counted by e-mail address.** A person who
+  committed under several addresses appears several times.
+- **Bots are recognised by account type only.** 195,412 rows have the
+  type `Bot`. Automated accounts registered as ordinary users are not
+  recognised: 53,726 rows of type `User` contain "bot" in the login, a
+  rough upper bound that also includes names such as `abbott`.
+- **Deleted and empty repositories look alike.** A repository that no
+  longer exists (HTTP 404) or has no commits (HTTP 204) yields an empty
+  list. Neither is recorded as failed, and both are requested again in
+  every run that covers their star count.
 - **Country information is self-reported.** The country code is derived
   from the free-text `location` field of the profile. Accounts without a
   location, or with a location that cannot be resolved, have no country

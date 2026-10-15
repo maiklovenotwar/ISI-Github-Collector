@@ -60,6 +60,8 @@ api_client = GitHubAPI(["token"], cache_dir="api_cache")
 - Automatic retries on transient failures
 - Specific exception types for different failure modes
   (`GitHubAPIError`, `GitHubRateLimitError`, `GitHubAuthenticationError`)
+- HTTP 404 is not raised: the request returns an empty result (`{}`), so a
+  caller cannot tell a deleted or renamed resource from an empty answer
 
 ## Public Methods
 

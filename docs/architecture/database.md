@@ -166,7 +166,7 @@ procedure and its limits are described in
 | github_login | String, not null | GitHub login as reported by the contributors endpoint |
 | github_user_id | Integer, indexed | Stable GitHub user ID (equals `contributors.id` when linked) |
 | github_type | String | Account type reported by the API (`User`, `Bot`, ...) |
-| contributions | Integer | Commit count on the default branch, as reported by the API |
+| contributions | Integer | Number of commits attributed to the contributor, as reported by the API |
 | is_anonymous | Boolean, not null | True for anonymous (email-only, no linked account) contributors |
 | collected_at | DateTime, not null | Timestamp of this crawl |
 | run_id | String, indexed | UUID of the collection run (for revert) |
@@ -177,9 +177,12 @@ deliberately nullable: anonymous contributors and logins not yet present in
 
 ## Relationships
 
-- A repository belongs to exactly one owner, either a contributor or an
-  organization, via `owner_id` (always set) and `organization_id`
-  (set only for organization-owned repositories).
+- A repository belongs to exactly one owner via `owner_id` (always set,
+  pointing to `contributors`). `organization_id` is set only for
+  organization-owned repositories, and only for those collected since
+  2026-10-13; older collections did not set it. Whether the owner is an
+  organization is therefore read from the owner's account type, see
+  `docs/methodology/country_attribution.md`.
 - An organization has zero or more `orbis_enrichments` rows (its match
   history); `current_orbis_enrichment_id` points at the currently active one.
 - A repository has zero or more `repository_contributors` rows.
@@ -303,12 +306,15 @@ also be triggered manually via `init_db(db_url)`.
 
 ## Performance
 
-- Indexes on frequently queried columns (see above).
-- Batch processing for inserts and updates.
-- Caching of frequently accessed data.
-- Deduplication before insert.
+The project database is MySQL 8.0; the tests use SQLite. Indexes are
+listed with the columns above. Collection and enrichment write in batches.
+Queries that read `repositories` in full take minutes to hours on the
+project database (see `scripts/diagnostics/methodology_checks.sql`).
 
 ## Backup
 
-For SQLite, use the `.backup` command. Regular backups are recommended,
-particularly before large collection runs or schema migrations.
+Backups of the whole database are made outside this repository (for
+SQLite with the `.backup` command, for MySQL with the server's own tools).
+Maintenance scripts that change existing rows save the affected rows as a
+CSV file before writing (`reset_stale_countries.py` to `data/backups/`);
+a migration states in its header how it is reverted.

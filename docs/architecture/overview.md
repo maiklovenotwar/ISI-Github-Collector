@@ -36,7 +36,9 @@ statistics enrichment additionally uses a dedicated GraphQL handler.
 - Rate-limit handling
 - Caching of API responses
 - GraphQL batch enrichment: a single failed item in a batch is logged
-  individually and does not abort the rest of the batch
+  individually and does not abort the rest of the batch;
+  `enrichment/updater.py` writes the resulting commit and pull-request
+  counts
 - Error causes are logged with a full stack trace for traceability
 - Automatic retries on transient API errors (e.g. HTTP 5xx)
 
@@ -46,7 +48,8 @@ Storage and access for collected data:
 
 - Database models (`models.py`)
 - Database access layer (`database.py`)
-- Schema migrations via versioned SQL scripts in `scripts/migrations/`
+- Schema migrations as SQL scripts in `scripts/migrations/`, applied by
+  hand (see `docs/architecture/database.md`)
 
 ### 4. Repository Collector (`repository_collector.py`)
 
@@ -79,8 +82,6 @@ methodology.
 - `orbis_matching_logic.py`: candidate scoring and consensus detection
 - `hq_detection.py`: headquarters resolution via a prioritized signal
   cascade
-- `updater.py`: writes enrichment results back to the database, with
-  dry-run support and transactional safety
 - `scripts/enrichment/orbis_matching_pipeline.py` is the CLI entry point wiring these
   together against a live data source and sink
 
