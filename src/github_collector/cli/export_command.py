@@ -10,6 +10,7 @@ import sys
 
 from github_collector import config
 from github_collector.database.database import GitHubDatabase
+from github_collector.database.engine import redact_db_url
 from github_collector.export.csv_export import export_tables
 from github_collector.utils.logging_config import get_export_logger
 
@@ -75,7 +76,7 @@ def main() -> int:
                 db_url = os.path.join(project_root, db_url)
             db_url = f"sqlite:///{db_url}"
 
-        logger.info(f"Verwende Datenbank-URL: {db_url}")
+        logger.info(f"Verwende Datenbank-URL: {redact_db_url(db_url)}")
 
         # Initialisiere Datenbank
         db = GitHubDatabase(str(db_url))

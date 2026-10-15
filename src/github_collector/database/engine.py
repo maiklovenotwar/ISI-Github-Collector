@@ -3,9 +3,22 @@
 from typing import Optional
 
 from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, make_url
+from sqlalchemy.exc import ArgumentError
 
 from github_collector import config
+
+
+def redact_db_url(db_url) -> str:
+    """Datenbank-URL ohne Passwort, für Log und Konsole (Befund K13).
+
+    Ein Wert, der keine gültige URL ist, wird nicht wiedergegeben, weil er das Passwort
+    enthalten könnte.
+    """
+    try:
+        return make_url(str(db_url)).render_as_string(hide_password=True)
+    except (ArgumentError, ValueError):
+        return "<keine gültige Datenbank-URL>"
 
 
 def make_engine(db_url: Optional[str] = None) -> Engine:

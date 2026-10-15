@@ -14,6 +14,7 @@ import pycountry
 
 from github_collector import config
 from github_collector.database.database import GitHubDatabase
+from github_collector.database.engine import redact_db_url
 from github_collector.geocoding.geocoding_service import GeocodingService
 from github_collector.ui.stats import show_geocoding_stats_after, show_geocoding_stats_before
 from github_collector.utils.logging_config import get_geocoding_logger
@@ -674,7 +675,7 @@ def _initialize_database(args: argparse.Namespace) -> GitHubDatabase:
     if args.db_path and isinstance(db_url, str) and "://" not in db_url:
         db_url = f"sqlite:///{db_url}"
 
-    logger.info(f"Verbinde mit Datenbank: {db_url}")
+    logger.info(f"Verbinde mit Datenbank: {redact_db_url(db_url)}")
     return GitHubDatabase(str(db_url))
 
 

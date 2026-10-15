@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from github_collector.config import DB_CONFIG, DB_URL
+from github_collector.database.engine import redact_db_url
 from github_collector.geocoding.normalization import normalize_location
 from github_collector.monitoring import record_db_operation
 from github_collector.utils.retry import retry_with_backoff
@@ -159,7 +160,7 @@ class GitHubDatabase:
             self.db_url = "sqlite:///:memory:"
         # Session-Factory pro Instanz; einzelne Operationen nutzen kurze Sessions
         self.session_factory = init_db(self.db_url)
-        logger.info(f"Datenbankverbindung initialisiert: {self.db_url}")
+        logger.info(f"Datenbankverbindung initialisiert: {redact_db_url(self.db_url)}")
 
     @retry_with_backoff(
         max_attempts=3,

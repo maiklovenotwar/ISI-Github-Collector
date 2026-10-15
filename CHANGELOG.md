@@ -97,6 +97,8 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- The geocoding and export commands and the database layer wrote the database URL, including
+  the password, to the log. They now log it with the password hidden.
 - `enrich_org_data_graphql.py` wrote its cache and log file into the current working directory;
   they are now stored under `data/cache/` and `logs/`.
 - The CSV export loaded a whole table into memory and ended with success even when a table
