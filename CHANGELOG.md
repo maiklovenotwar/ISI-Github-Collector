@@ -104,6 +104,10 @@ Notable changes to this project are recorded here. The format follows
 - Geocoding: an ending that is both a country code and a state or province abbreviation
   (`Recife - PE`, `Boise, ID`, `Curitiba, PR`) was read as the country code. Without a known US
   place before it, such a string is now passed to the geocoder.
+- Geocoding: results of the text rules were taken from the cache, so a corrected rule never
+  reached strings already cached (3,778 strings, for example `Montreal, CA` in the United
+  States). Such entries, which carry no coordinates, are now determined again; geocoder results
+  are kept.
 - Geocoding: territories with their own ISO code (Hong Kong, Macau, Puerto Rico, Guam, the French
   overseas regions, and others) were assigned to China, the United States, or France depending
   on the source of the result. They now keep their own code.

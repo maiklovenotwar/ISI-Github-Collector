@@ -51,7 +51,8 @@ result ends the procedure.
    that `Korea, South` remained assigned to Australia (about 2,800
    accounts and 4,200 organizations). Entries of the table of special
    cases that mark a string as not a place, and the text rules, do not
-   override the cache.
+   override the cache. Cache entries written by the tables or the text
+   rules are not used; such strings are resolved again (see "Cache").
 2. **Cleaning.** Additions without geographic meaning (`remote`,
    `home office`, `anywhere`, and similar), URLs, e-mail addresses, and
    brackets are removed. A string that is empty afterwards has no
@@ -231,8 +232,14 @@ places in one string").
 The cache stores one entry per normalised location string. Entries
 written since 2026-10-12 record how the result was obtained (`source`:
 table of special cases, text rule, Nominatim, or no result) and when
-(`cached_at`). Entries have no expiry date, so a change of the text rules
-does not affect strings that are already cached.
+(`cached_at`). Entries have no expiry date. Results of the tables and the
+text rules are stored without coordinates; such an entry is not taken
+from the cache but determined again, so that a change of the rules also
+reaches strings that are already cached. Geocoder results, which carry
+coordinates, are kept. Before 2026-10-15 rule results were taken from the
+cache as well: 3,778 cached strings with about 8,200 stored rows carried
+a country that the current rules no longer give (`Maringá - PR` in the
+United States, `Montreal, CA` in the United States).
 `scripts/diagnostics/inspect_geocoding_cache.py` summarises the cache
 without sending requests.
 

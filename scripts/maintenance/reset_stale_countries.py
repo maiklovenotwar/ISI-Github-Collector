@@ -16,6 +16,8 @@ Ergebnisses gruppiert. Zurückgesetzt (`country_code` und `region` auf NULL, dam
 - "mapping": die kuratierte Zuordnung nennt ein anderes Land,
 - "georgia": die bloße Angabe "Georgia", nach der dokumentierten Regel der US-Bundesstaat (E9),
 - "territory": das Gebiet hat einen eigenen ISO-Code (E15, z. B. Hongkong statt China),
+- "rule_change": das gespeicherte Land stammt von einer inzwischen geänderten Textregel
+  ("Montreal, CA" stand vor 2026-10-13 in den USA),
 - "not_in_cache": der Ort wurde nie geokodiert und keine Regel entscheidet ihn.
 
 Nur gezählt werden "cache" und "rules": Der Cache enthält selbst falsche Treffer und
@@ -49,7 +51,10 @@ from sqlalchemy import bindparam, text  # noqa: E402
 from github_collector import config  # noqa: E402
 from github_collector.database.engine import make_engine  # noqa: E402
 from github_collector.geocoding.cache import GeocodingCache  # noqa: E402
-from github_collector.geocoding.geocoding_service import preprocess_location  # noqa: E402
+from github_collector.geocoding.geocoding_service import (  # noqa: E402
+    is_rule_result,
+    preprocess_location,
+)
 from github_collector.geocoding.heuristics import HeuristicResolver  # noqa: E402
 from github_collector.geocoding.normalization import normalize_location  # noqa: E402
 from github_collector.geocoding.territories import apply_territory  # noqa: E402
@@ -69,9 +74,9 @@ SELECT_ROWS = """
 NO_COUNTRY = ""
 UNKNOWN = None
 
-GROUPS = ("mapping", "georgia", "territory", "cache", "rules", "not_in_cache")
-# Gruppen, die mit --write zurückgesetzt werden (E11, E15)
-WRITE_GROUPS = ("mapping", "georgia", "territory", "not_in_cache")
+GROUPS = ("mapping", "georgia", "territory", "rule_change", "cache", "rules", "not_in_cache")
+# Gruppen, die mit --write zurückgesetzt werden (E11, E15, K14)
+WRITE_GROUPS = ("mapping", "georgia", "territory", "rule_change", "not_in_cache")
 
 
 def current_country(location: str, cache: GeocodingCache, rules: HeuristicResolver):
@@ -94,14 +99,17 @@ def current_country(location: str, cache: GeocodingCache, rules: HeuristicResolv
     if normalized and rules.resolve_correction(normalized) == {}:
         return NO_COUNTRY, "correction"
     cached = cache.get(location)
-    if cached is not None:
+    if cached is not None and not (is_rule_result(cached) and mapped is None):
         return _with_territory(cached, "cache")
     if not normalized or mapped is not None:
         return NO_COUNTRY, "mapping"
     code, region = rules.extract_country_from_text(normalized)
     if not code:
         return UNKNOWN, "rules"
-    return _with_territory({"country_code": code, "region": region}, "rules")
+    # Eine Regel, die heute anders entscheidet als die, die den Cache-Eintrag schrieb, ist
+    # eine bewusste Korrektur und wird geschrieben; sonst bleibt die Textregel nur gezählt.
+    source = "rule_change" if cached is not None else "rules"
+    return _with_territory({"country_code": code, "region": region}, source)
 
 
 def _with_territory(result, source: str):
@@ -205,6 +213,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(
             f"{table}: anderes Land laut Zuordnung {counts['mapping']:,}, "
             f"bloßes Georgia {counts['georgia']:,}, Gebiet {counts['territory']:,}, "
+            f"geänderte Regel {counts['rule_change']:,}, "
             f"nie geokodiert {counts['not_in_cache']:,}, "
             f"zurückzusetzen {len(ids):,}"
         )

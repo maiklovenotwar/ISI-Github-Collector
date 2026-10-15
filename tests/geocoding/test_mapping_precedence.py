@@ -43,5 +43,52 @@ def test_cache_still_wins_over_a_not_a_place_mapping(service):
 
 
 def test_cache_still_wins_over_text_rules(service):
-    service.cache.set("Broomfield, CO", {"country_code": "US", "country": "United States"})
+    # a geocoder result (with coordinates) is not replaced by a text rule
+    service.cache.set(
+        "Broomfield, CO",
+        {"country_code": "US", "country": "United States", "latitude": 39.9, "longitude": -105.1},
+    )
     assert service.geocode("Broomfield, CO")["country_code"] == "US"
+
+
+class FakeClient:
+    def __init__(self, answer):
+        self.answer = answer
+        self.asked = []
+
+    def geocode(self, location):
+        self.asked.append(location)
+        return self.answer
+
+
+def test_rule_result_in_the_cache_is_recomputed_after_a_rule_change(service):
+    # Written by the old ending rule (no coordinates): "Boise, ID" as Indonesia. The current
+    # rules leave the string to the geocoder (K14), so the old entry must not decide.
+    service.cache.set("Boise, ID", {"country_code": "ID", "country": "Indonesia", "latitude": None})
+    service.nominatim_client = FakeClient(
+        {
+            "country_code": "us",
+            "country": "United States",
+            "address": {"state": "Idaho"},
+            "latitude": 43.6,
+            "longitude": -116.2,
+            "formatted_address": "Boise, Ada County, Idaho, United States",
+        }
+    )
+    assert service.geocode("Boise, ID")["country_code"].upper() == "US"
+    assert service.nominatim_client.asked == ["Boise, ID"]
+
+
+def test_rule_result_in_the_cache_that_still_holds_needs_no_request(service):
+    service.cache.set(
+        "Austin, TX", {"country_code": "US", "country": "United States", "latitude": None}
+    )
+    assert service.geocode("Austin, TX")["country_code"] == "US"
+
+
+def test_geocoder_result_in_the_cache_is_kept(service):
+    service.cache.set(
+        "Boise, ID",
+        {"country_code": "US", "country": "United States", "latitude": 43.6, "longitude": -116.2},
+    )
+    assert service.geocode("Boise, ID")["country_code"] == "US"

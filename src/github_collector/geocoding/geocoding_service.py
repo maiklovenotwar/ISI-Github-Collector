@@ -72,6 +72,11 @@ def preprocess_location(location: str) -> Optional[str]:
     return location
 
 
+def is_rule_result(entry: Dict[str, Any]) -> bool:
+    """Cache-Eintrag mit Land, aber ohne Koordinaten: von einer Regel, nicht vom Geocoder."""
+    return bool(entry.get("country_code")) and entry.get("latitude") is None
+
+
 class GeocodingService:
 
     def __init__(
@@ -172,6 +177,11 @@ class GeocodingService:
             return None
         if GeocodingCache.is_empty_result(cached_result):
             return {}
+        if is_rule_result(cached_result) and mapped is None:
+            # Von einer Textregel oder Zuordnung geschrieben (ohne Koordinaten): neu
+            # berechnen, damit eine Regeländerung auch gespeicherte Orte erreicht ("Boise,
+            # ID" stand nach der alten Endungsregel in Indonesien, Befund K14).
+            return None
         return apply_territory(cached_result)
 
     def geocode(self, location: str) -> Dict[str, Any]:
