@@ -49,9 +49,11 @@ result ends the procedure.
    cached result. Both tables are deliberate corrections; before
    2026-10-14 an older geocoder result in the cache could hide them, so
    that `Korea, South` remained assigned to Australia (about 2,800
-   accounts and 4,200 organizations). Entries of the table of special
-   cases that mark a string as not a place, and the text rules, do not
-   override the cache. Cache entries written by the tables or the text
+   accounts and 4,200 organizations). The same holds for an entry of
+   either table that states that a string has no country (`World` had
+   been placed in the United States). Strings recognised as not a place
+   only by a pattern (for example a two-letter string), and the text
+   rules, do not override the cache. Cache entries written by the tables or the text
    rules are not used; such strings are resolved again (see "Cache").
 2. **Cleaning.** Additions without geographic meaning (`remote`,
    `home office`, `anywhere`, and similar), URLs, e-mail addresses, and
@@ -63,7 +65,7 @@ result ends the procedure.
    that are a URL, a time zone, consist only of emoji or digits, or match
    similar patterns are treated as not a place. A second table,
    `src/github_collector/geocoding/data/location_corrections.csv`, lists
-   399 strings for which the geocoder had returned a wrong country, each
+   441 strings for which the geocoder had returned a wrong country, each
    checked by hand and stored with the correct country or with none, and
    with the reason (see "Check of Cached Geocoder Results").
 4. **Text rules.** In this order: the name of a US state as the whole
@@ -223,7 +225,9 @@ considered and rejected: in a sample it also fired for strings with
 several places (`Hamburg / Tokyo`) and for US places such as `Rome, GA`.
 Instead, the strings of the first kind with at least three stored rows
 (377) and the most frequent strings of the second kind were reviewed by
-hand; 399 corrections resulted. Strings that name several countries were
+hand; 399 corrections resulted. A second pass over the strings whose stored
+country differed from the cached one added 42 (`Riyadh` had been placed
+in Mauritania, `Madrid (Spain)` in the Philippines). Strings that name several countries were
 left unchanged, as they are not an error of the geocoder (see "Several
 places in one string").
 

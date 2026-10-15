@@ -72,3 +72,9 @@ def test_correction_without_a_country_overrides_the_cache(service):
     service.cache.set("Antarctica", {"country_code": "CA", "country": "Canada"})
     assert service.geocode("Antarctica") == {}
     assert GeocodingCache.is_empty_result(service.cache.get("Antarctica"))
+
+
+def test_built_in_entry_without_a_country_also_overrides_the_cache(service):
+    # "World" is listed as not a place, but an old geocoder match in the cache won.
+    service.cache.set("World", {"country_code": "US", "country": "United States", "latitude": 1.0})
+    assert service.geocode("World") == {}

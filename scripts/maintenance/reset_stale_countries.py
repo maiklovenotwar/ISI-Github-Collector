@@ -95,8 +95,8 @@ def current_country(location: str, cache: GeocodingCache, rules: HeuristicResolv
     mapped = rules.resolve_mapping(normalized) if normalized else None
     if mapped:
         return (mapped.get("country_code") or "").upper(), "mapping"
-    # Eine Korrektur "kein Land" geht dem Cache vor (Befund K12, E14)
-    if normalized and rules.resolve_correction(normalized) == {}:
+    # Ein ausdrücklicher Eintrag "kein Land" geht dem Cache vor (Befund K12, E14)
+    if rules.is_listed_without_country(normalized):
         return NO_COUNTRY, "correction"
     cached = cache.get(location)
     if cached is not None and not (is_rule_result(cached) and mapped is None):

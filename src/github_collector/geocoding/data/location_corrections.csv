@@ -4,6 +4,7 @@ $pwd,,not a single place or ambiguous
 /bin/bash,,not a single place or ambiguous
 /dev/urandom,,not a single place or ambiguous
 /tmp,,not a single place or ambiguous
+404 not found,,not a single place or ambiguous
 aba,,not a single place or ambiguous
 abc,,not a single place or ambiguous
 "abidjan, cote d'ivoire",CI,wrong geocoder match
@@ -14,6 +15,8 @@ akihabara tokyo,JP,names the country
 alexandria,,not a single place or ambiguous
 america latina,,ambiguous or not a place
 americas,,not a single place or ambiguous
+amsterdam area,NL,wrong geocoder match
+an hui he fei,CN,wrong geocoder match
 anon,,not a single place or ambiguous
 antarctica,,not a single place or ambiguous
 antartica,,not a single place or ambiguous
@@ -21,6 +24,7 @@ antartica,,not a single place or ambiguous
 arctic,,not a single place or ambiguous
 arg,AR,wrong geocoder match
 "argentina, bs as",AR,names the country
+athens,GR,wrong geocoder match
 atx,US,wrong geocoder match
 base,,not a single place or ambiguous
 bbsr,IN,wrong geocoder match
@@ -39,6 +43,7 @@ bethlehem,,not a single place or ambiguous
 bogota d.c. - colombia,CO,names the country
 bogota d.c. colombia,CO,names the country
 bogota dc - colombia,CO,names the country
+boston area,US,wrong geocoder match
 bouvet island,BV,names the country
 brasil - es,BR,names the country
 brasil - pe,BR,names the country
@@ -80,16 +85,21 @@ buenos aires/argentina,AR,names the country
 bzh,FR,wrong geocoder match
 c-137,,not a single place or ambiguous
 c:\,,not a single place or ambiguous
+"cambridge, usa",US,wrong geocoder match
 can,,not a single place or ambiguous
+canton,,not a single place or ambiguous
 "capital region, denmark",DK,names the country
 "cario, egypt",EG,names the country
 "cd, china",CN,names the country
 cd.sc.china,CN,names the country
 cdc,,not a single place or ambiguous
+central europe,,not a single place or ambiguous
 central florida,US,names the country
 "central, israel",IL,names the country
+cern,CH,wrong geocoder match
 "cheng du, china",CN,names the country
 "cheng du,china",CN,names the country
+chicago area,US,wrong geocoder match
 china * beijing,CN,names the country
 china * shanghai,CN,names the country
 china - beijing,CN,names the country
@@ -126,21 +136,27 @@ columbia,,not a single place or ambiguous
 congo,,ambiguous or not a place
 congo dr,CD,names the country
 congo republique democratique du,CD,names the country
+cordoba,,not a single place or ambiguous
 cote d'ivoire,CI,names the country
 cote divoire,CI,names the country
 cuidad de mexico,MX,names the country
+curitiba/pr,BR,wrong geocoder match
 cze,CZ,wrong geocoder match
 d.r.congo,CD,names the country
 dallas texas,US,names the country
 dallas/texas,US,names the country
 democratic republic of congo,CD,names the country
 "depok, jawa barat",ID,wrong geocoder match
+di du,,not a single place or ambiguous
 dmv,US,wrong geocoder match
+dnipro,UA,wrong geocoder match
+"east bay, ca",US,wrong geocoder match
 east coast,,not a single place or ambiguous
 east coast australia,AU,names the country
 egypt cario,EG,names the country
 el mundo,,not a single place or ambiguous
 error: unable to resolve,,not a single place or ambiguous
+ether,,not a single place or ambiguous
 europe/berlin,DE,names the country
 falkenberg,,not a single place or ambiguous
 formosa - argentina,AR,names the country
@@ -152,7 +168,9 @@ france south,FR,names the country
 france-paris,FR,names the country
 france/paris,FR,names the country
 free,,not a single place or ambiguous
+french,FR,wrong geocoder match
 from china,CN,names the country
+fu jian fu zhou,CN,wrong geocoder match
 fz.china,CN,names the country
 gdl,MX,wrong geocoder match
 georgia tbilisi,GE,wrong geocoder match
@@ -221,9 +239,11 @@ korea. republic of,KR,names the country
 l.a.,US,wrong geocoder match
 laniakea supercluster,,not a single place or ambiguous
 "laquila, italy",IT,names the country
+latam,,not a single place or ambiguous
 latino america,,ambiguous or not a place
 ldn,GB,wrong geocoder match
 leon,,not a single place or ambiguous
+lima - peru,PE,wrong geocoder match
 lima -peru,PE,names the country
 lima / peru,PE,names the country
 lima-peru,PE,names the country
@@ -236,13 +256,17 @@ london u.k.,GB,names the country
 "los angeles, chile",CL,names the country
 m.p. india,IN,names the country
 m78,,not a single place or ambiguous
+macedonia,MK,wrong geocoder match
 made in china,CN,names the country
 "madison, wisconsin, united states",US,names the country
+madrid - spain,ES,wrong geocoder match
+madrid spain,ES,wrong geocoder match
 "madrid, sp",ES,names the country
 mainland china,CN,names the country
 mainland of china,CN,names the country
 "mainland, china",CN,names the country
 malaga spain,ES,names the country
+mansoura,EG,wrong geocoder match
 mariana trench,,not a single place or ambiguous
 meta,,not a single place or ambiguous
 mo du,CN,wrong geocoder match
@@ -264,6 +288,8 @@ new york city area,US,names the country
 new york city metropolitan area,US,names the country
 new york metro,US,names the country
 new york metro area,US,names the country
+nh,US,wrong geocoder match
+night city,,not a single place or ambiguous
 "ningbo, zhejiang province, china",CN,names the country
 "nj, china",CN,names the country
 norfolk island,NF,names the country
@@ -271,6 +297,7 @@ north america,,not a single place or ambiguous
 north east of england,GB,names the country
 north italy,IT,names the country
 northeast england,GB,names the country
+northern germany,DE,wrong geocoder match
 northern italy,IT,names the country
 nw england,GB,names the country
 observable universe,,not a single place or ambiguous
@@ -278,7 +305,10 @@ osaka - japan,JP,names the country
 osaka / japan,JP,names the country
 osaka japan,JP,names the country
 osaka/japan,JP,names the country
+pacific northwest,US,wrong geocoder match
 palani,IN,wrong geocoder match
+pale blue dot,,not a single place or ambiguous
+palestine,PS,wrong geocoder match
 palmira,,not a single place or ambiguous
 pan india,IN,names the country
 paris 15,FR,names the country
@@ -302,8 +332,10 @@ reno,US,wrong geocoder match
 republic of congo,CG,names the country
 republic of korea south,KR,names the country
 "republic of, korea",KR,names the country
+"richmond, ca",US,wrong geocoder match
 ring 0,,not a single place or ambiguous
 rio - brazil,BR,names the country
+riyadh,SA,wrong geocoder match
 rlyeh,,not a single place or ambiguous
 room,,not a single place or ambiguous
 saigon - vietnam,VN,names the country
@@ -315,6 +347,9 @@ san antonio texas,US,names the country
 "san francisco, cordoba, argentina",AR,names the country
 "san francisco, cordoba, argentina.",AR,names the country
 san francisco/new york,US,names the country
+"san francsico, ca",US,wrong geocoder match
+san fransisco,US,wrong geocoder match
+"san fransisco, ca",US,wrong geocoder match
 san jose costa rica,CR,names the country
 "san jose, costa rica.",CR,names the country
 san luis,,not a single place or ambiguous
@@ -336,6 +371,7 @@ seoul. korea.,KR,names the country
 seoul.korea,KR,names the country
 seoul/korea,KR,names the country
 seoul_korea,KR,names the country
+"sevilla, espana",ES,wrong geocoder match
 sfba,US,wrong geocoder match
 shanghai city,CN,names the country
 "shanghai, chn",CN,names the country
@@ -362,12 +398,15 @@ sunny southern california,US,names the country
 tanta,EG,wrong geocoder match
 tay ninh,VN,wrong geocoder match
 terminal,,not a single place or ambiguous
+terra,,not a single place or ambiguous
 thai,TH,nationality word
 the czech republic,CZ,names the country
 the interwebz,,not a single place or ambiguous
+the milky way,,not a single place or ambiguous
 the multiverse,,not a single place or ambiguous
 the philippines,PH,names the country
 the russian federation,RU,names the country
+the wired,,not a single place or ambiguous
 toronto - ca,CA,names the country
 toronto ca,CA,names the country
 "toronto, ca",CA,names the country
@@ -381,6 +420,7 @@ tula,,not a single place or ambiguous
 u.s.a,US,wrong geocoder match
 "undefined, china",CN,names the country
 unitedstates,US,wrong geocoder match
+university of oxford,GB,wrong geocoder match
 university of sydney,AU,names the country
 us-east-1,,not a single place or ambiguous
 vancouver ca,CA,names the country
@@ -396,5 +436,7 @@ west korea,,ambiguous or not a place
 western sydney,AU,names the country
 word,,not a single place or ambiguous
 "wuhan, hubei province, china",CN,names the country
+"xian, shaanxi, china",CN,wrong geocoder match
 zh-cn,,not a single place or ambiguous
+zheng zhou,CN,wrong geocoder match
 zhong guo si chuan,CN,names the country

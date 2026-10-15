@@ -45,7 +45,7 @@ def cache_file(tmp_path):
     # a wrong match of the kind found in K12
     geocoder = {"latitude": 1.0, "longitude": 1.0}  # geocoder matches carry coordinates
     cache.set(
-        "Boston Area", {"country_code": "CO", "country": "Colombia", "region": None, **geocoder}
+        "Xqzv Area", {"country_code": "CO", "country": "Colombia", "region": None, **geocoder}
     )
     # Nominatim reports Hong Kong under China (E15)
     cache.set(
@@ -69,7 +69,7 @@ def cache_file(tmp_path):
 @pytest.fixture
 def rows(test_db):
     people = [
-        (1, "Boston Area", "US"),  # cache says CO -> cache (not written, K12)
+        (1, "Xqzv Area", "US"),  # cache says CO -> cache (not written, K12)
         (2, "Xqzv Plomb", "GB"),  # never geocoded, no rule -> not_in_cache
         (3, "Berlin", "DE"),  # unchanged
         (4, "Nowhere Land", "NL"),  # cache explicitly has no country -> untouched
@@ -97,7 +97,7 @@ def rows(test_db):
                     region="r",
                 )
             )
-        session.add(Organization(id=20, login="org", location="Boston Area", country_code="US"))
+        session.add(Organization(id=20, login="org", location="Xqzv Area", country_code="US"))
     return test_db
 
 

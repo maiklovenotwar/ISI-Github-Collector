@@ -756,6 +756,24 @@ class HeuristicResolver:
             "formatted_address": None,
         }
 
+    def is_listed_without_country(self, normalized: str) -> bool:
+        """Ausdrücklich ohne Land eingetragen (Korrektur- oder Sonderfalltabelle).
+
+        Anders als die Muster für "kein Ort" geht ein solcher Eintrag dem Cache vor: Er ist
+        eine bewusste Entscheidung gegen einen Geocoder-Treffer ("World" stand in den USA).
+        """
+        if not normalized:
+            return False
+        if self.resolve_correction(normalized) == {}:
+            return True
+        # Die zweibuchstabigen Einträge sind mehrdeutige Kürzel ("de": Delaware oder
+        # Deutschland); für sie bleibt ein Geocoder-Treffer im Cache maßgeblich.
+        return (
+            len(normalized) > 2
+            and normalized in self._problematic_location_map
+            and self._problematic_location_map[normalized] is None
+        )
+
     def resolve_mapping(self, normalized: str) -> Optional[Dict[str, Any]]:
         if not normalized:
             return None

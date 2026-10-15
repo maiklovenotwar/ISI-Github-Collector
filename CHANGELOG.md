@@ -98,7 +98,7 @@ Notable changes to this project are recorded here. The format follows
 ### Fixed
 
 - Geocoding: the cache held wrong geocoder matches for frequent strings (`Istanbul/Turkey` in
-  Italy, `China Beijing` in the United States, `Antarctica` in Canada). A table of 399
+  Italy, `China Beijing` in the United States, `Antarctica` in Canada). A table of 441
   corrections checked by hand (`src/github_collector/geocoding/data/location_corrections.csv`)
   now takes precedence over the cache, also where it states that a string has no country.
 - Geocoding: an ending that is both a country code and a state or province abbreviation

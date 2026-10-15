@@ -166,9 +166,9 @@ class GeocodingService:
         # bleiben hinter dem Cache, dort schützt er oft richtige Werte (z. B. "de" -> DE).
         if mapped:
             return self._mapping_over_cache(location, mapped)
-        # Eine Korrektur "kein Land" ist ebenfalls eine bewusste Entscheidung gegen einen
-        # falschen Treffer im Cache ("Antarctica" stand in Kanada, Befund K12).
-        if normalized and self.heuristics.resolve_correction(normalized) == {}:
+        # Ein ausdrücklicher Eintrag "kein Land" ist ebenfalls eine bewusste Entscheidung
+        # gegen einen falschen Treffer im Cache ("Antarctica" stand in Kanada, Befund K12).
+        if self.heuristics.is_listed_without_country(normalized):
             return self._remember(location, {}, "mapping")
         if self.cache is None:
             return None
