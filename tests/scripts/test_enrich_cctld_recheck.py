@@ -81,3 +81,11 @@ def test_recheck_without_write_is_a_dry_run(module, engine, monkeypatch):
     before = _rows(engine)
     assert module.main() == 0
     assert _rows(engine) == before
+
+
+def test_validate_only_and_recheck_cannot_be_combined(module, monkeypatch):
+    # --validate-only used to win silently, so a requested recheck never ran (review R1).
+    monkeypatch.setattr(sys, "argv", ["enrich_cctld.py", "--validate-only", "--recheck"])
+    with pytest.raises(SystemExit) as exit_info:
+        module.parse_args()
+    assert exit_info.value.code == 2

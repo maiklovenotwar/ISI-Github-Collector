@@ -471,12 +471,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Schreibe Ergebnisse nach MySQL",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--validate-only",
         action="store_true",
         help="Nur Validierung gegen Geocoding, kein Enrichment",
     )
-    parser.add_argument(
+    mode.add_argument(
         "--recheck",
         action="store_true",
         help="Gespeicherte Zuordnungen mit den aktuellen Regeln neu berechnen "

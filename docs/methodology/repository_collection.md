@@ -99,7 +99,7 @@ different days. Star counts, fork counts, and issue counts are states at
 the time of retrieval; the collector does not record their history.
 
 In the project database on 2026-10-13, the 27,498,495 repositories had
-been retrieved between 2025-11-28 and January 2026 (16.8 million in
+been retrieved between 2025-11-28 and 2026-01-18 (16.8 million in
 December 2025). For 5,294,213 of them (19%) no time of retrieval is
 recorded; they were stored before the column was introduced. Two
 repositories were retrieved again on 2026-10-13.
@@ -214,7 +214,13 @@ that month.
   counts open, closed, and merged pull requests together;
   `commits_count` counts the commits on the default branch only. The time
   at which the counts were retrieved is not stored. On 2026-10-14,
-  27,465,002 of 27,498,495 repositories (99.9%) had both counts.
+  27,465,002 of 27,498,495 repositories (99.9%) had both counts. For the
+  other 33,493 GitHub returned no data; the GraphQL API does this when no
+  repository is found under the stored owner and name, for example after
+  a deletion, a renaming, or a change to private. The causes were not
+  counted separately. They are listed in the
+  file of failed identifiers and are selected again in every run, because
+  no column records that a request was made.
 
 ## Outlook: Relations Between Repositories and Accounts
 

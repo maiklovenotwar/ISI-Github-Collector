@@ -110,3 +110,36 @@ def test_statements_run_on_the_current_schema_and_apply_the_owner_rule(test_db):
         ("organization", 1, 1, 0, 0, 0),
         ("user", 1, 1, 0, 0, 0),
     ]
+
+
+def test_retrieval_query_gives_the_exact_first_and_last_retrieval(test_db):
+    # The month alone did not reproduce the first date of the collection (review R2).
+    with session_scope(test_db.session_factory) as session:
+        session.add(Contributor(id=1, login="alice", type="User"))
+        session.flush()
+        session.add_all(
+            [
+                Repository(
+                    id=10,
+                    name="a",
+                    full_name="alice/a",
+                    owner_id=1,
+                    collected_at=datetime(2025, 11, 28, 9, 0),
+                ),
+                Repository(
+                    id=11,
+                    name="b",
+                    full_name="alice/b",
+                    owner_id=1,
+                    collected_at=datetime(2025, 11, 30, 18, 0),
+                ),
+            ]
+        )
+    engine = create_engine(test_db.db_url)
+    _sqlite_date_functions(engine)
+    with engine.connect() as conn:
+        rows = conn.execute(text(statements()[1])).fetchall()
+    assert len(rows) == 1
+    year, month, count, first, last = rows[0]
+    assert (year, month, count) == (2025, 11, 2)
+    assert str(first).startswith("2025-11-28") and str(last).startswith("2025-11-30")

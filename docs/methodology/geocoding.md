@@ -25,7 +25,7 @@ used.
 
 The location is read at the time a profile is retrieved, and the country
 refers to that location. The repositories and their owners were retrieved
-between 2025-11-28 and January 2026. The profiles of all user accounts
+between 2025-11-28 and 2026-01-18. The profiles of all user accounts
 were retrieved again between 2026-08-28 and 2026-09-06; this overwrote
 `location` with the current value but left `country_code` as it was. A
 country is determined only for rows without one, so where an account

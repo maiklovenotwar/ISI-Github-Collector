@@ -39,9 +39,11 @@ GROUP BY YEAR(created_at), MONTH(created_at)
 ORDER BY creation_year, creation_month;
 
 -- 2. Retrievals per month (repository_collection.md, "Reference Date"). Reads only the index
---    on collected_at. The first and last month give the period of the collection.
+--    on collected_at. first_retrieval of the first month and last_retrieval of the last month
+--    give the exact period of the collection.
 SELECT YEAR(collected_at) AS retrieval_year, MONTH(collected_at) AS retrieval_month,
-       COUNT(*) AS repositories
+       COUNT(*) AS repositories,
+       MIN(collected_at) AS first_retrieval, MAX(collected_at) AS last_retrieval
 FROM repositories
 WHERE collected_at IS NOT NULL
 GROUP BY YEAR(collected_at), MONTH(collected_at)

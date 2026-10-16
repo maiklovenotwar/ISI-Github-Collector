@@ -97,6 +97,12 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- `enrich_cctld.py --validate-only` silently took precedence over `--recheck`; the two options now
+  exclude each other.
+- The ccTLD step read a user name before the host as part of the domain (`https://x@linktr.ee`), so
+  service domains behind it were not recognised.
+- Query 2 of `methodology_checks.sql` now reports the first and last retrieval time of each month,
+  so the exact period of the collection can be reproduced.
 - Geocoding: the cache held wrong geocoder matches for frequent strings (`Istanbul/Turkey` in
   Italy, `China Beijing` in the United States, `Antarctica` in Canada). A table of 441
   corrections checked by hand (`src/github_collector/geocoding/data/location_corrections.csv`)

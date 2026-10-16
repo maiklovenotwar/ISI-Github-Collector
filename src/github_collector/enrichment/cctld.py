@@ -203,17 +203,20 @@ def extract_domain_from_blog(blog: str) -> Optional[str]:
         if domain.startswith(prefix):
             domain = domain[len(prefix) :]
 
-    # Entferne www.
-    if domain.startswith("www."):
-        domain = domain[4:]
-
     # Entferne Pfad, Query, Fragment
     domain = domain.split("/")[0]
     domain = domain.split("?")[0]
     domain = domain.split("#")[0]
 
+    # Entferne Benutzerangaben vor dem Host ("x@linktr.ee", "user:pw@firma.de")
+    domain = domain.rsplit("@", 1)[-1]
+
     # Entferne Port
     domain = domain.split(":")[0]
+
+    # Entferne www.
+    if domain.startswith("www."):
+        domain = domain[4:]
 
     # Entferne trailing dots
     domain = domain.rstrip(".")

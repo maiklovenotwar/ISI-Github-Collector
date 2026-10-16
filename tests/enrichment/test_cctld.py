@@ -159,3 +159,21 @@ class TestServiceDomainsAndFreeTlds:
 
     def test_extract_cctld_ignores_a_linktree_blog_and_uses_the_email(self) -> None:
         assert extract_cctld("https://linktr.ee/someone", "a@uni-bremen.de") == ("DE", "email")
+
+
+class TestUserinfoInBlogUrl:
+    """A user name before the host ("x@linktr.ee") is not part of the domain (review R3)."""
+
+    @pytest.mark.parametrize(
+        "blog, domain",
+        [
+            ("https://me@firma.de/about", "firma.de"),
+            ("user:secret@firma.de", "firma.de"),
+            ("https://x@linktr.ee/y", "linktr.ee"),
+        ],
+    )
+    def test_userinfo_is_removed(self, blog: str, domain: str) -> None:
+        assert extract_domain_from_blog(blog) == domain
+
+    def test_service_domain_behind_userinfo_gives_no_country(self) -> None:
+        assert extract_cctld("https://x@linktr.ee/y", None) == (None, None)
