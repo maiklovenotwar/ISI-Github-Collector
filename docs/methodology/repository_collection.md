@@ -101,7 +101,15 @@ the time of retrieval; the collector does not record their history.
 In the project database on 2026-10-13, the 27,498,495 repositories had
 been retrieved between 2025-11-28 and January 2026 (16.8 million in
 December 2025). For 5,294,213 of them (19%) no time of retrieval is
-recorded; they were stored before the column was introduced.
+recorded; they were stored before the column was introduced. Two
+repositories were retrieved again on 2026-10-13.
+
+Because membership depends on the star count at retrieval, repositories
+created shortly before their retrieval are under-represented: they had
+little time to gather stars. In the project database (2026-10-16), 239,748
+repositories were created in December 2025, against about 310,000 per
+month earlier in that year. Comparisons over time should end some months
+before the retrieval.
 
 ## Completeness
 

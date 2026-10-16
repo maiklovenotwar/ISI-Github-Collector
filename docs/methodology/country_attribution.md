@@ -31,10 +31,10 @@ The following rules avoid double counting.
   refers to.
 
 `scripts/diagnostics/methodology_checks.sql` (query 5) compares the two
-rows of each organization. In the project database on 2026-10-13, 735,205
-organizations had both rows. For 120,677 of them only the row in
-`organizations` carried a country, for 399 only the placeholder row, and
-for 66 the two rows carried different countries.
+rows of each organization. In the project database on 2026-10-16, 735,205
+organizations had both rows. For 118,490 of them only the row in
+`organizations` carried a country, for 398 only the placeholder row, and
+for 64 the two rows carried different countries.
 
 ## Country of a Repository
 
@@ -58,13 +58,18 @@ LEFT JOIN organizations o ON o.id = r.owner_id;
 The rule uses the account type of the owner, not the column
 `repositories.organization_id`. Versions before 2026-10-13 did not set
 that column when a repository was stored from a search result. In the
-project database on 2026-10-13, 1,271,276 of the 2,951,091 repositories
+project database on 2026-10-16, 1,271,265 of the 2,951,091 repositories
 owned by an organization carried it (query 6 of
-`scripts/diagnostics/methodology_checks.sql`).
+`scripts/diagnostics/methodology_checks.sql`). For 15 repositories the
+owner's account has the type `Organization` but no row in
+`organizations`, and 11 repositories owned by a user carry an
+`organization_id`; both are probably accounts whose type changed between
+retrievals.
 
-By this rule, 12,663,064 of the 24,547,404 repositories owned by a user
-(51.6%) and 1,289,838 of the 2,951,091 repositories owned by an
-organization (43.7%) had a country on that day.
+By this rule, 12,558,621 of the 24,547,404 repositories owned by a user
+(51.2%) and 1,263,438 of the 2,951,091 repositories owned by an
+organization (42.8%) had a country on that day (on 2026-10-13, before the
+corrections described in `geocoding.md`, 51.6% and 43.7%).
 
 A repository whose owner has no country has no country. The CSV export
 writes the three tables separately and does not apply this rule; it has
@@ -100,12 +105,12 @@ The effect of this source is reported separately: results are computed
 once from `country_code` alone and once with `country_code_cctld` added
 where `country_code` is missing, and the difference is stated.
 
-The project database illustrates the shift. On 2026-10-13 the United
+The project database illustrates the shift. On 2026-10-16 the United
 States led the organizations with a geocoded country by a wide margin
-(57,098, followed by Germany with 15,618), but did not appear among the
+(56,476, followed by Germany with 15,564), but did not appear among the
 fifteen most frequent countries assigned by the ccTLD step, neither for
 organizations (led by Germany with 1,087) nor for the accounts in
-`contributors` (led by China with 9,127).
+`contributors` (led by China with 9,087).
 
 Several country-code domains are used mainly by services or for word play
 rather than by holders in that country. A measurement on 2026-10-14 found
@@ -134,9 +139,10 @@ Two further limits apply to this source.
   its holder is located.
 - Before writing, the script compares its result with the geocoded
   country for all rows that have both, and stops if fewer than 80% agree.
-  In a dry run on 2026-10-09 the agreement was 91.8% for organizations
-  (48,435 rows with both values) and 84.4% for accounts in `contributors`
-  (254,219 rows). This is the agreement of two estimates, not the
+  On 2026-10-16 the agreement was 95.6% for organizations (47,199 rows
+  with both values) and 89.3% for accounts in `contributors` (242,080
+  rows); in a dry run on 2026-10-09, before service domains were excluded
+  and the geocoding was corrected, it was 91.8% and 84.4%. This is the agreement of two estimates, not the
   accuracy of either: both can be wrong in the same way. The overall rate
   can also hide countries for which almost every assignment is wrong; the
   validation therefore also reports the fifteen countries with the lowest

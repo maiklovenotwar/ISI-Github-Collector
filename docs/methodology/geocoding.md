@@ -11,11 +11,13 @@ the accuracy. The procedure is implemented in
 The only input is the profile field `location`. It is optional free text
 written by the account holder, for example `Karlsruhe, Germany`,
 `Bay Area`, `Earth`, or `Berlin / NYC`. Accounts without a location
-receive no country. In the project database on 2026-10-13, 35.7% of the
+receive no country. In the project database on 2026-10-16, 35.7% of the
 9,034,973 user accounts and 33.3% of the 735,242 organizations stated a
-location; 34.4% and 31.6% respectively had a country. Of the accounts
-with a location, 96.2% of the users and 94.8% of the organizations had a
-country. The result is stored in `country_code` (ISO 3166-1
+location; 34.2% and 31.2% respectively had a country. Of the accounts
+with a location, 95.7% of the users and 93.7% of the organizations had a
+country. (On 2026-10-13, before the corrections described under "Check of
+Cached Geocoder Results", the shares were 96.2% and 94.8%; the
+corrections removed countries from strings that are not a place.) The result is stored in `country_code` (ISO 3166-1
 alpha-2) and `region`; see `country_attribution.md` for how this value is
 used.
 
@@ -33,8 +35,13 @@ this for at most about 1.5% of the accounts with a country and a location
 (17,624 with a different country, 30,005 whose current location had never
 been geocoded) and 2.5% of the organizations. Since 2026-10-14, a changed
 location resets `country_code` and `region` when a profile or an owner is
-stored again, so that the geocoding determines them anew. No column
-records when a location or a country was determined.
+stored again, so that the geocoding determines them anew. The rows
+affected in the project database were reset on 2026-10-14 and 2026-10-15
+(after a CSV backup, with `scripts/maintenance/reset_stale_countries.py`)
+and geocoded again by 2026-10-16; differences that rest only on an older
+cache entry were left unchanged where the cache was found unreliable (see
+"Check of Cached Geocoder Results"). No column records when a location or
+a country was determined.
 
 ## Procedure
 
@@ -151,29 +158,30 @@ expectation that no country applies, serves as a reference
 `scripts/maintenance/benchmark_geocoding.py` compares the result of the
 procedure with this list.
 
-Result of the run of 2026-10-13, without cache; the geocoder answered
-every request. The rule for ambiguous endings, the codes of territories,
-and the table of corrections were changed on 2026-10-15; the benchmark
-has not yet been repeated with these changes.
+Result of the run of 2026-10-16, without cache, with the rules and tables
+of that day; the geocoder answered every request.
 
 | | Entries | Share |
 |---|---:|---:|
 | Entries in the list | 1,068 | |
-| Result as expected | 1,014 | 94.9% |
-| Expected country assigned | 943 of 997 | 94.6% |
-| No country assigned although one was expected | 35 of 997 | 3.5% |
+| Result as expected | 1,015 | 95.0% |
+| Expected country assigned | 944 of 997 | 94.7% |
+| No country assigned although one was expected | 34 of 997 | 3.4% |
 | A different country assigned | 19 of 997 | 1.9% |
 | Correctly without a country (not a place) | 71 of 71 | 100% |
 
-Of the 962 entries to which the procedure assigned a country, 943 (98.0%)
-carried the expected one. By stage: the table of special cases resolved 75
-entries, all as expected; the text rules 162, of which 158 as expected;
-Nominatim 725, of which 710 as expected.
+Of the 963 entries to which the procedure assigned a country, 944 (98.0%)
+carried the expected one. By stage: the tables resolved 86 entries, 85 as
+expected; the text rules 147, of which 145 as expected; Nominatim 730, of
+which 714 as expected. Three of the 19 differences follow from the list,
+not from the procedure: it expects France for `Nouméa` and `Réunion`,
+which keep their own codes since 2026-10-15, and Brazil for
+`Lima - Perú`. The list was not changed after the run.
 
-A run on the same day before the rules for ambiguous US state endings were
-changed gave 1,012 entries as expected: the change corrected two entries
-that had been assigned to the United States (expected: Canada and
-Georgia).
+Earlier runs: on 2026-10-13, 1,014 entries as expected with the rules of
+that day, and 1,012 before the rules for ambiguous US state endings were
+changed (that change corrected two entries that had been assigned to the
+United States; expected: Canada and Georgia).
 
 Two properties of the list limit what this figure means.
 
