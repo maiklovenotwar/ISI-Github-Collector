@@ -78,3 +78,10 @@ def test_built_in_entry_without_a_country_also_overrides_the_cache(service):
     # "World" is listed as not a place, but an old geocoder match in the cache won.
     service.cache.set("World", {"country_code": "US", "country": "United States", "latitude": 1.0})
     assert service.geocode("World") == {}
+
+
+@pytest.mark.parametrize("location", ["Mainland，China", "Mainland, China", "Mainland,China"])
+def test_full_width_comma_reaches_the_same_entry(service, location):
+    # "，" (U+FF0C) is common in Chinese locations; it must be cleaned like "," so that
+    # "Mainland，China" finds the correction for "mainland, china".
+    assert service.geocode(location)["country_code"] == "CN"

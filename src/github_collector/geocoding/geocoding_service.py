@@ -61,6 +61,9 @@ def preprocess_location(location: str) -> Optional[str]:
     location = location.replace("[", "").replace("]", "").replace("(", "").replace(")", "")
     location = location.replace('"', "").replace("'", "")
 
+    # Ostasiatische Kommas (U+FF0C, U+3001) wie "," behandeln, etwa in "Mainland, China"
+    location = location.replace("\uff0c", ",").replace("\u3001", ",")
+
     # Ersetze mehrere Leerzeichen/Kommas durch ein einzelnes Leerzeichen/Komma
     location = re.sub(r"\s+", " ", location).strip()
     location = re.sub(r",+", ",", location).strip()
