@@ -56,15 +56,6 @@ class TestTransliteration:
         assert kept == [candidate]
         assert candidate.name_via_transliteration is True
 
-    def test_domain_hit_with_non_latin_name_becomes_a_hit(self) -> None:
-        candidate = make_candidate(
-            orbis_name="Яндекс", github_name="Yandex", login="yandex", name_length=6
-        )
-
-        result = analyze_matches({1: [candidate]})[1]
-
-        assert result.status == MatchStatus.UNIQUE
-
     @pytest.mark.parametrize(
         "orbis_name, github_name, login",
         [

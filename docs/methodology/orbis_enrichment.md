@@ -163,7 +163,10 @@ an acceptance criterion before any labelling takes place.
   types equally; organizations that are projects, communities or public
   bodies have no company to find.
 - **Non-Latin names.** Found only through the domain, and compared through a
-  restricted transliteration. The share of Orbis names without Latin
+  restricted transliteration. The romanisation often differs from the name a
+  company uses in Latin script (`Яндекс` becomes `Iandeks`, similarity 0.62
+  against `Yandex`); such a candidate then stays below the name-match
+  threshold, earns only the blog points and is not a hit. The share of Orbis names without Latin
   letters is measured with `scripts/diagnostics/count_orbis_non_latin_names.py`
   (requires access to Orbis); the result is not yet available.
 - **Entity, not headquarters.** See section 1.

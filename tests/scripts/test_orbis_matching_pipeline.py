@@ -113,6 +113,33 @@ class TestTransliterationInThePipeline:
         (candidate,) = build_match_candidates(HUAWEI_ORG, [HUAWEI_ROW], "huawei.com")
         assert candidate.has_name_match is True
 
+    @pytest.mark.parametrize(
+        "orbis_name, github_name, expected",
+        [
+            # the transliteration matches the GitHub name -> name match, a hit
+            ("Сбербанк", "Sberbank", "unique"),
+            # documented limit: unidecode gives "Iandeks", similarity 0.62 < 0.75, so the
+            # candidate earns only blog points and stays below the minimum score
+            ("Яндекс", "Yandex", "no_match"),
+        ],
+    )
+    def test_domain_hit_with_a_non_latin_name_through_the_real_path(
+        self, orbis_name, github_name, expected
+    ) -> None:
+        org = {
+            "id": 1,
+            "login": github_name.lower(),
+            "name": github_name,
+            "blog": "",
+            "country_code": None,
+        }
+        row = {"bvd_id": "XX900002", "name": orbis_name, "country_iso": "RU"}
+        candidates = build_match_candidates(org, [row], f"{github_name.lower()}.example")
+
+        result = analyze_matches({1: candidates}, config=ScoringConfig())[1]
+
+        assert result.status.value == expected
+
     def test_name_fallback_does_not_use_transliteration(self) -> None:
         (candidate,) = build_name_only_candidates(HUAWEI_ORG, [HUAWEI_ROW])
         assert candidate.has_name_match is False
@@ -128,6 +155,7 @@ from github_collector.enrichment.orbis_matching_logic import (  # noqa: E402
     MatchStatus,
     MatchType,
     ScoringConfig,
+    analyze_matches,
 )
 
 
