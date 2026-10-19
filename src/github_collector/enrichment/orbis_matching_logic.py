@@ -28,9 +28,10 @@ from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import yaml
+from unidecode import unidecode
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +207,10 @@ class MatchCandidate:
     # weiterer Bestätigung reines Zufalls-Rauschen sein (Fund Charge 11:
     # "Studecorators" vs. "STUDEC"), siehe score_candidate()-Malus.
     name_similarity_via_containment: bool = False
+    # Ob name_similarity über die lateinische Umschrift eines Orbis-Namens ohne
+    # lateinische Buchstaben zustande kam (siehe name_similarity_details) - solche
+    # Treffer werden eigens validiert (Entscheidung E19).
+    name_via_transliteration: bool = False
 
     # Anzahl Filial-Rohdatensätze, die auf diesen Kandidaten dedupliziert wurden
     # (siehe select_branch_representative) - Proxy für "ist die aktive
@@ -341,10 +346,65 @@ def _calculate_name_similarity_detailed(
     return best_similarity, best_via_containment
 
 
+_LATIN_LETTER = re.compile(r"[A-Za-z]")
+# Rechtsformen in der Umschrift (unidecode) - sie tragen keinen Namensbestandteil
+# und würden sonst Zufallstreffer erzeugen ("有限公司" -> "You Xian Gong Si").
+_TRANSLITERATED_LEGAL_FORMS = re.compile(
+    r"\b(?:gu fen you xian gong si|you xian ze ren gong si|you xian gong si|gong si|"
+    r"zhu shi hui she|jusighoesa|yuhanhoesa|ooo|oao|zao|pao|ao)\b"
+)
+_MIN_TRANSLITERATED_LETTERS = 5
+_MIN_SOURCE_CHARACTERS = 2
+
+
+def _transliteration(orbis_name: str) -> Optional[str]:
+    """Lateinische Umschrift eines Orbis-Namens ohne lateinische Buchstaben, sonst None.
+
+    Ohne Umschrift fiele jeder solche Name am Namensfilter heraus (Befund M1). Damit
+    kurze Silben keine Zufallstreffer erzeugen ("李" -> "Li" gegen "Li Lab"), werden
+    Rechtsformen entfernt und ein Kern von mindestens fünf Buchstaben aus mindestens
+    zwei Schriftzeichen verlangt. Grenze: Japanisch mit Kanji wird chinesisch gelesen
+    ("株式会社メルカリ" -> 0,44 gegen "Mercari").
+    """
+    if not orbis_name or _LATIN_LETTER.search(orbis_name):
+        return None
+    if len(re.sub(r"\W", "", orbis_name)) < _MIN_SOURCE_CHARACTERS:
+        return None
+    text = _TRANSLITERATED_LEGAL_FORMS.sub(" ", unidecode(orbis_name).lower())
+    if len(_normalize_for_similarity(text)) < _MIN_TRANSLITERATED_LETTERS:
+        return None
+    return text
+
+
+def name_similarity_details(
+    orbis_name: str,
+    github_name: Optional[str],
+    github_login: str,
+    allow_transliteration: bool = True,
+) -> Tuple[float, bool, bool]:
+    """Ähnlichkeit, ob über Teilstring, ob über Umschrift (Maximum beider Varianten).
+
+    Die beiden Flags gehören zur gewinnenden Variante, damit der Teilstring-Malus
+    (`score_candidate()`) auch für umgeschriebene Namen greift.
+    """
+    similarity, via_containment = _calculate_name_similarity_detailed(
+        orbis_name, github_name, github_login
+    )
+    transliterated = _transliteration(orbis_name) if allow_transliteration else None
+    if transliterated:
+        alt_similarity, alt_containment = _calculate_name_similarity_detailed(
+            transliterated, github_name, github_login
+        )
+        if alt_similarity > similarity:
+            return alt_similarity, alt_containment, True
+    return similarity, via_containment, False
+
+
 def calculate_name_similarity(
     orbis_name: str,
     github_name: Optional[str],
     github_login: str,
+    allow_transliteration: bool = True,
 ) -> float:
     """Berechne die beste Namens-Ähnlichkeit zwischen Orbis-Name und GH Name/Login.
 
@@ -365,11 +425,15 @@ def calculate_name_similarity(
         orbis_name: NAME_NATIVE des Orbis-Kandidaten.
         github_name: Anzeigename der GitHub-Org, falls vorhanden.
         github_login: Login der GitHub-Org (immer vorhanden).
+        allow_transliteration: Umschrift nicht-lateinischer Orbis-Namen zulassen
+            (siehe name_similarity_details); der Namens-Rückfall schaltet sie ab.
 
     Returns:
         Ähnlichkeit zwischen 0.0 und 1.0.
     """
-    similarity, _ = _calculate_name_similarity_detailed(orbis_name, github_name, github_login)
+    similarity, _, _ = name_similarity_details(
+        orbis_name, github_name, github_login, allow_transliteration
+    )
     return similarity
 
 
@@ -451,9 +515,11 @@ def filter_implausible_candidates(
     """
     plausible: List[MatchCandidate] = []
     for c in candidates:
-        c.name_similarity, c.name_similarity_via_containment = _calculate_name_similarity_detailed(
-            c.orbis_name, c.github_name, c.login
-        )
+        (
+            c.name_similarity,
+            c.name_similarity_via_containment,
+            c.name_via_transliteration,
+        ) = name_similarity_details(c.orbis_name, c.github_name, c.login)
         c.login_exact_match = has_exact_login_substring(c.orbis_name, c.login)
 
         if not c.orbis_name:

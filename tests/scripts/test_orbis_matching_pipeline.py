@@ -15,8 +15,26 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "enrich
 from orbis_matching_pipeline import (  # noqa: E402
     apply_hq_resolution_to_match_result,
     apply_hq_signals,
+    build_match_candidates,
+    build_name_only_candidates,
     should_attempt_name_fallback,
 )
+
+HUAWEI_ORG = {"id": 1, "login": "huawei", "name": "Huawei", "blog": "", "country_code": None}
+HUAWEI_ROW = {"bvd_id": "XX900001", "name": "华为技术有限公司", "country_iso": "CN"}
+
+
+class TestTransliterationInThePipeline:
+    """Die Umschrift zählt als Namens-Treffer nur auf dem Domain-Weg (E19)."""
+
+    def test_domain_path_counts_a_transliterated_name_match(self) -> None:
+        (candidate,) = build_match_candidates(HUAWEI_ORG, [HUAWEI_ROW], "huawei.com")
+        assert candidate.has_name_match is True
+
+    def test_name_fallback_does_not_use_transliteration(self) -> None:
+        (candidate,) = build_name_only_candidates(HUAWEI_ORG, [HUAWEI_ROW])
+        assert candidate.has_name_match is False
+
 
 from github_collector.enrichment.hq_detection import (  # noqa: E402
     HQResolution,

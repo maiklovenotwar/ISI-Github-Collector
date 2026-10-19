@@ -9,6 +9,8 @@ abgeleitet sind (siehe Verweise in den einzelnen Tests).
 
 import logging
 
+import pytest
+
 from github_collector.enrichment.orbis_matching_logic import (
     MatchCandidate,
     MatchStatus,
@@ -22,10 +24,74 @@ from github_collector.enrichment.orbis_matching_logic import (
     determine_match_status,
     filter_implausible_candidates,
     has_exact_login_substring,
+    name_similarity_details,
     normalize_bvd_id_base,
     score_candidate,
     select_branch_representative,
 )
+
+
+class TestTransliteration:
+    """Orbis-Namen in nicht-lateinischer Schrift über eine geschützte Umschrift (M1, E19).
+
+    Vorher ergab jeder solche Name 0,0 und fiel am Namensfilter heraus, auch bei
+    exaktem Domain-Treffer. Die Beispiele sind öffentlich bekannte Firmennamen.
+    """
+
+    @pytest.mark.parametrize(
+        "orbis_name, github_name, login",
+        [
+            ("华为技术有限公司", "Huawei", "huawei"),
+            ("Яндекс", "Yandex", "yandex"),
+            ("Ελληνικά Πετρέλαια", "Hellenic Petroleum", "helpe"),
+        ],
+    )
+    def test_non_latin_name_passes_the_plausibility_filter(
+        self, orbis_name, github_name, login
+    ) -> None:
+        candidate = make_candidate(orbis_name=orbis_name, github_name=github_name, login=login)
+
+        kept = filter_implausible_candidates([candidate], min_similarity=0.5)
+
+        assert kept == [candidate]
+        assert candidate.name_via_transliteration is True
+
+    def test_domain_hit_with_non_latin_name_becomes_a_hit(self) -> None:
+        candidate = make_candidate(
+            orbis_name="Яндекс", github_name="Yandex", login="yandex", name_length=6
+        )
+
+        result = analyze_matches({1: [candidate]})[1]
+
+        assert result.status == MatchStatus.UNIQUE
+
+    @pytest.mark.parametrize(
+        "orbis_name, github_name, login",
+        [
+            ("有限公司", "Youxian", "youxian"),  # nur Rechtsform
+            ("ООО Дата", "Data", "dataorg"),  # Kern zu kurz
+            ("张", "Zhang", "zhang"),  # ein Schriftzeichen
+            ("李", "Li Lab", "lilab"),
+        ],
+    )
+    def test_short_or_legal_form_only_transliterations_do_not_count(
+        self, orbis_name, github_name, login
+    ) -> None:
+        similarity, _, via_transliteration = name_similarity_details(orbis_name, github_name, login)
+
+        assert similarity < 0.5
+        assert via_transliteration is False
+
+    def test_transliteration_can_be_switched_off(self) -> None:
+        similarity, _, via = name_similarity_details(
+            "华为技术有限公司", "Huawei", "huawei", allow_transliteration=False
+        )
+        assert (similarity, via) == (0.0, False)
+
+    def test_mixed_script_and_latin_names_do_not_get_worse(self) -> None:
+        assert calculate_name_similarity("Huawei 华为", "Huawei", "huawei") == 1.0
+        assert calculate_name_similarity("Société Générale", "Société Générale", "socgen") == 1.0
+        assert calculate_name_similarity("Яндекс", "Google", "google") < 0.5
 
 
 def make_candidate(**overrides) -> MatchCandidate:

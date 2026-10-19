@@ -224,7 +224,11 @@ def build_name_only_candidates(
     candidates = []
     for c in name_candidates:
         orbis_name = c["name"] or ""
-        similarity = calculate_name_similarity(orbis_name, org["name"] or None, org["login"])
+        # Ohne Domain-Bestätigung zählt eine Umschrift nicht als Namens-Treffer (E19);
+        # die exakte Namenssuche findet nicht-lateinische Namen ohnehin nicht.
+        similarity = calculate_name_similarity(
+            orbis_name, org["name"] or None, org["login"], allow_transliteration=False
+        )
         has_name_match = similarity >= NAME_MATCH_SIMILARITY_THRESHOLD
 
         candidates.append(
@@ -512,6 +516,7 @@ def run_pipeline(  # noqa: C901
                             "company_website",
                             "score",
                             "hq_method",
+                            "via_transliteration",
                         ]
                     )
                     for org_id, result in results.items():
@@ -531,6 +536,7 @@ def run_pipeline(  # noqa: C901
                                 c.website if c else "",
                                 c.total_score if c else "",
                                 hq_methods.get(org_id, ""),
+                                c.name_via_transliteration if c else "",
                             ]
                         )
                 print(f"\n[DRY-RUN] Vollständige Ergebnisse exportiert nach: {export_csv}")
