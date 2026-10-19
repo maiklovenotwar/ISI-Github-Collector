@@ -191,8 +191,8 @@ def resolve_headquarters(  # noqa: C901
         6. GUO_SELF (Ultimate Owner Self-Reference, ~30% Coverage, 0% Accuracy für GitHub-Orgs)
         7. LARGE_CORP_HQ (>= 1000 Mitarbeiter)
         8. IS_PARENT (Parent-Status, 2.5% Coverage)
-        9. BVDID_FALLBACK (alphabetisch erste BVDID, bevorzugt innerhalb des
-           github_country-Landes falls vorhanden, 100% Coverage)
+        9. BVDID_FALLBACK (alphabetisch erste BVDID unter den Kandidaten, die
+           Land oder Domain bestätigen; ohne Bestätigung kein Ergebnis)
 
     Bevor die Kaskade läuft, werden zwei Vorverarbeitungsschritte angewendet
     (Fund aus Orbis-Notizen (intern): validation_batch2_baseline.md:
@@ -224,6 +224,8 @@ def resolve_headquarters(  # noqa: C901
     if not candidates:
         return None
 
+    # '' (Ort ohne Geocoding-Treffer) und None bedeuten beide: Land unbekannt.
+    github_country = github_country or None
     candidate_list = list(candidates)
 
     if github_name or github_login:
@@ -265,8 +267,7 @@ def resolve_headquarters(  # noqa: C901
     # akzeptieren. Gibt es WEDER Land- noch Domain-Bestätigung, ist das
     # Signal zu schwach - Kaskade läuft weiter statt eine Rateentscheidung
     # zu erzwingen. Ohne bekanntes github_country (häufig, da GH-Land oft
-    # leer) bleibt das bisherige Verhalten (bestmögliche Schätzung ohne
-    # Vergleichsbasis) unverändert.
+    # leer) zählt nur die Domain-Bestätigung (Entscheidung E16).
     hq_table = [c for c in candidate_list if c.has_hq_entry]
     if hq_table:
         corroborated = _corroborate(hq_table, github_country)
@@ -363,8 +364,7 @@ def resolve_headquarters(  # noqa: C901
     # Brasilien) landete auf einer Niederlassung in einem anderen Land ohne jeden
     # inhaltlichen Bezug. In diesem Fall lieber unaufgelöst (PENDING) lassen,
     # statt eine unbestätigte Vermutung zu schreiben. Ohne bekanntes
-    # github_country (keine Vergleichsbasis) bleibt die bisherige
-    # Bestmöglich-Schätzung über alle Kandidaten erhalten.
+    # github_country zählt nur die Domain-Bestätigung (Entscheidung E16).
     fallback_pool = _corroborate(candidate_list, github_country)
     if not fallback_pool:
         return None
@@ -389,14 +389,14 @@ def _corroborate(
 
     Returns:
         Länder-passende Kandidaten falls vorhanden, sonst Domain-bestätigte
-        Kandidaten falls vorhanden, sonst (nur wenn github_country selbst
-        unbekannt ist - keine Vergleichsbasis) alle übergebenen Kandidaten.
-        Ist github_country bekannt und weder Land noch Domain bestätigen
-        irgendeinen Kandidaten, wird eine leere Liste zurückgegeben (Signal
-        gilt als zu schwach).
+        Kandidaten. Ist github_country unbekannt (None oder ''), zählt nur die
+        Domain (Entscheidung E16; früher wurden dann alle Kandidaten
+        durchgelassen, und die Kaskade wählte z. B. den alphabetisch ersten).
+        Bestätigt nichts, wird eine leere Liste zurückgegeben (Signal gilt als
+        zu schwach).
     """
-    if github_country is None:
-        return candidates
+    if not github_country:
+        return [c for c in candidates if c.matches_root_domain]
 
     country_matches = [c for c in candidates if c.orbis_country == github_country]
     if country_matches:

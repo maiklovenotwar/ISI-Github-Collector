@@ -91,21 +91,25 @@ class TestHqMethodPriorityOrder:
 
 
 class TestResolveHeadquartersCascade:
-    """Regressionstests für die Multi-Signal-Kaskade (ohne Namensfilter)."""
+    """Regressionstests für die Multi-Signal-Kaskade (ohne Namensfilter).
+
+    Jede Entscheidung braucht eine Bestätigung über Land oder Domain (E16);
+    die Kandidaten haben das Default-Land DE, deshalb `github_country="DE"`.
+    """
 
     def test_empty_list_returns_none(self) -> None:
         assert resolve_headquarters([]) is None
 
     def test_single_candidate_returned_directly(self) -> None:
         candidate = make_orbis_candidate(bvd_id="DE111")
-        resolution = resolve_headquarters([candidate])
+        resolution = resolve_headquarters([candidate], github_country="DE")
         assert resolution.bvd_id == "DE111"
 
     def test_hq_table_wins_over_oldest_founding(self) -> None:
         hq_flagged = make_orbis_candidate(bvd_id="DE111", has_hq_entry=True)
         older = make_orbis_candidate(bvd_id="DE222", date_incorporation="1900-01-01")
 
-        resolution = resolve_headquarters([hq_flagged, older])
+        resolution = resolve_headquarters([hq_flagged, older], github_country="DE")
 
         assert resolution.bvd_id == "DE111"
         assert resolution.hq_method == "HQ_TABLE"
@@ -117,7 +121,7 @@ class TestResolveHeadquartersCascade:
         weak = make_orbis_candidate(bvd_id="US111", has_hq_entry=True, hq_subsidiary_count=2)
         strong = make_orbis_candidate(bvd_id="US999", has_hq_entry=True, hq_subsidiary_count=8571)
 
-        resolution = resolve_headquarters([weak, strong])
+        resolution = resolve_headquarters([weak, strong], github_country="DE")
 
         assert resolution.bvd_id == "US999"
         assert resolution.hq_method == "HQ_TABLE"
@@ -138,7 +142,7 @@ class TestResolveHeadquartersCascade:
         a = make_orbis_candidate(bvd_id="DE111", date_incorporation="1990-01-01")
         b = make_orbis_candidate(bvd_id="DE222", date_incorporation="1990-01-01")
 
-        resolution = resolve_headquarters([a, b])
+        resolution = resolve_headquarters([a, b], github_country="DE")
 
         assert resolution.hq_method == "BVDID_FALLBACK"
         assert resolution.bvd_id == "DE111"  # alphabetisch erste
@@ -147,7 +151,7 @@ class TestResolveHeadquartersCascade:
         a = make_orbis_candidate(bvd_id="ZZ999")
         b = make_orbis_candidate(bvd_id="AA111")
 
-        resolution = resolve_headquarters([a, b])
+        resolution = resolve_headquarters([a, b], github_country="DE")
 
         assert resolution.hq_method == "BVDID_FALLBACK"
         assert resolution.bvd_id == "AA111"
@@ -275,16 +279,52 @@ class TestResolveHeadquartersCorroboration:
 
         assert resolution is None
 
-    def test_bvdid_fallback_without_known_github_country_still_guesses(self) -> None:
-        """Ohne github_country (häufigster Fall, GH-Land oft leer) bleibt die
-        bisherige Bestmöglich-Schätzung erhalten - es gibt keine
-        Vergleichsbasis, auf der man eine Ablehnung begründen könnte."""
-        a = make_orbis_candidate(bvd_id="ZZ999", name="Acme", country_iso="ZZ")
+    def test_bvdid_fallback_without_known_github_country_stays_unresolved(self) -> None:
+        """Ohne github_country gibt es keine Bestätigung über das Land; ohne
+        Domain-Treffer wird dann nicht geraten (Entscheidung E16, früher:
+        alphabetisch erster Kandidat)."""
+        a = make_orbis_candidate(bvd_id="AU111", name="Acme", country_iso="AU")
+        b = make_orbis_candidate(bvd_id="FR222", name="Acme", country_iso="FR")
 
-        resolution = resolve_headquarters([a], github_name="Acme", github_login="acme")
+        resolution = resolve_headquarters([a, b], github_name="Acme", github_login="acme")
+
+        assert resolution is None
+
+    def test_single_candidate_without_country_or_domain_stays_unresolved(self) -> None:
+        """Auch ein einzelner Kandidat mit HQ-Eintrag ist ohne Land und Domain
+        keine Bestätigung - das war der Weg zu den Fehltreffern oben."""
+        only = make_orbis_candidate(
+            bvd_id="DE111", name="Acme", has_hq_entry=True, hq_subsidiary_count=9
+        )
+
+        assert resolve_headquarters([only], github_name="Acme", github_login="acme") is None
+
+    def test_domain_confirms_when_country_unknown(self) -> None:
+        plain = make_orbis_candidate(bvd_id="AU111", name="Acme", has_hq_entry=True)
+        domain = make_orbis_candidate(
+            bvd_id="FR222", name="Acme", has_hq_entry=True, matches_root_domain=True
+        )
+
+        resolution = resolve_headquarters(
+            [plain, domain], github_name="Acme", github_login="acme", github_country=None
+        )
+
+        assert resolution.bvd_id == "FR222"
+        assert resolution.hq_method == "HQ_TABLE"
+
+    def test_empty_country_is_treated_as_unknown(self) -> None:
+        """'' (Ort ohne Geocoding-Treffer) gilt wie None als unbekanntes Land."""
+        plain = make_orbis_candidate(bvd_id="AU111", name="Acme", has_hq_entry=True)
+        domain = make_orbis_candidate(
+            bvd_id="FR222", name="Acme", has_hq_entry=True, matches_root_domain=True
+        )
+
+        resolution = resolve_headquarters(
+            [plain, domain], github_name="Acme", github_login="acme", github_country=""
+        )
 
         assert resolution is not None
-        assert resolution.bvd_id == "ZZ999"
+        assert resolution.bvd_id == "FR222"
 
 
 class TestResolveHeadquartersNamePlausibility:
@@ -303,6 +343,7 @@ class TestResolveHeadquartersNamePlausibility:
             [noise_with_hq_flag, real_entity],
             github_name="Airbus",
             github_login="airbus",
+            github_country="DE",
         )
 
         assert resolution.bvd_id == "XX000011"
@@ -316,7 +357,7 @@ class TestResolveHeadquartersNamePlausibility:
     def test_no_name_context_skips_filter(self) -> None:
         """Ohne github_name/github_login (Rückwärtskompatibilität) läuft kein Filter."""
         candidates = [make_orbis_candidate(name="Anything")]
-        resolution = resolve_headquarters(candidates)
+        resolution = resolve_headquarters(candidates, github_country="DE")
         assert resolution is not None
 
 
@@ -334,7 +375,7 @@ class TestResolveHeadquartersBranchDedup:
             bvd_id="XX000009-1003", name="Musterbau & Partner", has_hq_entry=True
         )
 
-        resolution = resolve_headquarters([base, branch_1, branch_2])
+        resolution = resolve_headquarters([base, branch_1, branch_2], github_country="DE")
 
         # Nach Dedup bleibt nur die unsuffigierte Basis übrig -> einziger Kandidat
         assert resolution.bvd_id == "XX000009"
@@ -349,7 +390,8 @@ class TestResolveHeadquartersBatch:
             1: [make_orbis_candidate(bvd_id="DE111")],
             2: [make_orbis_candidate(bvd_id="US222")],
         }
-        results = resolve_headquarters_batch(grouped)
+        context = {1: (None, None, "DE"), 2: (None, None, "DE")}
+        results = resolve_headquarters_batch(grouped, github_context=context)
         assert set(results.keys()) == {1, 2}
 
     def test_batch_with_context_filters_per_org(self) -> None:
@@ -359,7 +401,7 @@ class TestResolveHeadquartersBatch:
                 make_orbis_candidate(bvd_id="FR1", name="Airbus"),
             ],
         }
-        context = {1: ("Airbus", "airbus")}
+        context = {1: ("Airbus", "airbus", "DE")}
 
         results = resolve_headquarters_batch(grouped, github_context=context)
 
