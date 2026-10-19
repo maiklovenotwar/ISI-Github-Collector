@@ -27,7 +27,7 @@ def test_enrichment_row_carries_full_company_snapshot(test_db) -> None:
 
     test_db.record_orbis_enrichment(
         organization_id=org.id,
-        bvd_id="US312526703L",
+        bvd_id="XX000020",
         match_type="combined_medium",
         score=50,
         run_id="run-1",
@@ -51,7 +51,7 @@ def test_find_organization_from_bvd_id_via_single_table(test_db) -> None:
     org = _make_org(test_db, 1, "touchmedia360")
     test_db.record_orbis_enrichment(
         organization_id=org.id,
-        bvd_id="RO36617326",
+        bvd_id="XX000015",
         match_type="combined_high",
         score=60,
         run_id="run-1",
@@ -64,7 +64,7 @@ def test_find_organization_from_bvd_id_via_single_table(test_db) -> None:
         row = (
             session.query(OrbisEnrichment, Organization)
             .join(Organization, Organization.id == OrbisEnrichment.organization_id)
-            .filter(OrbisEnrichment.bvd_id == "RO36617326")
+            .filter(OrbisEnrichment.bvd_id == "XX000015")
             .first()
         )
         enrichment, organization = row
@@ -79,22 +79,20 @@ def test_company_snapshot_survives_rollback(test_db) -> None:
     org = _make_org(test_db, 1, "schlothauer-wauer")
     test_db.record_orbis_enrichment(
         organization_id=org.id,
-        bvd_id="DE2011435329",
+        bvd_id="XX000009",
         match_type="combined_high",
         score=70,
         run_id="run-1",
         country_code="DE",
-        company_name="Schlothauer & Wauer Ingenieurgesellschaft für Straßenverkehr mbH",
+        company_name="Musterbau & Partner Ingenieurgesellschaft mbH",
         company_city="Berlin",
     )
 
     test_db.rollback_orbis_enrichment_run("run-1")
 
     with session_scope(test_db.session_factory) as session:
-        row = session.query(OrbisEnrichment).filter_by(bvd_id="DE2011435329").first()
+        row = session.query(OrbisEnrichment).filter_by(bvd_id="XX000009").first()
         assert row is not None
         assert row.reverted_at is not None
-        assert (
-            row.company_name == "Schlothauer & Wauer Ingenieurgesellschaft für Straßenverkehr mbH"
-        )
+        assert row.company_name == "Musterbau & Partner Ingenieurgesellschaft mbH"
         assert row.company_city == "Berlin"

@@ -239,7 +239,7 @@ def resolve_headquarters(  # noqa: C901
     # verbleibenden Kandidaten sofort ohne Land-/Domain-Bestätigung
     # akzeptierte. Fund beim 500-Organisationen-Dry-Run: genau dieser Pfad
     # lieferte "braintree" (US-Zahlungsfirma) als einzigen namens-plausiblen
-    # Kandidaten die Stadtverwaltung von Braintree, MA - eine reine
+    # Kandidaten einen gleichnamigen, unbeteiligten Eintrag - eine reine
     # Namenskollision ohne jede weitere Bestätigung. Ein einzelner Kandidat
     # durchläuft jetzt dieselbe Kaskade (inkl. `_corroborate()`-Prüfung bei
     # HQ_TABLE/CONSOLIDATING_ENTITY/BVDID_FALLBACK) wie mehrere - bei
@@ -256,9 +256,9 @@ def resolve_headquarters(  # noqa: C901
     # akzeptiert, sobald genau ein namens-plausibler Kandidat es erfüllt -
     # unabhängig davon, ob Land oder Domain überhaupt übereinstimmen. Das
     # führte zu bestätigten Fehltreffern: "braintree" (US-Zahlungsfirma)
-    # landete auf der Stadtverwaltung von Braintree, MA (ebenfalls US, aber
-    # eine Gemeindebehörde statt der Firma); "amanikids" (Tansania) landete
-    # auf einer unabhängigen 2-Personen-IT-Firma "Amani" in Belgien. Deshalb:
+    # landete auf einem gleichnamigen, unbeteiligten Eintrag im selben Land;
+    # "amanikids" landete auf einer gleichnamigen, unbeteiligten Firma in einem
+    # anderen Land. Deshalb:
     # wenn github_country bekannt ist, zuerst auf länder-passende HQ_TABLE-
     # Kandidaten einschränken. Gibt es keine, aber einen mit echter
     # Root-Domain (matches_root_domain), diesen als Ersatz-Bestätigung
@@ -348,7 +348,7 @@ def resolve_headquarters(  # noqa: C901
     # Fund aus Live-Verifikation (Airbus/IBM): sobald ROOT_DOMAIN_PRESENCE bei
     # echten multinationalen Konzernen mangels Eindeutigkeit durchfällt (viele
     # Landesgesellschaften teilen dieselbe Root-Domain UND dasselbe Land -
-    # z.B. 16 FR-Airbus-Entitäten unter airbus.com), landete der rein
+    # viele Einheiten desselben Konzerns im selben Land), landete der rein
     # alphabetische Fallback auf einem komplett falschen Land (AU statt FR),
     # weil er ohne jeden Kontext über ALLE Kandidaten sortiert. Bevorzuge
     # daher, falls vorhanden, Kandidaten mit zum GitHub-Land passendem
@@ -360,7 +360,7 @@ def resolve_headquarters(  # noqa: C901
     # Signal 1 oben): ist github_country bekannt, aber KEIN Kandidat bestätigt
     # es (weder Land noch echte Root-Domain), ist "irgendeine" Firma
     # alphabetisch zu wählen reine Raterei - Beispiel "teamware" (GH-Land
-    # Brasilien) landete auf einer australischen Niederlassung ohne jeden
+    # Brasilien) landete auf einer Niederlassung in einem anderen Land ohne jeden
     # inhaltlichen Bezug. In diesem Fall lieber unaufgelöst (PENDING) lassen,
     # statt eine unbestätigte Vermutung zu schreiben. Ohne bekanntes
     # github_country (keine Vergleichsbasis) bleibt die bisherige

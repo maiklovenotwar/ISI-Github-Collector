@@ -54,7 +54,7 @@ MAX_DOMAINS_PER_BATCH = ORACLE_MAX_IN_LIST_SIZE // URL_VARIANTS_PER_DOMAIN
 # WICHTIG: 200 war zu niedrig - bei den größten Multis (ibm.com hat >200
 # Landesgesellschaften mit derselben Website) hat der bisherige Wert die
 # korrekte Konzernmutter-BVDID abgeschnitten, bevor die Scoring-/HQ-Signale
-# sie je gesehen haben (empirisch verifiziert: US130871985, IBMs echte
+# sie je gesehen haben (empirisch verifiziert: XX000017, IBMs echte
 # Konzernmutter, sortiert alphabetisch hinter Position 200 und fehlte
 # dadurch komplett im Kandidaten-Pool). Ein paar tausend kurze Dict-Zeilen
 # pro Domain sind speichertechnisch trivial - 2000 gibt deutlich mehr
@@ -456,7 +456,7 @@ class OrbisClient:
             Dictionary mit Domain als Key und Orbis-Daten als Value:
             {
                 "acme.com": {
-                    "bvd_id": "DE12345678",
+                    "bvd_id": "XX000008",
                     "name": "ACME Corporation GmbH",
                     "country_iso": "DE",
                     "city": "Berlin",
@@ -934,7 +934,7 @@ class OrbisClient:
         Der richtige Join ist umgekehrt: `HQ_BVDID = candidate.bvd_id` -
         "wie viele andere Firmen nennen DIESEN Kandidaten als ihren
         Hauptsitz". Empirisch bestätigt: IBMs und Oracles dokumentiert
-        korrekte BVDIDs (US130871985, US542185193) sind für zusammen 8571
+        korrekte BVDIDs (XX000017, XX000021) sind für zusammen 8571
         Töchter als HQ_BVDID hinterlegt.
 
         Filtert zusätzlich auf `HQ_CURRENT_INDICATOR = 'Current info'`

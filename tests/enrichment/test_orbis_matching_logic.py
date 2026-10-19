@@ -38,7 +38,7 @@ def make_candidate(**overrides) -> MatchCandidate:
         "name_length": 4,
         "has_name_match": True,
         "has_blog_match": True,
-        "bvd_id": "DE12345678",
+        "bvd_id": "XX000008",
         "orbis_name": "Acme",
         "orbis_country": "DE",
     }
@@ -146,7 +146,7 @@ class TestFilterImplausibleCandidates:
                 login="github",
                 github_name="GitHub",
                 orbis_name="常州平纳精密机械配件厂",
-                bvd_id="CN9459133366",
+                bvd_id="XX000006",
             )
         ]
         result = filter_implausible_candidates(candidates, min_similarity=0.5)
@@ -176,14 +176,14 @@ class TestNormalizeBvdIdBase:
 
     def test_strips_b_suffix(self) -> None:
         """Fund: Airbus/Atlassian nutzen '-B0001'/'-B0002'-Filial-Suffixe."""
-        assert normalize_bvd_id_base("AU102443916-B0002") == "AU102443916"
+        assert normalize_bvd_id_base("XX000003-B0002") == "XX000003"
 
     def test_strips_numeric_suffix(self) -> None:
-        """Fund: Schlothauer & Wauer nutzt '-1002' bis '-1007'-Filial-Suffixe."""
-        assert normalize_bvd_id_base("DE2011435329-1002") == "DE2011435329"
+        """Fund: numerische Filial-Suffixe wie '-1002' bis '-1007'."""
+        assert normalize_bvd_id_base("XX000009-1002") == "XX000009"
 
     def test_plain_id_unchanged(self) -> None:
-        assert normalize_bvd_id_base("DE2011435329") == "DE2011435329"
+        assert normalize_bvd_id_base("XX000009") == "XX000009"
 
     def test_empty_id_unchanged(self) -> None:
         assert normalize_bvd_id_base("") == ""
@@ -199,34 +199,34 @@ class TestSelectBranchRepresentative:
     def test_unsuffixed_variant_preferred(self) -> None:
         """Fund aus Charge 01/04: unsuffigierte Basis-BVDID ist der Repräsentant,
         auch wenn Filial-Suffixe existieren."""
-        base = make_candidate(bvd_id="DE2011435329", orbis_country="DE")
-        branch = make_candidate(bvd_id="DE2011435329-1002", orbis_country="DE")
+        base = make_candidate(bvd_id="XX000009", orbis_country="DE")
+        branch = make_candidate(bvd_id="XX000009-1002", orbis_country="DE")
         score_candidate(base, ScoringConfig())
         score_candidate(branch, ScoringConfig())
 
         result = select_branch_representative([base, branch])
 
         assert len(result) == 1
-        assert result[0].bvd_id == "DE2011435329"
+        assert result[0].bvd_id == "XX000009"
 
     def test_fallback_to_highest_score_without_unsuffixed(self) -> None:
         """Ohne unsuffigierte Variante wird der Kandidat mit dem höchsten Score gewählt."""
-        low = make_candidate(bvd_id="DE12345678-1001", total_score=10)
-        high = make_candidate(bvd_id="DE12345678-1002", total_score=40)
+        low = make_candidate(bvd_id="XX000008-1001", total_score=10)
+        high = make_candidate(bvd_id="XX000008-1002", total_score=40)
 
         result = select_branch_representative([low, high])
 
         assert len(result) == 1
-        assert result[0].bvd_id == "DE12345678-1002"
+        assert result[0].bvd_id == "XX000008-1002"
 
     def test_unrelated_companies_not_merged(self) -> None:
         """Unterschiedliche Basis-BVDIDs bleiben getrennte Kandidaten."""
-        a = make_candidate(bvd_id="DE11111111")
-        b = make_candidate(bvd_id="US22222222")
+        a = make_candidate(bvd_id="XX000007")
+        b = make_candidate(bvd_id="XX000018")
 
         result = select_branch_representative([a, b])
 
-        assert {c.bvd_id for c in result} == {"DE11111111", "US22222222"}
+        assert {c.bvd_id for c in result} == {"XX000007", "XX000018"}
 
 
 class TestScoreCandidate:
@@ -508,7 +508,7 @@ class TestAnalyzeMatches:
             github_id=1,
             login="openai",
             github_name="OpenAI",
-            bvd_id="US310437293L",
+            bvd_id="XX000019",
             orbis_name="Openai INC",
             orbis_country="US",
             has_name_match=True,
@@ -535,25 +535,25 @@ class TestAnalyzeMatches:
 
         result = results[1]
         assert result.status == MatchStatus.UNIQUE
-        assert result.best_candidate.bvd_id == "US310437293L"
+        assert result.best_candidate.bvd_id == "XX000019"
 
     def test_branch_duplicates_resolved_as_unique(self) -> None:
         """Fund aus Charge 04: Basis-BVDID + Filial-Suffix sind EINE Firma,
-        nicht ein Multi-Hit-Konflikt (Schlothauer & Wauer Fall)."""
+        nicht ein Multi-Hit-Konflikt (Fall aus Charge 04)."""
         base = make_candidate(
             github_id=2,
             login="schlothauer-wauer",
-            github_name="Schlothauer & Wauer GmbH",
-            bvd_id="DE2011435329",
-            orbis_name="Schlothauer & Wauer Ingenieurgesellschaft",
+            github_name="Musterbau & Partner GmbH",
+            bvd_id="XX000009",
+            orbis_name="Musterbau & Partner Ingenieurgesellschaft",
             orbis_country="DE",
         )
         branch = make_candidate(
             github_id=2,
             login="schlothauer-wauer",
-            github_name="Schlothauer & Wauer GmbH",
-            bvd_id="DE2011435329-1002",
-            orbis_name="Schlothauer & Wauer Ingenieurgesellschaft",
+            github_name="Musterbau & Partner GmbH",
+            bvd_id="XX000009-1002",
+            orbis_name="Musterbau & Partner Ingenieurgesellschaft",
             orbis_country="DE",
         )
 
@@ -561,7 +561,7 @@ class TestAnalyzeMatches:
 
         result = results[2]
         assert result.status == MatchStatus.UNIQUE
-        assert result.best_candidate.bvd_id == "DE2011435329"
+        assert result.best_candidate.bvd_id == "XX000009"
 
     def test_no_candidates_yields_no_match(self) -> None:
         results = analyze_matches({3: []})

@@ -36,7 +36,7 @@ def make_candidate(**overrides) -> MatchCandidate:
         "login": "acme",
         "match_value": "acme.com",
         "match_type_input": "name_blog",
-        "bvd_id": "DE12345678",
+        "bvd_id": "XX000008",
         "orbis_name": "Acme",
         "orbis_country": "DE",
         "website": "acme.com",
@@ -73,19 +73,19 @@ class TestApplyHqSignalsHqTable:
     """Tests für has_hq_entry/hq_subsidiary_count aus lookup_hq_subsidiary_counts()."""
 
     def test_positive_count_sets_has_hq_entry(self) -> None:
-        candidate = make_candidate(bvd_id="US130871985")
-        apply_hq_signals([candidate], root_domain=None, hq_subsidiary_counts={"US130871985": 8571})
+        candidate = make_candidate(bvd_id="XX000017")
+        apply_hq_signals([candidate], root_domain=None, hq_subsidiary_counts={"XX000017": 8571})
         assert candidate.has_hq_entry is True
         assert candidate.hq_subsidiary_count == 8571
 
     def test_missing_bvd_id_defaults_to_no_hq_entry(self) -> None:
         candidate = make_candidate(bvd_id="US999")
-        apply_hq_signals([candidate], root_domain=None, hq_subsidiary_counts={"US130871985": 8571})
+        apply_hq_signals([candidate], root_domain=None, hq_subsidiary_counts={"XX000017": 8571})
         assert candidate.has_hq_entry is False
         assert candidate.hq_subsidiary_count == 0
 
     def test_none_hq_subsidiary_counts_defaults_to_no_hq_entry(self) -> None:
-        candidate = make_candidate(bvd_id="US130871985")
+        candidate = make_candidate(bvd_id="XX000017")
         apply_hq_signals([candidate], root_domain=None, hq_subsidiary_counts=None)
         assert candidate.has_hq_entry is False
 
@@ -116,12 +116,12 @@ class TestApplyHqSignalsThenResolveHeadquarters:
 
     def test_resolution_candidate_is_the_same_object_matching_produced(self) -> None:
         candidate = make_candidate(
-            bvd_id="US130871985", orbis_name="Acme", website="acme.com", github_name="Acme"
+            bvd_id="XX000017", orbis_name="Acme", website="acme.com", github_name="Acme"
         )
         apply_hq_signals(
             [candidate],
             root_domain="acme.com",
-            hq_subsidiary_counts={"US130871985": 100},
+            hq_subsidiary_counts={"XX000017": 100},
         )
 
         resolution = resolve_headquarters(
@@ -173,7 +173,7 @@ class TestApplyHqResolutionToMatchResult:
         Rohschätzung in best_candidate gesetzt (das ist es, was PENDING
         überhaupt erst ausgelöst hat) - ohne den Reset würde diese Schätzung
         unverändert als 'aufgelöst' weitergereicht."""
-        unconfirmed_guess = make_candidate(bvd_id="US130431850L", orbis_name="Braintree")
+        unconfirmed_guess = make_candidate(bvd_id="XX000016", orbis_name="Braintree")
         result = make_match_result(best_candidate=unconfirmed_guess)
 
         apply_hq_resolution_to_match_result(result, resolution=None)

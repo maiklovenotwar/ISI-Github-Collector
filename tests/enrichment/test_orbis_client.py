@@ -179,7 +179,7 @@ class TestOrbisClientNormalMatch:
     def test_single_domain_single_result(self) -> None:
         """Eine Domain → ein Ergebnis mit bvd_id und country_iso."""
         rows = [
-            ("DE12345678", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
+            ("XX000008", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
@@ -187,15 +187,15 @@ class TestOrbisClientNormalMatch:
         results = client.lookup_batch_by_websites(["acme.com"])
 
         assert "acme.com" in results
-        assert results["acme.com"]["bvd_id"] == "DE12345678"
+        assert results["acme.com"]["bvd_id"] == "XX000008"
         assert results["acme.com"]["country_iso"] == "DE"
         assert results["acme.com"]["name"] == "ACME GmbH"
 
     def test_multiple_domains_multiple_results(self) -> None:
         """Mehrere Domains → mehrere Ergebnisse."""
         rows = [
-            ("DE12345678", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
-            ("US87654321", "Example Inc", "https://example.org", "US", "New York", "10001"),
+            ("XX000008", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
+            ("XX000022", "Example Inc", "https://example.org", "US", "New York", "10001"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
@@ -263,8 +263,8 @@ class TestOrbisClientMultipleHits:
         """Mehrere Treffer für eine Domain → erster (nach BVD_ID) gewinnt."""
         # Sortiert nach BVD_ID: AA kommt vor BB
         rows = [
-            ("AA11111111", "First Corp", "https://multi.com", "DE", "Munich", "80331"),
-            ("BB22222222", "Second Corp", "https://multi.com", "US", "Boston", "02101"),
+            ("XX000001", "First Corp", "https://multi.com", "DE", "Munich", "80331"),
+            ("XX000004", "Second Corp", "https://multi.com", "US", "Boston", "02101"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
@@ -273,7 +273,7 @@ class TestOrbisClientMultipleHits:
             results = client.lookup_batch_by_websites(["multi.com"])
 
         # Erster Treffer (AA...) gewinnt
-        assert results["multi.com"]["bvd_id"] == "AA11111111"
+        assert results["multi.com"]["bvd_id"] == "XX000001"
         assert results["multi.com"]["country_iso"] == "DE"
 
         # Warning wurde geloggt
@@ -282,8 +282,8 @@ class TestOrbisClientMultipleHits:
     def test_multiple_hits_warning_contains_domain(self, caplog: pytest.LogCaptureFixture) -> None:
         """Warning bei Mehrfach-Treffern enthält Domain-Info."""
         rows = [
-            ("AA11111111", "First", "https://dup.com", "DE", "Berlin", "10115"),
-            ("BB22222222", "Second", "https://dup.com", "US", "NYC", "10001"),
+            ("XX000001", "First", "https://dup.com", "DE", "Berlin", "10115"),
+            ("XX000004", "Second", "https://dup.com", "US", "NYC", "10001"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
@@ -301,7 +301,7 @@ class TestOrbisClientMissingSpalte:
         """Zeile mit falscher Spaltenanzahl wird übersprungen, kein Crash."""
         rows = [
             # Korrekte Zeile
-            ("DE12345678", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
+            ("XX000008", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
             # Fehlerhafte Zeile (nur 3 Spalten)
             ("XX99999999", "Broken", "https://broken.com"),
         ]
@@ -457,7 +457,7 @@ class TestOrbisClientDomainNormalization:
     def test_domains_lowercased(self) -> None:
         """Domains werden zu Kleinbuchstaben konvertiert."""
         rows = [
-            ("DE12345678", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
+            ("XX000008", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
@@ -470,7 +470,7 @@ class TestOrbisClientDomainNormalization:
     def test_domains_stripped(self) -> None:
         """Whitespace um Domains wird entfernt."""
         rows = [
-            ("DE12345678", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
+            ("XX000008", "ACME GmbH", "https://acme.com", "DE", "Berlin", "10115"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
@@ -494,14 +494,14 @@ class TestOrbisClientLookupByNames:
     def test_mixed_case_input_still_finds_results(self) -> None:
         """Nicht-kleingeschriebener Suchbegriff darf keine Treffer verschlucken."""
         rows = [
-            ("FR562101626", "Studec", "www.studec.fr", "FR", "Ivry Sur Seine"),
+            ("XX000012", "Studec", "www.studec.fr", "FR", "Ivry Sur Seine"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
 
         results = client.lookup_batch_by_names(["STUDEC"])
 
-        assert results["studec"][0]["bvd_id"] == "FR562101626"
+        assert results["studec"][0]["bvd_id"] == "XX000012"
 
     def test_result_key_is_lowercased_input(self) -> None:
         """Rückgabe-Key ist immer `.lower().strip()`, unabhängig von der Eingabe."""
@@ -516,7 +516,7 @@ class TestOrbisClientLookupByNames:
     def test_multiple_candidates_for_one_name(self) -> None:
         """Mehrere Orbis-Zeilen für denselben Namen werden alle gesammelt."""
         rows = [
-            ("FR562101626", "Studec", "www.studec.fr", "FR", "Ivry Sur Seine"),
+            ("XX000012", "Studec", "www.studec.fr", "FR", "Ivry Sur Seine"),
             ("GBML7634128", "Studec", "www.studecorators.co.uk", "GB", "Worthing"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
@@ -526,7 +526,7 @@ class TestOrbisClientLookupByNames:
 
         assert len(results["studec"]) == 2
         bvd_ids = {c["bvd_id"] for c in results["studec"]}
-        assert bvd_ids == {"FR562101626", "GBML7634128"}
+        assert bvd_ids == {"XX000012", "GBML7634128"}
 
 
 class TestExtractRootDomain:

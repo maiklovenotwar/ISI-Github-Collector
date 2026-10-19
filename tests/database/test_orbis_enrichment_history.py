@@ -28,7 +28,7 @@ def test_record_enrichment_sets_current_enrichment_id(test_db) -> None:
 
     enrichment = test_db.record_orbis_enrichment(
         organization_id=org.id,
-        bvd_id="US312526703L",
+        bvd_id="XX000020",
         match_type="combined_medium",
         score=50,
         run_id="run-1",
@@ -38,7 +38,7 @@ def test_record_enrichment_sets_current_enrichment_id(test_db) -> None:
     with session_scope(test_db.session_factory) as session:
         refreshed = session.query(Organization).filter_by(id=org.id).first()
         assert refreshed.current_orbis_enrichment_id == enrichment.id
-        assert refreshed.bvd_id == "US312526703L"
+        assert refreshed.bvd_id == "XX000020"
 
 
 def test_rollback_does_not_delete_enrichment_row(test_db) -> None:
@@ -46,7 +46,7 @@ def test_rollback_does_not_delete_enrichment_row(test_db) -> None:
     org = _make_org(test_db, 1, "touchmedia360")
     test_db.record_orbis_enrichment(
         organization_id=org.id,
-        bvd_id="RO36617326",
+        bvd_id="XX000015",
         match_type="combined_high",
         score=60,
         run_id="run-1",
@@ -59,7 +59,7 @@ def test_rollback_does_not_delete_enrichment_row(test_db) -> None:
         rows = session.query(OrbisEnrichment).filter_by(run_id="run-1").all()
         assert len(rows) == 1, "Zeile darf nicht gelöscht worden sein"
         assert rows[0].reverted_at is not None
-        assert rows[0].bvd_id == "RO36617326"  # historische Daten bleiben lesbar
+        assert rows[0].bvd_id == "XX000015"  # historische Daten bleiben lesbar
 
 
 def test_rollback_clears_current_enrichment_id_when_nothing_remains(test_db) -> None:
@@ -68,7 +68,7 @@ def test_rollback_clears_current_enrichment_id_when_nothing_remains(test_db) -> 
     org = _make_org(test_db, 1, "schlothauer-wauer")
     test_db.record_orbis_enrichment(
         organization_id=org.id,
-        bvd_id="DE2011435329",
+        bvd_id="XX000009",
         match_type="combined_high",
         score=70,
         run_id="run-1",
@@ -97,7 +97,7 @@ def test_rollback_falls_back_to_earlier_active_enrichment(test_db) -> None:
     org = _make_org(test_db, 1, "ajwgroup")
     test_db.record_orbis_enrichment(
         organization_id=org.id,
-        bvd_id="GB04559872",
+        bvd_id="XX000013",
         match_type="combined_high",
         score=70,
         run_id="run-1",
@@ -106,7 +106,7 @@ def test_rollback_falls_back_to_earlier_active_enrichment(test_db) -> None:
     )
     second = test_db.record_orbis_enrichment(
         organization_id=org.id,
-        bvd_id="FR04559872-0002",
+        bvd_id="XX000010-0002",
         match_type="combined_high",
         score=70,
         run_id="run-2",
@@ -119,7 +119,7 @@ def test_rollback_falls_back_to_earlier_active_enrichment(test_db) -> None:
 
     with session_scope(test_db.session_factory) as session:
         refreshed = session.query(Organization).filter_by(id=org.id).first()
-        assert refreshed.bvd_id == "GB04559872"
+        assert refreshed.bvd_id == "XX000013"
         assert refreshed.country_code_orbis == "GB"
         assert refreshed.current_orbis_enrichment_id != second.id
 

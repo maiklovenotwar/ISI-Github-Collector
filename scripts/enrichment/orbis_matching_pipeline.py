@@ -21,10 +21,10 @@ ROOT_DOMAIN_PRESENCE und (länderbewussten) BVDID_FALLBACK zurück.
 WICHTIGE JOIN-RICHTUNG bei HQ_TABLE (siehe lookup_hq_subsidiary_counts()-
 Docstring): Der in orbis_matching_strategy_v2.md dokumentierte Join
 `HQ.BVDID = Kandidat.BVDID` liefert für echte Konzernmütter praktisch nie
-einen Treffer (0/13 in eigenen Tests, deckt sich mit "0 Matches" im
+einen Treffer (in eigenen Tests praktisch nie, deckt sich mit dem
 historischen Validierungsbericht). Richtig ist der umgekehrte Join
 `HQ.HQ_BVDID = Kandidat.BVDID` ("wie viele Töchter nennen diesen Kandidaten
-als Hauptsitz") - empirisch bestätigt an IBM/Oracle (je >1000 Töchter).
+als Hauptsitz") - empirisch bestätigt an großen Konzernen mit vielen Töchtern.
 
 Usage:
     python scripts/enrichment/orbis_matching_pipeline.py --dry-run --limit 50
@@ -202,7 +202,7 @@ def build_name_only_candidates(
 
     Fund aus Charge 10 (studec): frühere Tests des Namens-Fallbacks (Charge
     5-9) prüften ausschließlich sehr obskure Kleinfirmen ohne jede
-    Orbis-Abdeckung (Trident Esports, Hamekoz, ...) - dort konnte kein
+    Orbis-Abdeckung - dort konnte kein
     Namens-Fallback helfen, weil die Firma schlicht nicht in Orbis erfasst
     ist. studec zeigt den Gegenfall: eine echte, distinktiv benannte Firma
     mit 0 Domain-Treffern (GH-Blog-Domain stimmt nicht mit Orbis' WEBSITE

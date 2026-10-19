@@ -35,7 +35,7 @@ def make_orbis_candidate(**overrides) -> MatchCandidate:
         "login": "placeholder",
         "match_value": "",
         "match_type_input": "name_blog",
-        "bvd_id": "DE12345678",
+        "bvd_id": "XX000008",
         "orbis_name": "Acme",
         "orbis_country": "DE",
     }
@@ -161,8 +161,8 @@ class TestResolveHeadquartersCorroboration:
     Kaskade jeden namens-plausiblen Kandidaten mit >=1 Tochter (HQ_TABLE)
     oder einfach den alphabetisch ersten (BVDID_FALLBACK) - unabhängig davon,
     ob Land oder Domain überhaupt passten. Bestätigte Fehltreffer:
-    "braintree" (US-Zahlungsfirma -> Stadtverwaltung Braintree, MA) und
-    "amanikids" (Tansania -> unabhängige belgische IT-Firma "Amani").
+    "braintree" und "amanikids" (jeweils ein gleichnamiger, unbeteiligter
+    Eintrag).
     """
 
     def test_hq_table_single_candidate_without_country_match_stays_unresolved(self) -> None:
@@ -171,7 +171,7 @@ class TestResolveHeadquartersCorroboration:
         GitHub-Land und es gibt keine Domain-Bestätigung -> PENDING bleibt
         PENDING statt eine Namenskollision als Treffer zu verwenden."""
         town_government = make_orbis_candidate(
-            bvd_id="US130431850L", name="Braintree", country_iso="US", has_hq_entry=True
+            bvd_id="XX000016", name="Braintree", country_iso="US", has_hq_entry=True
         )
 
         resolution = resolve_headquarters(
@@ -181,7 +181,7 @@ class TestResolveHeadquartersCorroboration:
             github_country="US",
         )
 
-        # In der echten Charge war beides "US" (Stadtverwaltung UND Firma
+        # In der echten Charge war beides "US" (Eintrag UND Firma
         # sitzen in den USA) - Land allein hätte hier NICHT geholfen. Dieser
         # Test prüft den einfacheren, aber ebenso wichtigen Fall: fehlt die
         # Landesangabe der Kandidaten ganz oder weicht sie ab, wird nicht
@@ -193,7 +193,7 @@ class TestResolveHeadquartersCorroboration:
         """Kein Kandidat bestätigt Land oder Domain -> Kaskade darf nicht
         raten, Ergebnis bleibt None (weiterhin PENDING)."""
         coincidental_name_match = make_orbis_candidate(
-            bvd_id="BE0875225951", name="Amani", country_iso="BE", has_hq_entry=True
+            bvd_id="XX000005", name="Amani", country_iso="BE", has_hq_entry=True
         )
 
         resolution = resolve_headquarters(
@@ -263,7 +263,7 @@ class TestResolveHeadquartersCorroboration:
         unabhängige Kandidaten, keiner bestätigt Land oder Domain -> keine
         Ratewahl mehr, Ergebnis bleibt None."""
         br_login_but_au_branch = make_orbis_candidate(
-            bvd_id="AU084275043-B0002", name="Teamware", country_iso="AU"
+            bvd_id="XX000002-B0002", name="Teamware", country_iso="AU"
         )
 
         resolution = resolve_headquarters(
@@ -295,9 +295,9 @@ class TestResolveHeadquartersNamePlausibility:
         Airbus/IBM teils auf komplett unbeteiligten Firmen. Ohne Namensfilter
         würde die Kaskade das Rauschen wählen, nicht die echte Zentrale."""
         noise_with_hq_flag = make_orbis_candidate(
-            bvd_id="GB10087028", name="Boering International Group Co., LTD", has_hq_entry=True
+            bvd_id="XX000014", name="Boering International Group Co., LTD", has_hq_entry=True
         )
-        real_entity = make_orbis_candidate(bvd_id="FR383474814", name="Airbus")
+        real_entity = make_orbis_candidate(bvd_id="XX000011", name="Airbus")
 
         resolution = resolve_headquarters(
             [noise_with_hq_flag, real_entity],
@@ -305,7 +305,7 @@ class TestResolveHeadquartersNamePlausibility:
             github_login="airbus",
         )
 
-        assert resolution.bvd_id == "FR383474814"
+        assert resolution.bvd_id == "XX000011"
         assert resolution.hq_method == "BVDID_FALLBACK"
 
     def test_all_candidates_implausible_returns_none(self) -> None:
@@ -324,20 +324,20 @@ class TestResolveHeadquartersBranchDedup:
     """Tests für die Filial-Dedup vor der Kaskade."""
 
     def test_branch_suffix_candidates_merged(self) -> None:
-        """Fund aus Charge 04 (Schlothauer & Wauer): Filial-Suffixe tragen oft
+        """Fund aus Charge 04: Filial-Suffixe tragen oft
         fälschlich has_hq_entry, die Basis-BVDID nicht."""
-        base = make_orbis_candidate(bvd_id="DE2011435329", name="Schlothauer & Wauer")
+        base = make_orbis_candidate(bvd_id="XX000009", name="Musterbau & Partner")
         branch_1 = make_orbis_candidate(
-            bvd_id="DE2011435329-1002", name="Schlothauer & Wauer", has_hq_entry=True
+            bvd_id="XX000009-1002", name="Musterbau & Partner", has_hq_entry=True
         )
         branch_2 = make_orbis_candidate(
-            bvd_id="DE2011435329-1003", name="Schlothauer & Wauer", has_hq_entry=True
+            bvd_id="XX000009-1003", name="Musterbau & Partner", has_hq_entry=True
         )
 
         resolution = resolve_headquarters([base, branch_1, branch_2])
 
         # Nach Dedup bleibt nur die unsuffigierte Basis übrig -> einziger Kandidat
-        assert resolution.bvd_id == "DE2011435329"
+        assert resolution.bvd_id == "XX000009"
         assert len(resolution.all_candidates) == 1
 
 

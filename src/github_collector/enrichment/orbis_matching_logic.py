@@ -209,7 +209,7 @@ class MatchCandidate:
 
     # Anzahl Filial-Rohdatensätze, die auf diesen Kandidaten dedupliziert wurden
     # (siehe select_branch_representative) - Proxy für "ist die aktive
-    # Haupteinheit", nicht nur ein einzelner Nebeneintrag (Schlothauer&Wauer-Fund)
+    # Haupteinheit", nicht nur ein einzelner Nebeneintrag (Fund aus Charge 04)
     branch_count: int = 1
 
     # Scores
@@ -486,7 +486,7 @@ def filter_implausible_candidates(
 # eigener "Hit", was echte Multi-Standort-Firmen fälschlich als Multi-Hit
 # ohne Konsens (PENDING) erscheinen lässt UND das HAS_HQ-Flag bevorzugt auf
 # Filialen statt der Hauptentität sitzt (Airbus "-B0001"/"-B0002",
-# Schlothauer & Wauer "-1002" bis "-1007" - siehe
+# numerische Suffixe wie "-1002" - siehe
 # Orbis-Notizen (intern): batches/batch04_review.md).
 
 _BVD_BRANCH_SUFFIX_PATTERN = re.compile(r"-(?:B\d+|\d{3,5})$")
@@ -822,7 +822,8 @@ def analyze_matches(
         #      schlägt generische Namens-Ähnlichkeit, siehe has_exact_login_substring)
         #   b) branch_count: wie viele Filial-Rohdatensätze auf diesen
         #      Kandidaten dedupliziert wurden (Proxy für "aktive Haupteinheit",
-        #      Schlothauer&Wauer-Fund: 6 Filialen vs. 1 bei der KG-Variante)
+        #      geprüfter Fall: die Hauptentität hatte deutlich mehr Filial-Datensätze
+        #      als eine Variante derselben Firma)
         #   c) name_similarity, dann BVDID als letzter, willkürlicher Fallback
         valid = [
             c for c in deduped if meets_min_score(c, config.min_score, config.name_only_min_score)
