@@ -870,7 +870,7 @@ class OrbisClient:
         # rohen Eingabe-Strings - sonst schlägt der Ergebnis-Lookup unten
         # (key = name.lower()) für jeden nicht bereits kleingeschriebenen
         # Eingabe-Namen fehl und liefert stillschweigend 0 Kandidaten (Fund
-        # aus Charge 10: org["name"]="STUDEC" lieferte 0 statt 4 Treffer,
+        # aus Charge 10: ein großgeschriebener Name lieferte 0 statt mehrerer Treffer,
         # weil der alte Code hier die unveränderte Eingabe als Key nahm).
         unique_names = list({n.lower().strip() for n in names if n})
         results: dict[str, list[dict[str, Any]]] = {n: [] for n in unique_names}
@@ -933,9 +933,8 @@ class OrbisClient:
         getesteten bekannten Konzernmutter-BVDIDs, u.a. IBM/Oracle/Airbus).
         Der richtige Join ist umgekehrt: `HQ_BVDID = candidate.bvd_id` -
         "wie viele andere Firmen nennen DIESEN Kandidaten als ihren
-        Hauptsitz". Empirisch bestätigt: IBMs und Oracles dokumentiert
-        korrekte BVDIDs (XX000017, XX000021) sind für zusammen 8571
-        Töchter als HQ_BVDID hinterlegt.
+        Hauptsitz". Empirisch bestätigt an großen Konzernmüttern, die für
+        sehr viele Töchter als HQ_BVDID hinterlegt sind.
 
         Filtert zusätzlich auf `HQ_CURRENT_INDICATOR = 'Current info'`
         (verwirft `'Archived info'`-Zeilen) - vermeidet dieselbe Falle wie

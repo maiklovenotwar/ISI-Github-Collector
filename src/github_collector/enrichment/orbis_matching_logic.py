@@ -132,7 +132,7 @@ class ScoringConfig:
     # Malus für Kandidaten, deren Namens-Ähnlichkeit NUR über Teilstring-
     # Enthaltensein zustande kam UND die keine weitere Bestätigung (Blog-
     # Match oder Länder-Übereinstimmung) haben - siehe score_candidate()
-    # und Charge-11-Fund (Studecorators/Simon Data).
+    # und Charge-11-Fund (Fund aus Charge 11).
     containment_only_malus: int = 15
 
     @classmethod
@@ -205,7 +205,7 @@ class MatchCandidate:
     # Ob name_similarity über den Teilstring-Enthaltensein-Zweig zustande kam
     # (siehe _calculate_name_similarity_detailed) - kann bei fehlender
     # weiterer Bestätigung reines Zufalls-Rauschen sein (Fund Charge 11:
-    # "Studecorators" vs. "STUDEC"), siehe score_candidate()-Malus.
+    # "Musdecorators" vs. "MUSDEC"), siehe score_candidate()-Malus.
     name_similarity_via_containment: bool = False
     # Ob name_similarity über die lateinische Umschrift eines Orbis-Namens ohne
     # lateinische Buchstaben zustande kam (siehe name_similarity_details) - solche
@@ -305,8 +305,8 @@ def _calculate_name_similarity_detailed(
 
     Der Enthaltensein-Zweig hat einen festen Boden von 0.7 unabhängig davon,
     WARUM der kürzere String im längeren enthalten ist - das erfasst sowohl
-    echte Abkürzungen ("SAP" in "SAP SE") als auch reinen Zufall ("studec"
-    als literale ersten 6 Zeichen von "Studecorators", eigentlich "Stu"+
+    echte Abkürzungen ("SAP" in "SAP SE") als auch reinen Zufall ("musdec"
+    als literale ersten 6 Zeichen von "Musdecorators", eigentlich "Mus"+
     "Decorators" - Fund aus Charge 11). Beide Fälle sind über reine
     Zeichenketten-Analyse nicht unterscheidbar (kein Leerzeichen im
     Orbis-Namen, das die Wortgrenze verraten würde) - das Flag erlaubt
@@ -410,7 +410,7 @@ def calculate_name_similarity(
 
     Prüft gegen BEIDE GitHub-Signale (Anzeigename und Login) und nimmt das
     Maximum, da der Login manchmal präziser ist als der Anzeigename (Fund aus
-    Charge 04, Fall "touchmedia360" vs. Anzeigename "Touch Media" -
+    Charge 04, Fall "mustermedia360" vs. Anzeigename "Muster Media" -
     siehe Orbis-Notizen (intern): batches/batch04_review.md).
 
     Enthält eine Substring-Sonderbehandlung: reine SequenceMatcher-Ratio
@@ -447,24 +447,24 @@ def has_exact_login_substring(
     Anders als `calculate_name_similarity()` (Fuzzy-Ähnlichkeit, nimmt das
     Maximum über Name UND Login) ist dies ein strenger Substring-Test nur
     gegen den Login. Fund aus dem Touch-Media-Fall (Charge 04):
-    Login "touchmedia360" steckt exakt in "Touch Media 360 Services SRL",
-    aber nicht in "Touch Media SRL" - während Letzteres beim generischen
+    Login "mustermedia360" steckt exakt in "Muster Media 360 Services SRL",
+    aber nicht in "Muster Media SRL" - während Letzteres beim generischen
     Namensvergleich sogar höher abschneidet (kürzerer, "saubererer" Treffer
-    gegen den Anzeigenamen "Touch Media"). Ein seltenes, spezifisches Token
+    gegen den Anzeigenamen "Muster Media"). Ein seltenes, spezifisches Token
     wie "360" im Login ist ein stärkeres Signal als generische
     Namens-Ähnlichkeit und sollte diese bei Gleichstand im Score übertrumpfen.
     `min_login_length` verhindert Trivial-Treffer bei kurzen/generischen
     Logins (analog zu `generic_name_length_threshold`).
 
-    WICHTIG (Fund aus Charge 11, "otoci"-Fall): wenn Login und Orbis-Name
-    NORMALISIERT IDENTISCH sind (z.B. Login "otoci" == Orbis-Name "Otoci",
-    kroatisch für "Inseln", ein reiner Zufallstreffer auf ein Alltagswort),
+    WICHTIG (Fund aus Charge 11, "insula"-Fall): wenn Login und Orbis-Name
+    NORMALISIERT IDENTISCH sind (z.B. Login "insula" == Orbis-Name "Insula",
+    lateinisch für "Insel", ein reiner Zufallstreffer auf ein Alltagswort),
     ist das trivial "enthalten" (ein String ist immer Substring seiner
     selbst), liefert aber KEINE zusätzliche Spezifität gegenüber der
     ohnehin schon berechneten Namens-Ähnlichkeit (die dann ohnehin 1.0
     beträgt). Der eigentliche Sinn dieser Funktion ist, ein seltenes,
     spezifisches Login-TOKEN INNERHALB eines LÄNGEREN Namens zu erkennen
-    (wie "360" in "touchmedia360" vs. "Touch Media 360 Services SRL") - das
+    (wie "360" in "mustermedia360" vs. "Muster Media 360 Services SRL") - das
     erfordert echte Gleichheit auszuschließen, sonst höhlt dieser
     Escape-Hatch den PENDING-Schutz für Kurz-Namen-Zufallstreffer
     (`determine_match_status()`) komplett aus.
@@ -672,11 +672,11 @@ def score_candidate(
     ):
         generic_name_malus = config.generic_name_malus
 
-    # Fund Charge 11 (Studecorators/Simon Data): eine über Teilstring-
+    # Fund Charge 11 (Fund aus Charge 11): eine über Teilstring-
     # Enthaltensein zustande gekommene Namens-Ähnlichkeit kann reiner Zufall
     # sein (kein Leerzeichen im Orbis-Namen verrät eine echte Wortgrenze -
-    # "studec" sind zufällig die ersten 6 Zeichen von "Studecorators",
-    # eigentlich "Stu"+"Decorators"). Ohne jede weitere Bestätigung (Blog
+    # "musdec" sind zufällig die ersten 6 Zeichen von "Musdecorators",
+    # eigentlich "Mus"+"Decorators"). Ohne jede weitere Bestätigung (Blog
     # oder Land) bekommt so ein Kandidat einen Malus statt vollem Vertrauen.
     # Bewusst NICHT die Ähnlichkeits-Formel selbst verändert, um echte
     # Abkürzungsfälle wie "Airbus"/"SAP" nicht zu riskieren.
@@ -810,7 +810,7 @@ def determine_match_status(
     # weitere Bestätigung (kein Blog-Match, kein exakter Login-Substring)
     # dürfen nie UNIQUE/CONSENSUS erreichen - selbst wenn zufällig nur ein
     # Kandidat bzw. nur ein Land vorliegt. Ein einzelner Zufallstreffer auf
-    # ein generisches Wort (z.B. "Otoci"/"Beholder", zufällig namensgleich
+    # ein generisches Wort (z.B. "Insula"/"Beholder", zufällig namensgleich
     # mit dem GH-Login) hat sonst schlicht keine Konkurrenz, die die
     # Mehrdeutigkeit sichtbar machen würde, und wirkte dadurch fälschlich
     # "eindeutig". `login_exact_match` bleibt als Ausnahme zulässig - ein
@@ -884,7 +884,7 @@ def analyze_matches(
         # 5. Besten Kandidaten bestimmen
         # Tie-Break bei gleichem total_score, in absteigender Spezifität:
         #   a) login_exact_match: der volle Login steckt wortwörtlich im
-        #      Namen (seltenes/spezifisches Token wie "360" bei Touch Media -
+        #      Namen (seltenes/spezifisches Token wie "360" bei Muster Media -
         #      schlägt generische Namens-Ähnlichkeit, siehe has_exact_login_substring)
         #   b) branch_count: wie viele Filial-Rohdatensätze auf diesen
         #      Kandidaten dedupliziert wurden (Proxy für "aktive Haupteinheit",

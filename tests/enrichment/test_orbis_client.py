@@ -483,8 +483,8 @@ class TestOrbisClientDomainNormalization:
 class TestOrbisClientLookupByNames:
     """Tests für lookup_batch_by_names() (Namens-Fallback-Pfad).
 
-    Regressionsfall aus Charge 10 (studec): org["name"] kommt aus der GH-DB
-    oft nicht kleingeschrieben (z.B. "STUDEC"). Der Ergebnis-Dict war vorher
+    Regressionsfall aus Charge 10 (musdec): org["name"] kommt aus der GH-DB
+    oft nicht kleingeschrieben (z.B. "MUSDEC"). Der Ergebnis-Dict war vorher
     mit den unveränderten Eingabe-Strings als Key gebaut, während der
     Zeilen-Abgleich intern immer `name.lower()` verwendet hat - dadurch wurde
     für jeden nicht bereits kleingeschriebenen Suchbegriff stillschweigend 0
@@ -494,14 +494,14 @@ class TestOrbisClientLookupByNames:
     def test_mixed_case_input_still_finds_results(self) -> None:
         """Nicht-kleingeschriebener Suchbegriff darf keine Treffer verschlucken."""
         rows = [
-            ("XX000012", "Studec", "www.studec.fr", "FR", "Ivry Sur Seine"),
+            ("XX000012", "Musdec", "www.musdec.example", "FR", "Musterstadt"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
 
-        results = client.lookup_batch_by_names(["STUDEC"])
+        results = client.lookup_batch_by_names(["MUSDEC"])
 
-        assert results["studec"][0]["bvd_id"] == "XX000012"
+        assert results["musdec"][0]["bvd_id"] == "XX000012"
 
     def test_result_key_is_lowercased_input(self) -> None:
         """Rückgabe-Key ist immer `.lower().strip()`, unabhängig von der Eingabe."""
@@ -516,16 +516,16 @@ class TestOrbisClientLookupByNames:
     def test_multiple_candidates_for_one_name(self) -> None:
         """Mehrere Orbis-Zeilen für denselben Namen werden alle gesammelt."""
         rows = [
-            ("XX000012", "Studec", "www.studec.fr", "FR", "Ivry Sur Seine"),
-            ("XX000902", "Studec", "www.studecorators.co.uk", "GB", "Worthing"),
+            ("XX000012", "Musdec", "www.musdec.example", "FR", "Musterstadt"),
+            ("XX000902", "Musdec", "www.musdecorators.example", "GB", "Musterhafen"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
 
-        results = client.lookup_batch_by_names(["Studec"])
+        results = client.lookup_batch_by_names(["Musdec"])
 
-        assert len(results["studec"]) == 2
-        bvd_ids = {c["bvd_id"] for c in results["studec"]}
+        assert len(results["musdec"]) == 2
+        bvd_ids = {c["bvd_id"] for c in results["musdec"]}
         assert bvd_ids == {"XX000012", "XX000902"}
 
 

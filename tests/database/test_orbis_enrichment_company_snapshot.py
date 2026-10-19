@@ -48,7 +48,7 @@ def test_enrichment_row_carries_full_company_snapshot(test_db) -> None:
 def test_find_organization_from_bvd_id_via_single_table(test_db) -> None:
     """Genau der Anwendungsfall aus der Nutzerfrage: von einer BVDID direkt
     zur GH-Organisation UND zum Firmennamen, ohne zweite Tabelle."""
-    org = _make_org(test_db, 1, "touchmedia360")
+    org = _make_org(test_db, 1, "mustermedia360")
     test_db.record_orbis_enrichment(
         organization_id=org.id,
         bvd_id="XX000015",
@@ -56,7 +56,7 @@ def test_find_organization_from_bvd_id_via_single_table(test_db) -> None:
         score=60,
         run_id="run-1",
         country_code="RO",
-        company_name="Touch Media 360 Services SRL",
+        company_name="Muster Media 360 Services SRL",
         company_city="Constanța",
     )
 
@@ -68,8 +68,8 @@ def test_find_organization_from_bvd_id_via_single_table(test_db) -> None:
             .first()
         )
         enrichment, organization = row
-        assert organization.login == "touchmedia360"
-        assert enrichment.company_name == "Touch Media 360 Services SRL"
+        assert organization.login == "mustermedia360"
+        assert enrichment.company_name == "Muster Media 360 Services SRL"
 
 
 def test_company_snapshot_survives_rollback(test_db) -> None:

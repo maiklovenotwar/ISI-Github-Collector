@@ -166,13 +166,13 @@ class TestApplyHqSignalsHqTable:
 
     def test_positive_count_sets_has_hq_entry(self) -> None:
         candidate = make_candidate(bvd_id="XX000017")
-        apply_hq_signals([candidate], root_domain=None, hq_subsidiary_counts={"XX000017": 8571})
+        apply_hq_signals([candidate], root_domain=None, hq_subsidiary_counts={"XX000017": 5000})
         assert candidate.has_hq_entry is True
-        assert candidate.hq_subsidiary_count == 8571
+        assert candidate.hq_subsidiary_count == 5000
 
     def test_missing_bvd_id_defaults_to_no_hq_entry(self) -> None:
         candidate = make_candidate(bvd_id="US999")
-        apply_hq_signals([candidate], root_domain=None, hq_subsidiary_counts={"XX000017": 8571})
+        apply_hq_signals([candidate], root_domain=None, hq_subsidiary_counts={"XX000017": 5000})
         assert candidate.has_hq_entry is False
         assert candidate.hq_subsidiary_count == 0
 
@@ -226,10 +226,10 @@ class TestApplyHqSignalsThenResolveHeadquarters:
 
 
 class TestShouldAttemptNameFallback:
-    """Tests für das Namens-Fallback-Gate (Charge-10-studec-/Charge-5-9-Fund)."""
+    """Tests für das Namens-Fallback-Gate (Charge-10-musdec-/Charge-5-9-Fund)."""
 
     def test_long_enough_term_passes(self) -> None:
-        assert should_attempt_name_fallback("Studec", threshold=5) is True
+        assert should_attempt_name_fallback("Musdec", threshold=5) is True
 
     def test_term_below_threshold_rejected(self) -> None:
         assert should_attempt_name_fallback("FALS", threshold=5) is False

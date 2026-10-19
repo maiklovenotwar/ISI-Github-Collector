@@ -129,13 +129,15 @@ class TestCalculateNameSimilarity:
         assert similarity < 0.5
 
     def test_login_more_similar_than_name(self) -> None:
-        """Fund aus Charge 04 (touchmedia360): Login kann präziser sein als Name.
+        """Fund aus Charge 04 (mustermedia360): Login kann präziser sein als Name.
 
         Siehe Orbis-Notizen (intern): batches/batch04_review.md.
         """
-        orbis_name = "Touch Media 360 Services SRL"
-        similarity_via_login = calculate_name_similarity(orbis_name, "Touch Media", "touchmedia360")
-        similarity_via_name_only = calculate_name_similarity(orbis_name, "Touch Media", "")
+        orbis_name = "Muster Media 360 Services SRL"
+        similarity_via_login = calculate_name_similarity(
+            orbis_name, "Muster Media", "mustermedia360"
+        )
+        similarity_via_name_only = calculate_name_similarity(orbis_name, "Muster Media", "")
         assert similarity_via_login > similarity_via_name_only
 
     def test_empty_orbis_name_returns_zero(self) -> None:
@@ -151,12 +153,12 @@ class TestCalculateNameSimilarity:
         assert calculate_name_similarity("ACME, Inc.", "acme inc", "acme-inc") == 1.0
 
     def test_detailed_flags_containment_for_coincidental_substring(self) -> None:
-        """Fund Charge 11: 'STUDEC' ist eine reine Zeichenketten-Koinzidenz mit
-        den ersten 6 Buchstaben von 'Studecorators' (eigentlich 'Stu'+
+        """Fund Charge 11: 'MUSDEC' ist eine reine Zeichenketten-Koinzidenz mit
+        den ersten 6 Buchstaben von 'Musdecorators' (eigentlich 'Mus'+
         'Decorators') - muss als via_containment=True erkannt werden, damit
         score_candidate() den gezielten Malus anwenden kann."""
         similarity, via_containment = _calculate_name_similarity_detailed(
-            "Studecorators", "STUDEC", "studec"
+            "Musdecorators", "MUSDEC", "musdec"
         )
         assert similarity > 0.75
         assert via_containment is True
@@ -164,7 +166,7 @@ class TestCalculateNameSimilarity:
     def test_detailed_does_not_flag_exact_match_as_containment(self) -> None:
         """Ein exakter Treffer ist keine Enthaltensein-Koinzidenz, auch wenn er
         technisch durch denselben Code-Zweig läuft (String enthält sich selbst)."""
-        _, via_containment = _calculate_name_similarity_detailed("Studec", "STUDEC", "studec")
+        _, via_containment = _calculate_name_similarity_detailed("Musdec", "MUSDEC", "musdec")
         assert via_containment is False
 
     def test_detailed_does_not_flag_sequence_matcher_path(self) -> None:
@@ -178,17 +180,17 @@ class TestHasExactLoginSubstring:
     """Tests für has_exact_login_substring() (Login-Spezifitäts-Signal)."""
 
     def test_login_substring_within_longer_name(self) -> None:
-        """Ursprünglicher Fund (Charge 04): 'touchmedia360' als Substring in
+        """Ursprünglicher Fund (Charge 04): 'mustermedia360' als Substring in
         einem deutlich längeren Namen ist ein starkes, spezifisches Signal."""
-        assert has_exact_login_substring("Touch Media 360 Services SRL", "touchmedia360")
+        assert has_exact_login_substring("Muster Media 360 Services SRL", "mustermedia360")
 
     def test_identical_login_and_name_is_not_specific(self) -> None:
-        """Fund Charge 11 (otoci): Login und Orbis-Name sind normalisiert
-        identisch ('otoci' == 'Otoci') - das ist trivial, aber keine
+        """Fund Charge 11 (insula): Login und Orbis-Name sind normalisiert
+        identisch ('insula' == 'Insula') - das ist trivial, aber keine
         zusätzliche Spezifität und darf nicht als starkes Signal zählen,
         sonst wird der PENDING-Schutz für Kurzname-Zufallstreffer
         (determine_match_status) ausgehebelt."""
-        assert not has_exact_login_substring("Otoci", "otoci")
+        assert not has_exact_login_substring("Insula", "insula")
 
     def test_login_shorter_than_minimum_length(self) -> None:
         assert not has_exact_login_substring("Acme Corp Ltd", "ab", min_login_length=5)
@@ -353,8 +355,8 @@ class TestScoreCandidate:
         assert candidate.total_score == 0
 
     def test_containment_only_match_without_corroboration_gets_malus(self) -> None:
-        """Fund Charge 11: 'Studecorators' (unbeteiligte UK-Firma) erreicht rein
-        zufällig 0.838 Ähnlichkeit zu 'STUDEC' über Teilstring-Enthaltensein
+        """Fund Charge 11: 'Musdecorators' (unbeteiligte UK-Firma) erreicht rein
+        zufällig 0.838 Ähnlichkeit zu 'MUSDEC' über Teilstring-Enthaltensein
         (keine Wortgrenze im Orbis-Namen erkennbar). Ohne Blog- oder
         Länder-Bestätigung wird das gemalust statt voll vertraut."""
         config = ScoringConfig()
@@ -408,7 +410,7 @@ class TestScoreCandidate:
         assert candidate.total_score == config.name_weight_short
 
     def test_exact_match_never_gets_containment_malus(self) -> None:
-        """Ein exakter Namens-Treffer (z.B. 'Studec' vs. 'STUDEC') ist keine
+        """Ein exakter Namens-Treffer (z.B. 'Musdec' vs. 'MUSDEC') ist keine
         Enthaltensein-Koinzidenz und darf nie gemalust werden."""
         config = ScoringConfig()
         candidate = make_candidate(
@@ -449,11 +451,11 @@ class TestDetermineMatchStatus:
         assert determine_match_status(candidates, min_score=30) == MatchStatus.NO_MATCH
 
     def test_name_only_candidate_uses_lower_threshold_but_stays_pending(self) -> None:
-        """Fund aus Charge 10 (studec): name_only-Kandidaten haben nie
+        """Fund aus Charge 10 (musdec): name_only-Kandidaten haben nie
         blog_score/combination_bonus und erreichen den normalen min_score=30
         für kurze Namen (name_weights.short=10) strukturell nie - brauchen
         eine eigene, niedrigere Schwelle (name_only_min_score), um überhaupt
-        als `valid` zu gelten. Aber (Fund aus Charge 11, otoci/BeholderDEV):
+        als `valid` zu gelten. Aber (Fund aus Charge 11, insula/BeholderDEV):
         ein unbestätigter name_only-Treffer darf trotzdem nie UNIQUE werden,
         selbst wenn er (zufällig) der einzige Kandidat ist - sonst wirkt ein
         einzelner Zufallstreffer auf ein generisches Wort fälschlich
@@ -472,7 +474,7 @@ class TestDetermineMatchStatus:
     def test_name_only_candidate_with_login_exact_match_can_be_unique(self) -> None:
         """Ausnahme: ein exakter Login-Substring (siehe has_exact_login_substring())
         ist ein eigenständig starkes Signal und darf auch bei name_only zu
-        UNIQUE führen (z.B. touchmedia360-artige Fälle über den Namens-Fallback)."""
+        UNIQUE führen (z.B. mustermedia360-artige Fälle über den Namens-Fallback)."""
         candidates = [
             make_candidate(match_type_input="name_only", total_score=10, login_exact_match=True)
         ]

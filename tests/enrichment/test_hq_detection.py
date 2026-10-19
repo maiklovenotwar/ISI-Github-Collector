@@ -91,7 +91,7 @@ class TestResolveHeadquartersCascade:
         mit den meisten aktuellen Töchtern ist der stärkere Beleg (empirisch
         an IBM/Oracle bestätigt, siehe OrbisClient.lookup_hq_subsidiary_counts)."""
         weak = make_orbis_candidate(bvd_id="US111", has_hq_entry=True, hq_subsidiary_count=2)
-        strong = make_orbis_candidate(bvd_id="US999", has_hq_entry=True, hq_subsidiary_count=8571)
+        strong = make_orbis_candidate(bvd_id="US999", has_hq_entry=True, hq_subsidiary_count=5000)
 
         resolution = resolve_headquarters([weak, strong], github_country="DE")
 

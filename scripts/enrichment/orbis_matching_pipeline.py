@@ -312,11 +312,11 @@ def build_name_only_candidates(
 ) -> List[MatchCandidate]:
     """Baue MatchCandidate-Objekte aus Namens-Fallback-Treffern (kein Blog).
 
-    Fund aus Charge 10 (studec): frühere Tests des Namens-Fallbacks (Charge
+    Fund aus Charge 10 (musdec): frühere Tests des Namens-Fallbacks (Charge
     5-9) prüften ausschließlich sehr obskure Kleinfirmen ohne jede
     Orbis-Abdeckung - dort konnte kein
     Namens-Fallback helfen, weil die Firma schlicht nicht in Orbis erfasst
-    ist. studec zeigt den Gegenfall: eine echte, distinktiv benannte Firma
+    ist. musdec zeigt den Gegenfall: eine echte, distinktiv benannte Firma
     mit 0 Domain-Treffern (GH-Blog-Domain stimmt nicht mit Orbis' WEBSITE
     überein), aber einem plausiblen Namens-Treffer. Deshalb: Fallback gezielt
     nur bei Domain-Miss UND ausreichend langem/distinktivem Namen (gegen das
@@ -399,7 +399,7 @@ def apply_hq_signals(
 def should_attempt_name_fallback(term: Optional[str], threshold: int) -> bool:
     """Gate für den Namens-Fallback: nur ausreichend lange/distinktive Namen.
 
-    Fund aus Charge 10 (studec): der Namens-Fallback hilft bei echten,
+    Fund aus Charge 10 (musdec): der Namens-Fallback hilft bei echten,
     distinktiv benannten Firmen ohne Domain-Treffer. Ohne dieses Gate würde
     er auch bei sehr kurzen/generischen Namen ("FALS", "F3X") greifen und nur
     zufällige, unbeteiligte Treffer liefern (Charge 5-9-Rauschproblem) - siehe
@@ -520,7 +520,7 @@ def run_pipeline(  # noqa: C901
         # Namens-Fallback: nur für Orgs ohne jeden Domain-Treffer (kein Blog
         # ODER Domain-Lookup lieferte 0 Kandidaten) UND mit ausreichend langem/
         # distinktivem Namen (siehe build_name_only_candidates()-Docstring,
-        # Charge 10/studec-Fund). Gate über denselben Schwellwert wie der
+        # Charge 10/musdec-Fund). Gate über denselben Schwellwert wie der
         # Generic-Name-Malus, um das FALS/F3X/Tamas-Rauschproblem (Charge 5-9)
         # nicht wieder einzuführen.
         name_fallback_terms: Dict[int, str] = {}

@@ -9,7 +9,7 @@ scoring:
   # (match_type_input="name_only", kein Blog-Signal). Grund: blog_score und
   # combination_bonus sind für diesen Pfad strukturell immer 0, wodurch der
   # normale min_score=30 für jeden Namen unter 11 Zeichen (name_weights.long)
-  # unerreichbar ist - der Namens-Fallback (Charge 10, studec-Fund) fand
+  # unerreichbar ist - der Namens-Fallback (Charge 10, musdec-Fund) fand
   # zwar den richtigen Kandidaten, verwarf ihn aber danach immer als
   # NO_MATCH. Bewusst auf name_weights.short (10) gesetzt, den niedrigsten
   # möglichen Name-Score - für name_only-Kandidaten übernimmt effektiv der
@@ -63,10 +63,10 @@ plausibility:
   # Teilstring-Enthaltensein zustande kam (siehe calculate_name_similarity())
   # UND die keine weitere Bestätigung (Blog-Match oder Länder-
   # Übereinstimmung) haben. Fund aus Charge 11 (workstreams/
-  # orbis_matching/docs/batches/batch11_review.md): "Studecorators"
+  # orbis_matching/docs/batches/batch11_review.md): "Musdecorators"
   # (eine unbeteiligte Firma) erreicht über puren Zeichenketten-Zufall
-  # ("studec" sind die ersten 6 Buchstaben von "Stu"+"Decorators") 0.838
-  # Ähnlichkeit zu "STUDEC" - höher als der 0.75-Schwellwert für
+  # ("musdec" sind die ersten 6 Buchstaben von "Mus"+"Decorators") 0.838
+  # Ähnlichkeit zu "MUSDEC" - höher als der 0.75-Schwellwert für
   # has_name_match. Die Formel selbst wurde bewusst NICHT verändert, weil
   # jede geprüfte Alternative echte Abkürzungsfälle wie "Airbus" vs. "Airbus
   # Defence and Space SAS" riskiert hätte (dort sackt die reine

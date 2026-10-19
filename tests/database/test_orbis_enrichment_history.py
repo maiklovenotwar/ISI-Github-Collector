@@ -43,7 +43,7 @@ def test_record_enrichment_sets_current_enrichment_id(test_db) -> None:
 
 def test_rollback_does_not_delete_enrichment_row(test_db) -> None:
     """Kernfund: eine zurückgerollte Zeile bleibt bestehen, nur `reverted_at` wird gesetzt."""
-    org = _make_org(test_db, 1, "touchmedia360")
+    org = _make_org(test_db, 1, "mustermedia360")
     test_db.record_orbis_enrichment(
         organization_id=org.id,
         bvd_id="XX000015",
@@ -133,7 +133,7 @@ def test_reverted_enrichment_is_still_queryable_by_bvd_id(test_db) -> None:
     """Genau der Anwendungsfall aus der Nutzerfrage: auch nach einem Rollback
     lässt sich über orbis_enrichments nachvollziehen, welche GitHub-Org
     ursprünglich zu einer BVDID gehörte."""
-    org = _make_org(test_db, 1, "otoci")
+    org = _make_org(test_db, 1, "insula")
     test_db.record_orbis_enrichment(
         organization_id=org.id,
         bvd_id="XX000901",
