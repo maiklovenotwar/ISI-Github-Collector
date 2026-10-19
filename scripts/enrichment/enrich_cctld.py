@@ -57,8 +57,9 @@ class EntityConfig:
 
 
 ENTITIES = {
-    # Organizations mit Orbis-Country-Code werden ausgelassen: Orbis gilt als
-    # Ground-Truth und hat Vorrang vor der ccTLD-Ableitung.
+    # Organizations mit Orbis-Country-Code werden ausgelassen. Offene Frage: Das
+    # Orbis-Land ist das Land der zugeordneten Einheit, kein geprüfter Hauptsitz
+    # (orbis_enrichment.md, Abschnitt 1); heute wirkungslos, weil es leer ist.
     "organizations": EntityConfig(
         table="organizations",
         label="Organizations",

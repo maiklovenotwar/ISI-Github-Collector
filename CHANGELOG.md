@@ -8,6 +8,16 @@ Notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Orbis matching: `--export-csv` writes the outcome for every organization (also without a
+  result, with the search path) and a metadata file (Git commit, configuration hash, Orbis schema,
+  counts per Match-Status), also in writing runs, and only to paths Git ignores.
+- `docs/methodology/manual_validation.md` is a new validation protocol for the Orbis matching:
+  stratified random sample from one run, blind labelling, double labelling, Wilson intervals and an
+  acceptance criterion fixed in advance. `scripts/diagnostics/draw_orbis_validation_sample.py`
+  draws the sample; `scripts/diagnostics/count_orbis_non_latin_names.py` counts Orbis names
+  without Latin letters.
+- `orbis_enrichments.match_status` stores the Match-Status of every match (migration
+  `add_orbis_enrichments_match_status.sql`).
 - Methodology of the collection pipeline: `docs/methodology/repository_collection.md`,
   `docs/methodology/geocoding.md`, and `docs/methodology/country_attribution.md`. They state the
   population (forks are excluded), the reference date, the measures and limits regarding
@@ -54,6 +64,11 @@ Notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- `docs/methodology/orbis_enrichment.md` describes the matching as implemented (search order,
+  similarity, scoring, Match-Status, headquarters resolution, which signals receive data) and
+  states that no accuracy estimate exists. `country_code_orbis` is described as the country of the
+  matched Orbis entity, not as the headquarters or as ground truth.
+- `config/orbis_matching.yaml` contains only the values the code reads.
 - `scripts/diagnostics/methodology_checks.sql` reads the `repositories` table in full twice
   instead of seven times: one statement counts everything that needs no join, one joins the
   owners. Months are grouped by number, which the server can handle on the full table.
@@ -97,6 +112,17 @@ Notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Orbis headquarters resolution: without a known GitHub country every candidate counted as
+  corroborated, so a `pending` organization received the candidate with the most subsidiaries or
+  the alphabetically first BvD identifier. Every decision of every signal now needs a corroboration
+  by country or, without a country, by the website; otherwise the organization stays `pending`
+  without a result.
+- Orbis matching: company names in non-Latin script reduced to nothing and were always discarded.
+  They are now also compared through a restricted transliteration.
+- A resolved `pending` match kept the Match-Type `pending`; it now carries the Match-Type of the
+  chosen candidate.
+- Tests contained identifiers from the Orbis database, and comments described individual Orbis
+  records. They are replaced by placeholders, and a test rejects BvD-like identifiers.
 - `enrich_cctld.py --validate-only` silently took precedence over `--recheck`; the two options now
   exclude each other.
 - The ccTLD step read a user name before the host as part of the domain (`https://x@linktr.ee`), so

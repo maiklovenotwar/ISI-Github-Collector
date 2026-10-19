@@ -12,6 +12,9 @@ candidate), `consensus` (multiple candidates, same country), `pending`
 (multiple disagreeing candidates, or an unconfirmed name/login match with no
 corroborating signal — deliberately flagged as "not confident enough" rather
 than guessed), `no_match` (no candidate reaches the minimum threshold).
+A `pending` organization receives a result only if the Headquarters
+Resolution finds a candidate corroborated by country or domain; the status
+stays `pending` and is stored with the result.
 _Avoid_: Confidence, Score (see Match-Type).
 
 **Match-Type**:
@@ -22,7 +25,8 @@ tier — independent of Match-Status. Values: `combined_high` / `combined_medium
 (found via the GitHub login because no name was available). A Match-Status of
 `no_match` has no candidate to classify, and therefore no Match-Type.
 _Avoid_: Do not conflate with Match-Status — a `unique` status can still have
-`name_only` as its Match-Type; the two axes are independent. Do not use as a
+`name_only` as its Match-Type; the two axes are independent. A resolved
+`pending` organization carries the Match-Type of the chosen candidate. Do not use as a
 substitute for `no_match` either (no candidate is not the same as an
 ambiguous candidate).
 
@@ -50,9 +54,11 @@ _Avoid_: Candidate, Contender.
 ### Headquarters Resolution
 
 A conceptually separate, downstream problem: matching decides which company
-belongs to a GitHub organization; headquarters resolution then only decides
-which of several Orbis entries for that same (already matched) company is the
-headquarters.
+belongs to a GitHub organization; headquarters resolution then decides which
+of several Orbis entries is chosen. In practice the entries of a `pending`
+organization are not always entries of the same company: the resolution also
+separates name collisions between different companies, which is why every
+choice needs a corroboration by country or domain.
 
 **Headquarters**:
 The actual corporate headquarters of an already-matched company — a fact
@@ -64,7 +70,7 @@ not the headquarters itself).
 The procedure that, given multiple Orbis entries for the same (already
 matched) company, produces a headquarters estimate via a prioritized signal
 cascade, together with the method that produced it. Carries a known,
-non-eliminable error rate and is not a substitute for ground truth.
+non-eliminable error rate; its result is an estimate, not a verified fact.
 _Avoid_: Headquarters (do not equate the two — resolution is an
 approximation, not a fact).
 

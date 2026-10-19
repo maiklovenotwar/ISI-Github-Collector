@@ -103,7 +103,7 @@ class Organization(Base):
 
     # Orbis Enrichment
     bvd_id = Column(String(50), index=True)  # Orbis BvD-Identifier
-    country_code_orbis = Column(String(2))  # ISO-Ländercode aus Orbis (Ground-Truth)
+    country_code_orbis = Column(String(2))  # Land der zugeordneten Orbis-Einheit (CTRYISO)
     # Legacy-Spalte, wird nicht mehr geschrieben (siehe OrbisEnrichment.match_type)
     orbis_match_type = Column(String(20))
     orbis_enriched_at = Column(DateTime)  # Zeitstempel des aktuellen Orbis-Matches

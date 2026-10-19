@@ -4,10 +4,11 @@ Wenn eine GitHub-Organization mehrere ORBIS-Treffer (BVDIDs) hat, muss genau
 ein Treffer als "Hauptsitz" ausgewählt werden. Dieses Modul implementiert die
 strikte Prioritätskaskade als wiederverwendbare Python-Logik.
 
-Signale in Prioritätsreihenfolge (siehe HQ_METHOD_PRIORITY unten für die
-maßgebliche, tatsächlich ausgeführte Reihenfolge inkl. Coverage-/Fehlerraten;
-`config/orbis_matching.yaml`s `headquarters_signals`-Abschnitt ist veraltet
-und wird NICHT gelesen):
+Signale in Prioritätsreihenfolge (maßgeblich ist HQ_METHOD_PRIORITY unten).
+Jede Entscheidung braucht eine Bestätigung über Land oder Domain (siehe
+_corroborate); die Pipeline liefert heute nur Daten für HQ_TABLE und
+ROOT_DOMAIN_PRESENCE, die übrigen Signale entscheiden nie
+(docs/methodology/orbis_enrichment.md, Abschnitt 6):
     1. HQ_TABLE (explizite HQ-Markierung)
     2. CONSOLIDATING_ENTITY (C1/C2-Codes)
     3. ROOT_DOMAIN_PRESENCE (einziger Kandidat mit echter Root-Domain)
@@ -19,12 +20,11 @@ und wird NICHT gelesen):
     99. BVDID_FALLBACK (alphabetisch erster, für Reproduzierbarkeit)
 
 Bekannte Probleme:
-    OLDEST_FOUNDING führte in der manuellen Validierung (Stand 2026-03) in
-    ~10% der Fälle zu falschen Ländern, weil das älteste Gründungsdatum nicht
-    immer dem Hauptsitz entspricht. GUO_SELF hat in der Validierung 0%
-    Accuracy für GitHub-Orgs erreicht. Beide Signale bleiben Teil der
-    Kaskade, sind aber bewusst unterhalb zuverlässigerer Signale einsortiert
-    statt entfernt zu werden -- siehe resolve_headquarters() für Details.
+    Das älteste Gründungsdatum entspricht nicht immer dem Hauptsitz, und die
+    Selbstreferenz als Ultimate Owner erwies sich in einer frühen, informellen
+    Prüfung (März 2026) als unzuverlässig. Beide Signale stehen deshalb unter
+    den zuverlässigeren. Belastbare Zahlen gibt es für das heutige Verfahren
+    nicht (Prüfprotokoll: docs/methodology/manual_validation.md).
 
 Architektur:
     - Reine Logik, keine DB-Verbindung: Empfängt vorbereitete Dicts.
@@ -81,17 +81,16 @@ class HQResolution:
 # ---------------------------------------------------------------------------
 
 # Reihenfolge bestimmt die Kaskade. Niedrigere Zahl = höhere Priorität.
-# WARNUNG: GUO_SELF hat 0.0% Accuracy in Validierung (März 2026)
 HQ_METHOD_PRIORITY = {
-    "HQ_TABLE": 1,  # Explizite HQ-Markierung (8.3% Coverage, hohe Zuverlässigkeit)
-    "CONSOLIDATING_ENTITY": 2,  # C1/C2 Codes (1.2% Coverage)
+    "HQ_TABLE": 1,  # Andere Einheiten nennen den Kandidaten als Hauptsitz
+    "CONSOLIDATING_ENTITY": 2,  # C1/C2-Konsolidierungscode
     "ROOT_DOMAIN_PRESENCE": 3,  # Einziger Kandidat mit echter Root-Domain (siehe unten)
-    "OLDEST_FOUNDING": 4,  # Ältestes Gründungsdatum (71.2% Coverage, ~10% Fehlerrate)
-    "HIGHEST_REVENUE": 5,  # Höchster Umsatz (34.5% Coverage)
-    "GUO_SELF": 6,  # Ultimate Owner Self-Reference (~30% Coverage, 0% Accuracy)
-    "LARGE_CORP_HQ": 7,  # Große Unternehmen (>= 1000 Mitarbeiter)
-    "IS_PARENT": 8,  # Parent-Status (2.5% Coverage)
-    "BVDID_FALLBACK": 99,  # Alphabetischer Fallback (100% Coverage)
+    "OLDEST_FOUNDING": 4,  # Eindeutig ältestes Gründungsdatum
+    "HIGHEST_REVENUE": 5,  # Eindeutig höchster Umsatz
+    "GUO_SELF": 6,  # Selbstreferenz als Ultimate Owner
+    "LARGE_CORP_HQ": 7,  # Mindestens 1000 Mitarbeiter
+    "IS_PARENT": 8,  # Mutter anderer Einheiten
+    "BVDID_FALLBACK": 99,  # Alphabetisch erste BvD-Kennung unter den bestätigten
 }
 
 # ROOT_DOMAIN_PRESENCE (Priorität 3): Fund aus Charge 01 (Microsoft/Google) -
@@ -132,17 +131,17 @@ def resolve_headquarters(  # noqa: C901
 ) -> Optional[HQResolution]:
     """Wähle genau einen Hauptsitz-Kandidaten aus einer Liste von ORBIS-Treffern.
 
-    Implementiert die korrigierte Prioritätskaskade (basierend auf Validierung März 2026,
-    erweitert um ROOT_DOMAIN_PRESENCE nach Charge-01-Fund):
-        1. HQ_TABLE (explizite HQ-Markierung, 8.3% Coverage, hohe Zuverlässigkeit)
-        2. CONSOLIDATING_ENTITY (C1/C2 Codes, 1.2% Coverage)
+    Implementiert die Prioritätskaskade (Reihenfolge nach einer frühen Prüfung im
+    März 2026, erweitert um ROOT_DOMAIN_PRESENCE nach dem Charge-01-Fund):
+        1. HQ_TABLE (andere Einheiten nennen den Kandidaten als Hauptsitz)
+        2. CONSOLIDATING_ENTITY (C1/C2-Codes)
         3. ROOT_DOMAIN_PRESENCE (einziger Kandidat mit echter Root-Domain, oder bei
            mehreren via github_country auf einen eindeutigen Landestreffer reduzierbar)
-        4. OLDEST_FOUNDING (eindeutig ältestes Gründungsdatum, 71.2% Coverage, ~10% Fehlerrate)
-        5. HIGHEST_REVENUE (eindeutig höchster Umsatz, 34.5% Coverage)
-        6. GUO_SELF (Ultimate Owner Self-Reference, ~30% Coverage, 0% Accuracy für GitHub-Orgs)
+        4. OLDEST_FOUNDING (eindeutig ältestes Gründungsdatum)
+        5. HIGHEST_REVENUE (eindeutig höchster Umsatz)
+        6. GUO_SELF (Selbstreferenz als Ultimate Owner)
         7. LARGE_CORP_HQ (>= 1000 Mitarbeiter)
-        8. IS_PARENT (Parent-Status, 2.5% Coverage)
+        8. IS_PARENT (Mutter anderer Einheiten)
         9. BVDID_FALLBACK (alphabetisch erste BVDID unter den Kandidaten, die
            Land oder Domain bestätigen; ohne Bestätigung kein Ergebnis)
 

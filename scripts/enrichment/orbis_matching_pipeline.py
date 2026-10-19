@@ -14,9 +14,9 @@ das HQ_TABLE-Signal aus Orbis. CONSOLIDATING_ENTITY, GUO_SELF, HIGHEST_REVENUE,
 LARGE_CORP_HQ, IS_PARENT benötigen weitere Joins gegen LEGAL_INFO/
 KEY_FINANCIALS_EUR/ALL_SUBSIDIARIES_L1, die hier noch nicht angebunden sind
 (GUO_SELF/OLDEST_FOUNDING bewusst NICHT priorisiert - siehe hq_detection.py
-Modul-Docstring: historisch die Hauptfehlerquelle bzw. 0% Accuracy für
-GH-Orgs). Für PENDING-Fälle greift die Kaskade daher primär auf HQ_TABLE,
-ROOT_DOMAIN_PRESENCE und (länderbewussten) BVDID_FALLBACK zurück.
+Modul-Docstring: in einer frühen, informellen Prüfung unzuverlässig). Für
+PENDING-Fälle greift die Kaskade daher nur auf HQ_TABLE, ROOT_DOMAIN_PRESENCE
+und BVDID_FALLBACK zurück, jeweils nur mit Bestätigung über Land oder Domain.
 
 WICHTIGE JOIN-RICHTUNG bei HQ_TABLE (siehe lookup_hq_subsidiary_counts()-
 Docstring): Der in orbis_matching_strategy_v2.md dokumentierte Join

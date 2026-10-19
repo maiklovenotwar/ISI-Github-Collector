@@ -80,8 +80,8 @@ to be applied in the analysis.
 | Column | Source | Available for | Described in |
 |--------|--------|---------------|--------------|
 | `country_code` | Free-text location of the profile, resolved by geocoding | persons and organizations | `geocoding.md` |
-| `country_code_cctld` | Country-code top-level domain of the website or e-mail address | persons and organizations | `orbis_enrichment.md`, section 5 |
-| `country_code_orbis` | Headquarters of the matched company in the Orbis database | organizations | `orbis_enrichment.md` |
+| `country_code_cctld` | Country-code top-level domain of the website or e-mail address | persons and organizations | this document, below |
+| `country_code_orbis` | Country of the Orbis entity matched to the organization | organizations | `orbis_enrichment.md` |
 
 No script overwrites the column of another source.
 
@@ -151,5 +151,9 @@ Two further limits apply to this source.
 ## Orbis
 
 `country_code_orbis` is the result of matching organizations to companies
-in a commercial database. It is not part of the results of the collection
-pipeline described here; see `orbis_enrichment.md`.
+in a commercial database. It is the country of the matched entity, which is
+not necessarily the headquarters, and for some cases agrees with the geocoded
+country by construction. It is not part of the results of the collection
+pipeline and is not used to fill missing countries; it serves as context or
+for sensitivity analyses once a validation round has met its acceptance
+criterion (`manual_validation.md`). See `orbis_enrichment.md`.

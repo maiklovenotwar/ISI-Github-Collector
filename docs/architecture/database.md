@@ -72,7 +72,7 @@ The schema has five tables:
 | created_at | DateTime | GitHub account creation date |
 | updated_at | DateTime | GitHub account last-update date |
 | bvd_id | String, indexed | Orbis BvD identifier of the current match |
-| country_code_orbis | String(2) | ISO country code from Orbis (ground truth) |
+| country_code_orbis | String(2) | Country of the matched Orbis entity (`CTRYISO`); not necessarily the headquarters, see `docs/methodology/orbis_enrichment.md`, section 1 |
 | country_code_cctld | String(2) | ISO country code derived from the country-code top-level domain of `blog` or `email` (see `scripts/enrichment/enrich_cctld.py`) |
 | cctld_source | String(20) | Field from which the code was derived: `blog`, `email`, or `both` |
 | cctld_enriched_at | DateTime | Timestamp of the ccTLD enrichment |

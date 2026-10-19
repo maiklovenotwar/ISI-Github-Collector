@@ -1,161 +1,196 @@
 # Orbis Enrichment Methodology
 
-Methodology for matching GitHub organizations to companies in the Orbis
-(Bureau van Dijk) database and resolving a single headquarters location per
-match. See `CONTEXT.md` for the terminology (Match-Status, Match-Type,
-Candidate/Contender/Hit, Headquarters Resolution) used throughout this
-document, and `docs/usage.md` for the CLI (`scripts/enrichment/orbis_matching_pipeline.py`).
+Description of how GitHub organizations are matched to companies in the
+Orbis database (Bureau van Dijk) and how one Orbis entity is chosen when
+several qualify. See `CONTEXT.md` for the terminology (Match-Status,
+Match-Type, Candidate/Contender/Hit, Headquarters Resolution) and
+`docs/usage.md` for the command line
+(`scripts/enrichment/orbis_matching_pipeline.py`). The logic is implemented
+in `src/github_collector/enrichment/orbis_matching_logic.py` and
+`hq_detection.py`; weights and thresholds are in `config/orbis_matching.yaml`.
 
-## 1. Matching
+**Status.** The matching has not yet been run on the project database
+(apart from two test runs of three organizations each, both rolled back).
+No accuracy estimate exists for the current procedure. `country_code_orbis`
+is not used in analyses until a validation round under
+`docs/methodology/manual_validation.md` has met its acceptance criterion.
 
-1. **Name matching**: GitHub organization name against Orbis `NAME_NATIVE`
-   (case-insensitive, indexed).
-2. **Blog matching**: GitHub blog-field domain against the Orbis website
-   domain.
-3. **Plausibility pre-filter**: before scoring, a candidate must reach a
-   minimum name-similarity of 0.5 (`difflib.SequenceMatcher`) against the
-   GitHub name/login; names shorter than a configured threshold are treated
-   as generic/untrustworthy unless corroborated by a blog-domain match.
-4. **Scoring** (`config/orbis_matching.yaml`):
-   - a name-length-weighted base score — longer, more specific names score
-     higher: 40 points at ≥15 characters, 30 at ≥11, 20 at ≥7, 10 below
-     that (the rationale, counter-intuitively opposite to "shorter is more
-     specific", is that *longer* company names are less likely to collide
-     by chance than short/generic ones)
-   - +20 points if the blog domain matches the Orbis website domain
-   - +10 further points if both name and blog corroborate each other
-   - minimum score to count as a match: 30 (reduced to 10 for name-only
-     candidates with no blog signal at all — otherwise names under 11
-     characters could never reach 30; for that path, the plausibility
-     filter and Match-Status, not the score threshold, carry the real
-     confidence judgment)
-5. Each GitHub organization ends up with a list of scored Orbis candidates.
+## 1. Role of the Orbis Country
 
-Scoring and consensus logic is implemented in
-`src/github_collector/enrichment/orbis_matching_logic.py`; thresholds and
-weights are configured in `config/orbis_matching.yaml`.
+`country_code_orbis` is the country of the matched Orbis entity (`CTRYISO`).
+It is not necessarily the country of the company's headquarters:
 
-## 2. Candidate Filtering and Consensus (Match-Status)
+- for a `unique` or `consensus` match it is the country of the entity that
+  was found, which may be a subsidiary or a branch;
+- for a resolved `pending` match the headquarters resolution (section 6)
+  prefers candidates in the country of the GitHub organization, so that the
+  Orbis country agrees with the geocoded country partly by construction.
 
-Raw candidates are filtered to contenders (name-plausibility check) and
-then to hits (score-threshold check); see `CONTEXT.md` for the exact
-definitions. An organization's Match-Status follows from its hits:
+Agreement between `country_code_orbis` and the geocoded `country_code`
+therefore does not validate either. Results of the collection pipeline are
+based on the geocoded country (`country_attribution.md`); the Orbis country
+is a separate estimate for context and sensitivity analyses, not a means to
+fill missing countries.
 
-- All hits agree on country → `consensus`
-- Exactly one hit → `unique`
-- Hits disagree, or only an unconfirmed name/login match exists with no
-  corroborating signal → `pending` (deliberately not guessed)
-- No candidate reaches the minimum score → `no_match`
+## 2. Search
 
-## 3. Headquarters Resolution
+1. **Domain.** For each organization with a blog URL, the domain and its root
+   domain are taken from the URL; domains on the list
+   `config/blog_blacklist.txt` (hosting and social-media services) are
+   skipped. All Orbis entities whose `WEBSITE` matches are candidates.
+2. **Name fallback.** Only if the domain search yields no candidate at all,
+   and the GitHub name (or, without a name, the login) has at least five
+   characters, Orbis is searched for that exact string in `NAME_NATIVE`
+   (case-insensitive). Company names in non-Latin script are never found
+   this way, because the GitHub name is written in Latin script.
+3. An organization with neither a usable domain nor a long enough name is
+   not searched; the outcome list records it as `not_searchable`.
 
-A `pending` organization — multiple disagreeing Orbis entries for what is
-otherwise the same matched company — is resolved to a single headquarters
-by `src/github_collector/enrichment/hq_detection.py`, via a fixed priority
-cascade (`HQ_METHOD_PRIORITY`):
+## 3. Name Similarity and Plausibility
 
-1. **HQ_TABLE** — explicit HQ marking in Orbis (8.3% coverage, high
-   reliability)
-2. **CONSOLIDATING_ENTITY** — C1/C2 consolidation codes (1.2% coverage)
-3. **ROOT_DOMAIN_PRESENCE** — the sole candidate with a genuine root-domain
-   website match, among otherwise name-identical candidates (added after a
-   finding that Microsoft- and Google-type cases have exactly one entity
-   with the real root domain, the rest having none or a subdomain)
-4. **OLDEST_FOUNDING** — oldest founding date (71.2% coverage, ~10% error
-   rate — see Known Issues)
-5. **HIGHEST_REVENUE** — highest revenue (34.5% coverage)
-6. **GUO_SELF** — Ultimate Owner self-reference (~30% coverage, 0% accuracy
-   for GitHub organizations in manual validation — see Known Issues)
-7. **LARGE_CORP_HQ** — company size ≥ 1,000 employees
-8. **IS_PARENT** — parent status in `ALL_SUBSIDIARIES_L1` (2.5% coverage)
-9. **BVDID_FALLBACK** — alphabetically first BvD ID, preferred within the
-   GitHub-derived country if known (100% coverage; a reproducible
-   last-resort choice, not a substantive signal)
+Names are compared after reducing them to the characters a–z and 0–9. If
+one normalised name contains the other, the similarity is
+0.7 + 0.3 × (shorter length / longer length); otherwise it is the ratio of
+`difflib.SequenceMatcher`. Each Orbis name is compared with the GitHub
+display name and the login; the higher value counts.
 
-Before the cascade runs, candidates are (a) filtered by name plausibility
-against the GitHub name/login, if available, and (b) deduplicated to one
-representative per branch/subsidiary sharing the same base BvD ID. Signals
-4 and 5 additionally require a unique winner (no tie) to be used.
+An Orbis name without any Latin letter would reduce to nothing. Such a name
+is also compared through its transliteration (`unidecode`), and the higher
+value counts, under three restrictions: legal forms are removed first
+(`You Xian Gong Si`, `Zhu Shi Hui She`, `OOO`, `AO`, and others), the
+remaining core needs at least five letters from at least two characters,
+and the transliteration counts towards a name match (below) only for
+candidates found by their domain. Japanese names containing kanji are read
+in their Chinese pronunciation and are compared poorly. Candidates matched
+this way are flagged and validated separately.
 
-### Known Issues
+- **Plausibility filter:** a candidate with a similarity below 0.5 is
+  discarded before any scoring.
+- **Name match:** a similarity of at least 0.75 counts as a name match and
+  earns name points (the threshold is a constant in the pipeline script).
 
-| Issue | Example | Frequency |
-|-------|---------|-----------|
-| Oldest founding date is not the headquarters | A long-established European legal entity pre-dates a company's actual (later) US headquarters | common |
-| Subsidiaries can predate the parent in the record | Local branches sometimes carry an older founding date than the group itself | common |
-| Wrong country selected via founding date | ~10% error rate for `OLDEST_FOUNDING` in manual validation | ~10% |
-| Ultimate-owner self-reference is unreliable for GitHub orgs | 0% accuracy observed in manual validation | — |
+## 4. Scoring
 
-These two findings (`OLDEST_FOUNDING`'s ~10% error rate, `GUO_SELF`'s 0%
-accuracy) are why both signals are kept in the cascade but ranked below the
-more reliable `HQ_TABLE`, `CONSOLIDATING_ENTITY`, and `ROOT_DOMAIN_PRESENCE`
-signals, rather than removed outright — they still contribute coverage
-where no stronger signal is available.
+The point values are a set heuristic; they have not been calibrated against
+data. The reasoning behind the name points is that longer names collide by
+chance less often than short ones.
 
-## 4. Validation
+| Component | Points | Condition |
+|---|---:|---|
+| Name | 40 / 30 / 20 / 10 | name match; GitHub name (or login) of ≥ 15 / ≥ 11 / ≥ 7 / fewer characters |
+| Blog | 20 | the candidate was found through the organization's domain |
+| Combination | 10 | name match and blog |
+| Generic name | −15 | name match without blog, name shorter than five characters |
+| Containment only | −15 | similarity from the containment rule, no blog, and the Orbis country does not equal the GitHub country |
 
-An early manual-validation round (March 2026, 50 sampled matches) found
-54% precision overall, with `OLDEST_FOUNDING` responsible for the majority
-of the false positives (51% error rate for country assignment within cases
-using that signal). This finding directly motivated adding
-`ROOT_DOMAIN_PRESENCE` above it in the cascade and de-prioritizing
-`GUO_SELF`.
+A candidate is a hit with at least 30 points; candidates of the name or
+login fallback need 10, because they cannot earn blog or combination
+points. A further function for a country bonus
+(`calculate_country_code_adjustment`) exists in the code but is not called.
 
-The scripts used to generate and manage that validation round's
-goldstandard dataset have since been superseded and removed; a
-goldstandard-based precision
-re-measurement against the current cascade has not yet been published.
-Batch-level manual review notes from later rounds exist under
-`workstreams/orbis_matching/docs/batches/` (not part of the public
-repository — see the data-sensitivity note below).
+Match-Types: `combined_high` (≥ 60), `combined_medium` (≥ 40),
+`combined_low` (≥ 30) for candidates found by domain; `name_only` and
+`login_fallback` for candidates of the name fallback, by the search term.
 
-## 5. ccTLD Enrichment
+## 5. Match-Status
 
-A separate, independent enrichment step derives a country code from the
-country-code top-level domain (ccTLD) of an entity's website or email
-domain (e.g. `.de`, `.co.uk`). It is applied to organizations by default
-and to contributors with `--entity contributors`:
+After the plausibility filter and the scoring, entities that are branches of
+the same base BvD identifier (suffixes such as `-B0001`, `-1002`) are merged
+into one. The Match-Status follows from the hits, in this order:
 
-```bash
-python scripts/enrichment/enrich_cctld.py
-python scripts/enrichment/enrich_cctld.py --entity contributors
-```
+1. no hit → `no_match`;
+2. all hits come from the name or login fallback and none contains the full
+   login as a token → `pending`;
+3. exactly one BvD identifier → `unique`;
+4. all hits that carry a country carry the same one (hits without a country
+   are ignored) → `consensus`;
+5. otherwise → `pending`.
 
-The procedure is implemented in
-`src/github_collector/enrichment/cctld.py` and comprises four rules:
+Among several hits the best candidate is chosen by score, then by a full
+login token in the company name, then by the number of merged branches, the
+similarity, and finally the BvD identifier.
 
-1. The domain is extracted from the `blog` URL and from the `email`
-   address; IP addresses and GitHub no-reply addresses are discarded.
-2. Compound suffixes (e.g. `.co.uk`, `.com.br`) and single two-letter
-   suffixes that are valid ISO 3166-1 alpha-2 codes are mapped to a
-   country; `.uk` is mapped to `GB`.
-3. Generic TLDs (e.g. `.com`, `.org`, `.net`) and country-code TLDs that
-   are predominantly used generically (e.g. `.io`, `.co`, `.ai`, `.me`)
-   yield no inference.
-4. If the website and the email domain indicate different countries, the
-   website takes precedence.
+## 6. Headquarters Resolution of `pending`
 
-Before any result is written, the extraction is validated against all rows
-that already carry a geocoded country code; the run is aborted if the
-agreement rate is below 80%. For organizations, rows with an Orbis-derived
-country code are excluded from the target population, because the Orbis
-value is treated as ground truth. Results are stored in
-`country_code_cctld` and do not overwrite the geocoded `country_code`.
+A `pending` organization is passed to the headquarters resolution, which
+either chooses one candidate or leaves the organization without a result.
+Every decision needs a corroboration: the candidate's Orbis country equals
+the GitHub organization's geocoded country, or the candidate's website
+equals the organization's root domain. Without a geocoded country (no
+location, or a location without a match) only the domain counts. Candidates
+without a corroboration are never chosen.
 
-## 6. Tools
+The signals are tried in a fixed order, each among the corroborated
+candidates:
 
-- `scripts/enrichment/orbis_matching_pipeline.py`: the pipeline entry point (matching
-  + headquarters resolution); see `docs/usage.md`.
-- `scripts/diagnostics/diagnose_hq_signals.py`: inspect the distribution of
-  available HQ signals for multi-hit organizations.
-- `scripts/diagnostics/check_orbis_schema.py`: verify that the Orbis tables and columns
-  required for headquarters resolution are reachable.
+| Order | Signal | Data in the current pipeline |
+|---:|---|---|
+| 1 | `HQ_TABLE`: other entities name the candidate as their headquarters; most such subsidiaries wins | yes |
+| 2 | `CONSOLIDATING_ENTITY`: consolidation code C1/C2 | no |
+| 3 | `ROOT_DOMAIN_PRESENCE`: the only candidate whose website is the root domain (or the only one in the GitHub country among several) | yes |
+| 4 | `OLDEST_FOUNDING`: unique oldest incorporation date | no |
+| 5 | `HIGHEST_REVENUE`: unique highest operating revenue | no |
+| 6 | `GUO_SELF`: the candidate is its own ultimate owner | no |
+| 7 | `LARGE_CORP_HQ`: at least 1,000 employees, most wins | no |
+| 8 | `IS_PARENT`: parent of other entities | no |
+| 9 | `BVDID_FALLBACK`: alphabetically first BvD identifier among the corroborated candidates | — |
 
-## 7. Data Sensitivity
+Signals 2 and 4 to 8 are implemented but receive no data, because the
+pipeline does not query the Orbis tables they need; they never decide
+today. Before the cascade, implausible names are filtered again and
+branches are merged.
 
-Orbis/Bureau van Dijk is a licensed commercial dataset. Intermediate
-artifacts that contain real company names, BvD IDs, or schema details
-derived from Orbis (export/import CSVs, batch review notes, the Orbis
-schema inventory) are excluded from version control — see `.gitignore`
-entries under `workstreams/*/data/`, `results/`, and the
-`workstreams/orbis_matching/docs/` directory.
+The written row records the Match-Status (`pending`), the Match-Type of the
+chosen candidate and the signal (`hq_method`). A further check of candidates
+without an Orbis name found no effect (they cannot reach the minimum score),
+so no change was made.
+
+## 7. Validation
+
+An informal review of an earlier version of the headquarters cascade (March
+2026, about 50 cases) found a low precision. Its records are not available
+and it cannot be reproduced; no figure from it is reported here. For the
+current procedure there is no accuracy estimate. The protocol in
+`docs/methodology/manual_validation.md` fixes the sample, the labelling and
+an acceptance criterion before any labelling takes place.
+
+## 8. Limits
+
+- **Selection.** Only organizations with a usable blog domain or a name of
+  at least five characters are searched.
+- **Coverage of Orbis.** Orbis does not cover all countries and company
+  types equally; organizations that are projects, communities or public
+  bodies have no company to find.
+- **Non-Latin names.** Found only through the domain, and compared through a
+  restricted transliteration. The share of Orbis names without Latin
+  letters is measured with `scripts/diagnostics/count_orbis_non_latin_names.py`
+  (requires access to Orbis); the result is not yet available.
+- **Entity, not headquarters.** See section 1.
+- **Heuristic scores.** See section 4.
+
+## 9. Reproducibility
+
+`--export-csv` writes the outcome for every processed organization (also
+those without a result) and, next to it, a metadata file with the run
+identifier, the Git commit, the SHA-256 hash of `config/orbis_matching.yaml`,
+the Orbis schema and the counts per Match-Status. Outputs that contain Orbis
+data are written only to paths that Git ignores. Every run can be rolled back
+with `--rollback <run-id>`; rolled-back rows stay in `orbis_enrichments` with
+`reverted_at` set.
+
+Tools: `scripts/diagnostics/diagnose_hq_signals.py` (distribution of the
+headquarters signals), `scripts/diagnostics/check_orbis_schema.py` (tables
+and columns reachable), `scripts/diagnostics/count_orbis_non_latin_names.py`,
+`scripts/diagnostics/draw_orbis_validation_sample.py`.
+
+## 10. Data Sensitivity
+
+Orbis is a licensed commercial database. Intermediate files that contain
+company names, BvD identifiers or schema details from Orbis (exports, sample
+files, review notes, the schema inventory) are excluded from version control
+(`workstreams/*/data/`, `results/`, `workstreams/orbis_matching/docs/`); tests
+use placeholder identifiers of the form `XX000001`, and a test fails on any
+identifier of the BvD form in a tracked file.
+
+The country derived from the web domain (ccTLD), which earlier appeared in
+this document, is described in `docs/methodology/country_attribution.md`.

@@ -64,7 +64,7 @@ plausibility:
   # UND die keine weitere Bestätigung (Blog-Match oder Länder-
   # Übereinstimmung) haben. Fund aus Charge 11 (workstreams/
   # orbis_matching/docs/batches/batch11_review.md): "Studecorators"
-  # (unbeteiligte UK-Malerfirma) erreicht über puren Zeichenketten-Zufall
+  # (eine unbeteiligte Firma) erreicht über puren Zeichenketten-Zufall
   # ("studec" sind die ersten 6 Buchstaben von "Stu"+"Decorators") 0.838
   # Ähnlichkeit zu "STUDEC" - höher als der 0.75-Schwellwert für
   # has_name_match. Die Formel selbst wurde bewusst NICHT verändert, weil
@@ -73,111 +73,11 @@ plausibility:
   # SequenceMatcher-Ratio auf 0.40, unter die Plausibilitäts-Schwelle).
   containment_only_malus: 15
 
-validation:
-  # Drei-Säulen-Validierung Schwellwerte
-  manual_sample_threshold: 0.85      # 85% korrekt
-  consistency_threshold: 0.90        # 90% konsistent
-  score_distribution_threshold: 0.30 # 30% mit Score >= 50
-  
-  # Testlauf Abbruchkriterien
-  testrun_consistency_min: 0.80      # 80% interne Konsistenz
-  testrun_manual_min: 0.75           # 75% manuelle Stichprobe
-  
-  # Stichproben-Größe
-  sample_size: 100
-
-processing:
-  # Batch-Größen
-  export_batch_size: 10000
-  oracle_batch_size: 1000
-  mysql_batch_size: 1000
-  
-  # Testlauf-Konfiguration
-  testrun_size: 10000
-  testrun_with_cc_ratio: 0.5  # 50% mit bestehendem Country Code
-  
-  # Dry-run Modus (Standard)
-  dry_run: true
-
-# Phase-Konfiguration
-phases:
-  # Phase 1: Eindeutige und Konsens-Matches
-  phase1:
-    enabled: true
-    handle_unique: true      # hit_count = 1
-    handle_consensus: true   # alle Treffer gleiches Land
-    mark_pending: true       # Multi-Hits ohne Konsens
-  
-  # Phase 2: Hauptsitzerkennung
-  phase2:
-    enabled: false  # Nur nach Phase-1-Freigabe
-
-    # DEPRECATED / NICHT AKTIV GELESEN: Die tatsächliche HQ-Kaskade ist in
-    # src/github_collector/enrichment/hq_detection.py als HQ_METHOD_PRIORITY
-    # hardcoded (9 Signale: HQ_TABLE, CONSOLIDATING_ENTITY, ROOT_DOMAIN_PRESENCE,
-    # OLDEST_FOUNDING, HIGHEST_REVENUE, GUO_SELF, LARGE_CORP_HQ, IS_PARENT,
-    # BVDID_FALLBACK) - hq_detection.py liest diesen YAML-Abschnitt NICHT.
-    # Die untenstehende 4-Signal-Liste ist ein historischer Entwurfsstand aus
-    # der ursprünglichen SQL-Pipeline-Planung und driftet vom echten Code ab.
-    # Coverage-Werte bleiben als Referenz erhalten, aber nicht als Steuerung
-    # verwenden - siehe hq_detection.py für die aktuell gültige Kaskade.
-    headquarters_signals:
-      founding_date:
-        enabled: true
-        priority: 1
-        coverage: 0.712  # 71.2%
-        table: "LEGAL_INFO"
-        
-      revenue:
-        enabled: true
-        priority: 2
-        coverage: 0.345  # 34.5%
-        table: "KEY_FINANCIALS_EUR"
-        
-      hq_table:
-        enabled: true
-        priority: 3
-        coverage: 0.083  # 8.3%
-        table: "HQ"
-        
-      hierarchy:
-        enabled: true
-        priority: 4
-        coverage: 0.025  # 2.5%
-        table: "ALL_SUBSIDIARIES_L1"
-
-# Externe Dateien
-blog_blacklist_file: "config/blog_blacklist.txt"
-
-# Oracle-Tabellennamen (überschreibbar via Umgebungsvariablen)
-oracle:
-  schema: "ORBIS_23J"
-  input_table: "GITHUB_COMBINED_INPUT"
-  results_table: "GITHUB_COMBINED_RESULTS"
-  
-  # Temp-Tabellen für Phasen
-  phase1_table: "GITHUB_COMBINED_PHASE1"
-  phase2_table: "GITHUB_COMBINED_PHASE2"
-
-# MySQL-Schema
-mysql:
-  organizations_table: "organizations"
-  enrichments_table: "orbis_enrichments"
-
-# Match-Type Definitionen
+# Score-Schwellen der Match-Types (siehe CONTEXT.md). Gelesen werden nur diese beiden:
+# combined_low gilt ab scoring.min_score; name_only und login_fallback haben keine eigene
+# Stufe, sondern folgen aus dem Suchweg (classify_match_type in orbis_matching_logic.py).
 match_types:
-  combined_high: 
+  combined_high:  # Name + Blog, Score >= 60
     min_score: 60
-    description: "Name + Blog Match, Score >= 60"
-  combined_medium:
+  combined_medium:  # Name + Blog, Score 40-59
     min_score: 40
-    description: "Name + Blog Match, Score 40-59"
-  combined_low:
-    min_score: 30
-    description: "Name oder Blog Match, Score 30-39"
-  name_only:
-    description: "Nur Name-Match (kein Blog)"
-  login_fallback:
-    description: "Login-Match (kein Name vorhanden)"
-  pending:
-    description: "Multi-Hit ohne Konsens (Phase 2 erforderlich)"
