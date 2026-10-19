@@ -78,19 +78,26 @@ class TestOutcomeExport:
         assert json.loads(meta_path.read_text(encoding="utf-8")) == {"run_id": "r1"}
 
     def test_run_metadata_identifies_code_configuration_and_orbis_schema(self) -> None:
+        cli_args = {"limit": 1000, "logins": None, "min_name_similarity": 0.6}
         meta = build_run_metadata(
             run_id="r1",
             dry_run=True,
             orbis_schema="ORBIS_23J",
             started_at="2026-10-19T10:00:00+00:00",
             status_counts={"unique": 1},
+            cli_args=cli_args,
         )
 
+        # Everything that changes the outcome: code, uncommitted edits, configuration,
+        # blog blacklist, and the options that select organizations or move thresholds.
         assert set(meta) == {
             "run_id",
             "dry_run",
             "git_commit",
+            "git_dirty",
             "config_sha256",
+            "blacklist_sha256",
+            "cli_args",
             "orbis_schema",
             "started_at",
             "status_counts",
@@ -99,6 +106,10 @@ class TestOutcomeExport:
             (REPO / "config" / "orbis_matching.yaml").read_bytes()
         ).hexdigest()
         assert meta["config_sha256"] == expected
+        blacklist = hashlib.sha256((REPO / "config" / "blog_blacklist.txt").read_bytes())
+        assert meta["blacklist_sha256"] == blacklist.hexdigest()
+        assert meta["cli_args"] == cli_args
+        assert isinstance(meta["git_dirty"], bool)
         assert len(meta["git_commit"]) == 40
 
 

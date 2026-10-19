@@ -92,6 +92,7 @@ NAME_MATCH_SIMILARITY_THRESHOLD = 0.75
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CONFIG_FILE = REPO_ROOT / "config" / "orbis_matching.yaml"
+BLACKLIST_FILE = REPO_ROOT / "config" / "blog_blacklist.txt"
 
 # Spalten der vollständigen Ergebnisliste je Lauf (eine Zeile je Organisation, auch
 # ohne Ergebnis), Grundlage der Validierungsstichprobe (docs/methodology/manual_validation.md).
@@ -191,16 +192,28 @@ def build_run_metadata(
     orbis_schema: str,
     started_at: str,
     status_counts: Dict[str, int],
+    cli_args: Optional[Dict[str, object]] = None,
 ) -> Dict[str, object]:
-    """Was einen Lauf reproduzierbar macht: Code-Stand, Konfiguration, Orbis-Schema."""
-    commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True
-    ).stdout.strip()
+    """Was einen Lauf reproduzierbar macht: alles, was sein Ergebnis verändert.
+
+    Code-Stand (Commit und ob uncommittete Änderungen vorlagen), Konfiguration und
+    Blog-Sperrliste (Hashes), die Optionen, die Organisationen auswählen oder Schwellen
+    verschieben (`--limit`, `--logins`, `--min-name-similarity`), und das Orbis-Schema.
+    """
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True
+        ).stdout.strip()
+
     return {
         "run_id": run_id,
         "dry_run": dry_run,
-        "git_commit": commit,
+        "git_commit": git("rev-parse", "HEAD"),
+        "git_dirty": bool(git("status", "--porcelain")),
         "config_sha256": hashlib.sha256(CONFIG_FILE.read_bytes()).hexdigest(),
+        "blacklist_sha256": hashlib.sha256(BLACKLIST_FILE.read_bytes()).hexdigest(),
+        "cli_args": cli_args or {},
         "orbis_schema": orbis_schema,
         "started_at": started_at,
         "status_counts": status_counts,
@@ -626,6 +639,11 @@ def run_pipeline(  # noqa: C901
                 client.config.get("schema", "ORBIS_23J"),
                 started_at,
                 status_counts,
+                cli_args={
+                    "limit": limit,
+                    "logins": sorted(logins) if logins else None,
+                    "min_name_similarity": min_name_similarity,
+                },
             )
             rows = outcome_rows(results, orgs_by_id, hq_methods, search_paths)
             write_outcome_export(export_path, rows, metadata)

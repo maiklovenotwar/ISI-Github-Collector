@@ -15,12 +15,16 @@ is not used in analyses.
 
 A validation round refers to exactly one run of
 `scripts/enrichment/orbis_matching_pipeline.py`, identified by the metadata
-file that `--export-csv` writes next to its outcome list (`run_id`, Git
-commit, SHA-256 of `config/orbis_matching.yaml`, Orbis schema, start time,
-counts per Match-Status). The results that are written to the database are
-validated by drawing the sample from the outcome list of the same run, or
-of a dry run with the same commit and configuration hash. A later change to
-the code or the configuration requires a new round.
+file that `--export-csv` writes next to its outcome list: `run_id`, Git
+commit and whether the working tree had uncommitted changes (`git_dirty`),
+SHA-256 of `config/orbis_matching.yaml` and of `config/blog_blacklist.txt`,
+the options `--limit`, `--logins` and `--min-name-similarity`, the Orbis
+schema, start time and counts per Match-Status. The results that are written
+to the database are validated by drawing the sample from the outcome list of
+the same run, or of a dry run whose metadata agree in all of these fields
+except `run_id`, `dry_run`, start time and counts, and with `git_dirty`
+false in both. A later change to the code, the configuration or the
+blacklist requires a new round.
 
 ## 2. Population and Strata
 
