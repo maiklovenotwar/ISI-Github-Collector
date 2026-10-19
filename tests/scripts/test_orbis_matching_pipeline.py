@@ -7,18 +7,83 @@ apply_hq_signals(), vormals build_orbis_candidates()). Deckt nur die reinen,
 DB-unabhängigen Funktionen ab, nicht run_pipeline() selbst (DB/Oracle-Zugriff).
 """
 
+import csv
+import hashlib
+import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "enrichment"))
+REPO = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(REPO / "scripts" / "enrichment"))
 
 from orbis_matching_pipeline import (  # noqa: E402
     apply_hq_resolution_to_match_result,
     apply_hq_signals,
     build_match_candidates,
     build_name_only_candidates,
+    build_run_metadata,
+    outcome_rows,
+    search_path_for,
     should_attempt_name_fallback,
+    write_outcome_export,
 )
+
+
+class TestOutcomeExport:
+    """Vollständige Ergebnisliste je Lauf mit Laufmetadaten (task 6, E26)."""
+
+    def test_search_path_names_how_an_organization_was_searched(self) -> None:
+        domains = {1: "acme.com"}
+        names = {2: "Acme Widgets"}
+        assert search_path_for(1, domains, names) == "domain"
+        assert search_path_for(2, domains, names) == "name"
+        assert search_path_for(3, domains, names) == "not_searchable"
+
+    def test_export_has_one_row_per_organization_and_a_metadata_file(self, tmp_path) -> None:
+        winner = make_candidate(bvd_id="XX000903", name_via_transliteration=True)
+        results = {
+            1: make_match_result(status=MatchStatus.UNIQUE, best_candidate=winner),
+            3: make_match_result(github_id=3, status=MatchStatus.NO_MATCH),
+        }
+        orgs = {
+            1: {"id": 1, "login": "acme", "name": "Acme", "country_code": "DE"},
+            3: {"id": 3, "login": "x", "name": "", "country_code": None},
+        }
+        rows = outcome_rows(results, orgs, {}, {1: "domain", 3: "not_searchable"})
+        meta_path = write_outcome_export(tmp_path / "run.csv", rows, {"run_id": "r1"})
+
+        with open(tmp_path / "run.csv", encoding="utf-8", newline="") as f:
+            exported = list(csv.DictReader(f))
+        assert [r["login"] for r in exported] == ["acme", "x"]
+        assert exported[0]["search_path"] == "domain"
+        assert exported[0]["via_transliteration"] == "True"
+        assert exported[1]["bvd_id"] == ""
+        assert json.loads(meta_path.read_text(encoding="utf-8")) == {"run_id": "r1"}
+
+    def test_run_metadata_identifies_code_configuration_and_orbis_schema(self) -> None:
+        meta = build_run_metadata(
+            run_id="r1",
+            dry_run=True,
+            orbis_schema="ORBIS_23J",
+            started_at="2026-10-19T10:00:00+00:00",
+            status_counts={"unique": 1},
+        )
+
+        assert set(meta) == {
+            "run_id",
+            "dry_run",
+            "git_commit",
+            "config_sha256",
+            "orbis_schema",
+            "started_at",
+            "status_counts",
+        }
+        expected = hashlib.sha256(
+            (REPO / "config" / "orbis_matching.yaml").read_bytes()
+        ).hexdigest()
+        assert meta["config_sha256"] == expected
+        assert len(meta["git_commit"]) == 40
+
 
 HUAWEI_ORG = {"id": 1, "login": "huawei", "name": "Huawei", "blog": "", "country_code": None}
 HUAWEI_ROW = {"bvd_id": "XX900001", "name": "华为技术有限公司", "country_iso": "CN"}

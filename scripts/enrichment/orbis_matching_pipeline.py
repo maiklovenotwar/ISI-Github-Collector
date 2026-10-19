@@ -35,7 +35,10 @@ Usage:
 
 import argparse
 import csv
+import hashlib
+import json
 import logging
+import subprocess
 import sys
 import urllib.parse
 import uuid
@@ -78,6 +81,7 @@ from github_collector.enrichment.orbis_matching_logic import (  # noqa: E402
     classify_match_type,
     load_matching_config,
 )
+from github_collector.utils.safe_output import require_ignored_path  # noqa: E402
 
 # Ab dieser Ähnlichkeit gilt ein Domain-Treffer auch als Namens-Match (für den
 # Combo-Bonus) - strenger als der reine Plausibilitäts-Schwellwert (0.5), da
@@ -85,6 +89,111 @@ from github_collector.enrichment.orbis_matching_logic import (  # noqa: E402
 # falsch". Ohne diese zweite Stufe würde ein reiner Blog-Match (blog_score=20)
 # NIE den min_score von 30 erreichen, siehe Fund beim ersten Live-Testlauf.
 NAME_MATCH_SIMILARITY_THRESHOLD = 0.75
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+CONFIG_FILE = REPO_ROOT / "config" / "orbis_matching.yaml"
+
+# Spalten der vollständigen Ergebnisliste je Lauf (eine Zeile je Organisation, auch
+# ohne Ergebnis), Grundlage der Validierungsstichprobe (docs/methodology/manual_validation.md).
+OUTCOME_COLUMNS = [
+    "login",
+    "name",
+    "github_country",
+    "search_path",
+    "status",
+    "match_type",
+    "bvd_id",
+    "company_name",
+    "company_country",
+    "company_city",
+    "company_website",
+    "score",
+    "hq_method",
+    "via_transliteration",
+]
+
+
+def search_path_for(
+    org_id: int, domain_for_org: Dict[int, str], name_fallback_terms: Dict[int, str]
+) -> str:
+    """Wie eine Organisation durchsucht wurde: `domain`, `name` oder `not_searchable`.
+
+    Nicht durchsuchbar ist eine Organisation ohne verwertbare Blog-Domain und ohne
+    Name/Login, der lang genug für den Namens-Rückfall ist.
+    """
+    if org_id in domain_for_org:
+        return "domain"
+    if org_id in name_fallback_terms:
+        return "name"
+    return "not_searchable"
+
+
+def outcome_rows(
+    results: Dict[int, MatchResult],
+    orgs_by_id: Dict[int, Dict],
+    hq_methods: Dict[int, str],
+    search_paths: Dict[int, str],
+) -> List[Dict[str, object]]:
+    """Eine Zeile je Organisation mit Status, gewähltem Kandidaten und Suchweg."""
+    rows: List[Dict[str, object]] = []
+    for org_id, result in results.items():
+        org = orgs_by_id[org_id]
+        c = result.best_candidate
+        rows.append(
+            {
+                "login": org["login"],
+                "name": org["name"],
+                "github_country": org["country_code"],
+                "search_path": search_paths.get(org_id, "not_searchable"),
+                "status": result.status.value,
+                "match_type": result.match_type.value if result.match_type else "",
+                "bvd_id": c.bvd_id if c else "",
+                "company_name": c.orbis_name if c else "",
+                "company_country": c.orbis_country if c else "",
+                "company_city": c.city if c else "",
+                "company_website": c.website if c else "",
+                "score": c.total_score if c else "",
+                "hq_method": hq_methods.get(org_id, ""),
+                "via_transliteration": c.name_via_transliteration if c else "",
+            }
+        )
+    return rows
+
+
+def write_outcome_export(
+    csv_path: Path, rows: List[Dict[str, object]], metadata: Dict[str, object]
+) -> Path:
+    """Schreibe die Ergebnisliste und daneben `<name>.meta.json`; gibt den Meta-Pfad zurück."""
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=OUTCOME_COLUMNS)
+        writer.writeheader()
+        writer.writerows(rows)
+    meta_path = csv_path.with_name(csv_path.stem + ".meta.json")
+    meta_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
+    return meta_path
+
+
+def build_run_metadata(
+    run_id: str,
+    dry_run: bool,
+    orbis_schema: str,
+    started_at: str,
+    status_counts: Dict[str, int],
+) -> Dict[str, object]:
+    """Was einen Lauf reproduzierbar macht: Code-Stand, Konfiguration, Orbis-Schema."""
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True
+    ).stdout.strip()
+    return {
+        "run_id": run_id,
+        "dry_run": dry_run,
+        "git_commit": commit,
+        "config_sha256": hashlib.sha256(CONFIG_FILE.read_bytes()).hexdigest(),
+        "orbis_schema": orbis_schema,
+        "started_at": started_at,
+        "status_counts": status_counts,
+    }
 
 
 def extract_domain(blog_url: Optional[str]) -> Optional[str]:
@@ -347,6 +456,11 @@ def run_pipeline(  # noqa: C901
 ) -> int:
     """Führe einen kompletten Enrichment-Lauf aus."""
     run_id = str(uuid.uuid4())
+    started_at = datetime.now(timezone.utc).isoformat()
+    # Vor jeder Abfrage prüfen, damit ein Lauf nicht erst nach Stunden am Ziel scheitert.
+    export_path = (
+        require_ignored_path(Path(export_csv).resolve(), REPO_ROOT) if export_csv else None
+    )
     print("=" * 70)
     print("ORBIS MATCHING PIPELINE")
     print("=" * 70)
@@ -432,6 +546,11 @@ def run_pipeline(  # noqa: C901
             recovered = sum(1 for org_id in name_fallback_terms if grouped_candidates[org_id])
             print(f"{recovered}/{len(name_fallback_terms)} mit mindestens einem Namens-Kandidaten")
 
+        search_paths = {
+            org_id: search_path_for(org_id, domain_for_org, name_fallback_terms)
+            for org_id in orgs_by_id
+        }
+
         print("\nAnalysiere Matches (Namens-Gate -> Scoring -> Filial-Dedup -> Status)...")
         results = analyze_matches(grouped_candidates, config=scoring_config)
 
@@ -491,6 +610,18 @@ def run_pipeline(  # noqa: C901
         for status, count in sorted(status_counts.items()):
             print(f"  {status}: {count} ({count / len(results) * 100:.1f}%)")
 
+        if export_path is not None:
+            metadata = build_run_metadata(
+                run_id,
+                dry_run,
+                client.config.get("schema", "ORBIS_23J"),
+                started_at,
+                status_counts,
+            )
+            rows = outcome_rows(results, orgs_by_id, hq_methods, search_paths)
+            write_outcome_export(export_path, rows, metadata)
+            print(f"\nVollständige Ergebnisliste exportiert nach: {export_path}")
+
         if dry_run:
             print("\n[DRY-RUN] Keine Datenbank-Schreibvorgänge durchgeführt.")
             print("Beispiel-Ergebnisse (erste 10 mit Treffer):")
@@ -507,47 +638,6 @@ def run_pipeline(  # noqa: C901
                 )
                 shown += 1
 
-            if export_csv:
-                with open(export_csv, "w", newline="", encoding="utf-8") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(
-                        [
-                            "login",
-                            "name",
-                            "github_country",
-                            "status",
-                            "match_type",
-                            "bvd_id",
-                            "company_name",
-                            "company_country",
-                            "company_city",
-                            "company_website",
-                            "score",
-                            "hq_method",
-                            "via_transliteration",
-                        ]
-                    )
-                    for org_id, result in results.items():
-                        org = orgs_by_id[org_id]
-                        c = result.best_candidate
-                        writer.writerow(
-                            [
-                                org["login"],
-                                org["name"],
-                                org["country_code"],
-                                result.status.value,
-                                result.match_type.value if result.match_type else "",
-                                c.bvd_id if c else "",
-                                c.orbis_name if c else "",
-                                c.orbis_country if c else "",
-                                c.city if c else "",
-                                c.website if c else "",
-                                c.total_score if c else "",
-                                hq_methods.get(org_id, ""),
-                                c.name_via_transliteration if c else "",
-                            ]
-                        )
-                print(f"\n[DRY-RUN] Vollständige Ergebnisse exportiert nach: {export_csv}")
             return 0
 
         print("\nSchreibe Ergebnisse in die Datenbank...")
@@ -615,7 +705,9 @@ def main() -> int:
         "--export-csv",
         type=str,
         metavar="PATH",
-        help="Nur mit --dry-run: schreibt ALLE Ergebnisse (nicht nur die ersten 10) als CSV",
+        help="Schreibt die Ergebnisse ALLER Organisationen als CSV plus .meta.json "
+        "(auch im Schreiblauf); nur in von Git ignorierte Pfade, z. B. "
+        "workstreams/orbis_matching/data/",
     )
 
     args = parser.parse_args()

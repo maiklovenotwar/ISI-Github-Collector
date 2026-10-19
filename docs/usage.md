@@ -297,9 +297,13 @@ python scripts/enrichment/orbis_matching_pipeline.py --logins airbus,IBM,Netflix
 python scripts/enrichment/orbis_matching_pipeline.py --limit 1000
 ```
 
-**Export a full dry-run result set as CSV** (requires `--dry-run`):
+**Export the outcome for every organization as CSV**, in a dry run or a writing run. The
+file contains Orbis data and must go to a path Git ignores (the script refuses others);
+next to it, `<name>.meta.json` records the run identifier, the Git commit, the hash of
+`config/orbis_matching.yaml`, the Orbis schema and the counts per Match-Status:
 ```bash
-python scripts/enrichment/orbis_matching_pipeline.py --dry-run --limit 1000 --export-csv results.csv
+python scripts/enrichment/orbis_matching_pipeline.py --dry-run --limit 1000 \
+    --export-csv workstreams/orbis_matching/data/dry_run.csv
 ```
 
 **Undo a previous run:**
