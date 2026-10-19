@@ -75,6 +75,7 @@ from github_collector.enrichment.orbis_matching_logic import (  # noqa: E402
     ScoringConfig,
     analyze_matches,
     calculate_name_similarity,
+    classify_match_type,
     load_matching_config,
 )
 
@@ -299,7 +300,9 @@ def should_attempt_name_fallback(term: Optional[str], threshold: int) -> bool:
 
 
 def apply_hq_resolution_to_match_result(
-    result: MatchResult, resolution: Optional[HQResolution]
+    result: MatchResult,
+    resolution: Optional[HQResolution],
+    config: Optional[ScoringConfig] = None,
 ) -> None:
     """Wende ein HQ-Kaskaden-Ergebnis auf ein PENDING MatchResult an (mutiert).
 
@@ -326,8 +329,13 @@ def apply_hq_resolution_to_match_result(
         resolution: Ergebnis von resolve_headquarters(), oder None wenn die
             Kaskade keinen Kandidaten mit ausreichender Land-/Domain-
             Bestätigung gefunden hat.
+        config: Scoring-Konfiguration für den Match-Type des gewählten Kandidaten
+            (Default: ScoringConfig()). Der Status bleibt PENDING; der Match-Type
+            beschreibt, wie der gewählte Kandidat gefunden wurde (Befund H5).
     """
     result.best_candidate = resolution.candidate if resolution is not None else None
+    if resolution is not None:
+        result.match_type = classify_match_type(resolution.candidate, config or ScoringConfig())
 
 
 def run_pipeline(  # noqa: C901
@@ -463,7 +471,7 @@ def run_pipeline(  # noqa: C901
             # ist - sonst bleibt die unbestätigte Rohschätzung aus
             # analyze_matches() stehen (genau der Bug hinter den
             # "braintree"/"amanikids"/"teamware"-Fehltreffern).
-            apply_hq_resolution_to_match_result(result, resolution)
+            apply_hq_resolution_to_match_result(result, resolution, scoring_config)
             if resolution is None:
                 continue
             resolved_count += 1
@@ -552,6 +560,7 @@ def run_pipeline(  # noqa: C901
                 organization_id=org_id,
                 bvd_id=result.best_candidate.bvd_id,
                 match_type=result.match_type.value,
+                match_status=result.status.value,
                 score=result.best_candidate.total_score,
                 run_id=run_id,
                 country_code=result.best_candidate.orbis_country,

@@ -44,6 +44,8 @@ from github_collector.enrichment.orbis_matching_logic import (  # noqa: E402
     MatchCandidate,
     MatchResult,
     MatchStatus,
+    MatchType,
+    ScoringConfig,
 )
 
 
@@ -224,3 +226,30 @@ class TestApplyHqResolutionToMatchResult:
 
         assert result.best_candidate is winner
         assert result.best_candidate is not raw_guess
+
+    def test_resolved_pending_gets_the_match_type_of_the_chosen_candidate(self) -> None:
+        """Bisher blieb match_type 'pending' - der Match-Type des gewählten
+        Kandidaten ging verloren (H5). Der Status bleibt PENDING (E17)."""
+        winner = make_candidate(
+            bvd_id="US222",
+            match_type_input="name_blog",
+            total_score=60,
+            has_name_match=True,
+            has_blog_match=True,
+        )
+        resolution = HQResolution(
+            bvd_id="US222", country_iso="US", hq_method="HQ_TABLE", candidate=winner
+        )
+        result = make_match_result(best_candidate=None, match_type=MatchType.PENDING)
+
+        apply_hq_resolution_to_match_result(result, resolution, ScoringConfig())
+
+        assert result.status == MatchStatus.PENDING
+        assert result.match_type == MatchType.COMBINED_HIGH
+
+    def test_unresolved_pending_keeps_its_match_type(self) -> None:
+        result = make_match_result(best_candidate=None, match_type=MatchType.PENDING)
+
+        apply_hq_resolution_to_match_result(result, None)
+
+        assert result.match_type == MatchType.PENDING

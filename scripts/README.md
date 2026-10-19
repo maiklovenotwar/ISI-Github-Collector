@@ -100,3 +100,5 @@ SQL files:
 - `clear_repositories_contributors_count.sql` (2026-10-14): sets the uncollected
   `contributors_count` from 0 to `NULL`, in blocks over the primary key (data change, not a
   schema change).
+- `add_orbis_enrichments_match_status.sql` (2026-10-19): column `match_status` on
+  `orbis_enrichments`.

@@ -181,6 +181,9 @@ class OrbisEnrichment(Base):
     company_website = Column(String(255))  # WEBSITE
     match_type = Column(String(20), nullable=False, index=True)  # combined_high, combined_low, ...
     hq_method = Column(String(30))  # ROOT_DOMAIN_PRESENCE, BVDID_FALLBACK, ...
+    # Match-Status beim Match (unique, consensus, pending; siehe CONTEXT.md). Ohne ihn
+    # waren unique und consensus nicht unterscheidbar (Befund H5).
+    match_status = Column(String(20), nullable=True)
     score = Column(Integer, nullable=False, index=True)
     blog_matched = Column(Boolean, nullable=False, default=False)
     run_id = Column(String(36), nullable=False, index=True)  # UUID des Enrichment-Laufs

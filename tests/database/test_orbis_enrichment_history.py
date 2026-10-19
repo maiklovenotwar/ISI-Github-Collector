@@ -148,3 +148,39 @@ def test_reverted_enrichment_is_still_queryable_by_bvd_id(test_db) -> None:
         assert len(history) == 1
         assert history[0].organization_id == org.id
         assert history[0].reverted_at is not None
+
+
+def test_record_stores_match_status(test_db) -> None:
+    """Der Match-Status wird mitgespeichert; unique und consensus waren sonst nicht
+    unterscheidbar (H5, E17)."""
+    org = _make_org(test_db, 1, "acme")
+
+    row = test_db.record_orbis_enrichment(
+        organization_id=org.id,
+        bvd_id="XX000903",
+        match_type="combined_high",
+        score=60,
+        run_id="run-1",
+        match_status="consensus",
+    )
+
+    assert row.match_status == "consensus"
+
+
+def test_rollback_keeps_match_status(test_db) -> None:
+    org = _make_org(test_db, 1, "acme")
+    test_db.record_orbis_enrichment(
+        organization_id=org.id,
+        bvd_id="XX000903",
+        match_type="combined_high",
+        score=60,
+        run_id="run-1",
+        match_status="unique",
+    )
+
+    test_db.rollback_orbis_enrichment_run("run-1")
+
+    with session_scope(test_db.session_factory) as session:
+        (row,) = session.query(OrbisEnrichment).filter_by(run_id="run-1").all()
+        assert row.reverted_at is not None
+        assert row.match_status == "unique"

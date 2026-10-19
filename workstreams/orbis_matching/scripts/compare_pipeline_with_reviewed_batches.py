@@ -123,7 +123,7 @@ def main() -> int:  # noqa: C901
             # in orbis_matching_pipeline.py (Fund: dieser Reset fehlte hier
             # bisher, die unbestätigte Rohschätzung aus analyze_matches()
             # blieb bei nicht bestätigten PENDING-Fällen fälschlich stehen).
-            apply_hq_resolution_to_match_result(result, resolution)
+            apply_hq_resolution_to_match_result(result, resolution, config)
             if resolution is None:
                 continue
             hq_method_by_org[org_id] = resolution.hq_method

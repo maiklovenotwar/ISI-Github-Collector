@@ -796,6 +796,7 @@ class GitHubDatabase:
         blog_matched: bool = False,
         enriched_at: Optional[datetime] = None,
         session: Optional[Session] = None,
+        match_status: Optional[str] = None,
     ) -> OrbisEnrichment:
         """Schreibe ein Orbis-Matching-Ergebnis für eine Organisation.
 
@@ -827,6 +828,7 @@ class GitHubDatabase:
             enriched_at: Zeitstempel. Falls None, wird die aktuelle Zeit (UTC)
                 verwendet.
             session: Optionale bestehende Session.
+            match_status: Match-Status beim Match (`unique`, `consensus`, `pending`).
 
         Returns:
             Das neu erstellte OrbisEnrichment-Objekt.
@@ -849,6 +851,7 @@ class GitHubDatabase:
                 company_city=company_city,
                 company_website=company_website,
                 match_type=match_type,
+                match_status=match_status,
                 hq_method=hq_method,
                 score=score,
                 blog_matched=blog_matched,

@@ -101,6 +101,7 @@ back independently.
 | company_website | String | Company website at match time (Orbis `WEBSITE`) |
 | match_type | String, not null, indexed | Match-Type (`combined_high`, `combined_low`, ...; see `CONTEXT.md`) |
 | hq_method | String | Headquarters-resolution signal that was used (`ROOT_DOMAIN_PRESENCE`, `BVDID_FALLBACK`, ...; see `docs/methodology/orbis_enrichment.md`) |
+| match_status | String(20), nullable | Match-Status at match time (`unique`, `consensus`, `pending`; see `CONTEXT.md`). A resolved `pending` case carries the Match-Type of the chosen candidate in `match_type`. `NULL` for rows written before the migration `add_orbis_enrichments_match_status.sql` |
 | score | Integer, not null, indexed | Matching score |
 | blog_matched | Boolean, not null | Whether the match was corroborated by a blog-domain match |
 | run_id | String, not null, indexed | UUID of the enrichment run |
