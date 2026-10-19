@@ -13,6 +13,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(REPO / "scripts" / "enrichment"))
 
@@ -22,6 +24,7 @@ from orbis_matching_pipeline import (  # noqa: E402
     build_match_candidates,
     build_name_only_candidates,
     build_run_metadata,
+    export_paths,
     outcome_rows,
     search_path_for,
     should_attempt_name_fallback,
@@ -31,6 +34,13 @@ from orbis_matching_pipeline import (  # noqa: E402
 
 class TestOutcomeExport:
     """Vollständige Ergebnisliste je Lauf mit Laufmetadaten (task 6, E26)."""
+
+    def test_both_export_files_must_be_ignored(self) -> None:
+        # test_export_*.csv is ignored, test_export_*.meta.json is not.
+        with pytest.raises(ValueError, match="not ignored"):
+            export_paths("test_export_run.csv")
+        target = REPO / "workstreams" / "orbis_matching" / "data" / "run.csv"
+        assert export_paths(str(target)) == (target, target.with_name("run.meta.json"))
 
     def test_search_path_names_how_an_organization_was_searched(self) -> None:
         domains = {1: "acme.com"}

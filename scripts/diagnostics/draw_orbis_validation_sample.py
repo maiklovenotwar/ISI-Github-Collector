@@ -106,11 +106,18 @@ def draw_sample(
     return sample
 
 
+def output_paths(out_stem: Path) -> Tuple[Path, Path]:
+    """Pfade der Blind- und der Schlüsseldatei zu einem Pfad-Stamm."""
+    return (
+        out_stem.with_name(out_stem.name + "_blind.csv"),
+        out_stem.with_name(out_stem.name + "_key.csv"),
+    )
+
+
 def write_sample(sample: List[Dict[str, str]], out_stem: Path) -> Tuple[Path, Path]:
     """Schreibe `<stem>_blind.csv` und `<stem>_key.csv`; Fallnummern in Zufallsreihenfolge."""
     out_stem.parent.mkdir(parents=True, exist_ok=True)
-    blind_path = out_stem.with_name(out_stem.name + "_blind.csv")
-    key_path = out_stem.with_name(out_stem.name + "_key.csv")
+    blind_path, key_path = output_paths(out_stem)
     numbered = [{**row, "case_id": f"C{index:04d}"} for index, row in enumerate(sample, 1)]
     with open(blind_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=BLIND_COLUMNS, extrasaction="ignore")
@@ -134,7 +141,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--exclude-logins", help="Datei mit einem Login je Zeile")
     args = parser.parse_args(argv)
 
-    out_stem = require_ignored_path(Path(args.out).resolve(), REPO_ROOT)
+    out_stem = Path(args.out).resolve()
+    # Geprüft werden die Dateien, die geschrieben werden, nicht der Stamm: ein ignorierter
+    # Ordner als Stamm ergäbe Dateien daneben, die nicht ignoriert sind.
+    for path in output_paths(out_stem):
+        require_ignored_path(path, REPO_ROOT)
     with open(args.export, encoding="utf-8", newline="") as f:
         rows = list(csv.DictReader(f))
     excluded: Set[str] = set()

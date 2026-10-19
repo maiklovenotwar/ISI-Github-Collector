@@ -114,6 +114,26 @@ def test_blind_file_has_no_result_columns(drawer, tmp_path):
         assert "bvd_id" in next(csv.reader(f))
 
 
+def test_checks_the_files_it_writes_not_only_the_stem(drawer, tmp_path):
+    # The ignored folder itself as stem: <folder>_key.csv lands next to it, unignored.
+    folder = REPO / "workstreams" / "orbis_matching" / "data"
+    folder.mkdir(parents=True, exist_ok=True)
+    export = tmp_path / "run.csv"
+    with open(export, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(row("a", "unique").keys()))
+        writer.writeheader()
+        writer.writerow(row("a", "unique", "XX000001"))
+    written = [folder.with_name("data_blind.csv"), folder.with_name("data_key.csv")]
+    try:
+        with pytest.raises(ValueError, match="not ignored"):
+            drawer.main(["--export", str(export), "--out", str(folder)])
+        assert not any(path.exists() for path in written)
+    finally:
+        for path in written:
+            if path.exists():
+                path.unlink()
+
+
 def test_refuses_an_output_path_git_does_not_ignore(drawer, tmp_path):
     export = tmp_path / "run.csv"
     with open(export, "w", encoding="utf-8", newline="") as f:

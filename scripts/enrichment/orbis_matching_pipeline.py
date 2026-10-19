@@ -44,7 +44,7 @@ import urllib.parse
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -160,6 +160,15 @@ def outcome_rows(
             }
         )
     return rows
+
+
+def export_paths(export_csv: str) -> Tuple[Path, Path]:
+    """Pfade der Ergebnisliste und ihrer Metadatei; beide müssen ignoriert sein."""
+    csv_path = Path(export_csv).resolve()
+    meta_path = csv_path.with_name(csv_path.stem + ".meta.json")
+    for path in (csv_path, meta_path):
+        require_ignored_path(path, REPO_ROOT)
+    return csv_path, meta_path
 
 
 def write_outcome_export(
@@ -460,9 +469,7 @@ def run_pipeline(  # noqa: C901
     run_id = str(uuid.uuid4())
     started_at = datetime.now(timezone.utc).isoformat()
     # Vor jeder Abfrage prüfen, damit ein Lauf nicht erst nach Stunden am Ziel scheitert.
-    export_path = (
-        require_ignored_path(Path(export_csv).resolve(), REPO_ROOT) if export_csv else None
-    )
+    export_path = export_paths(export_csv)[0] if export_csv else None
     print("=" * 70)
     print("ORBIS MATCHING PIPELINE")
     print("=" * 70)
