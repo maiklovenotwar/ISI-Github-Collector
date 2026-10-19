@@ -8,9 +8,10 @@ siehe Orbis-Notizen (intern): validation_batch2_baseline.md
 (Airbus/IBM: selbst HQ_TABLE kann ohne Namensfilter auf Rauschen zeigen).
 """
 
+import pytest
+
 from github_collector.enrichment.hq_detection import (
     HQ_METHOD_PRIORITY,
-    determine_hq_method,
     resolve_headquarters,
     resolve_headquarters_batch,
 )
@@ -45,35 +46,6 @@ def make_orbis_candidate(**overrides) -> MatchCandidate:
         overrides["orbis_country"] = overrides.pop("country_iso")
     defaults.update(overrides)
     return MatchCandidate(**defaults)
-
-
-class TestDetermineHqMethod:
-    """Regressionstests für die Signal-Bestimmung pro Einzelkandidat."""
-
-    def test_hq_table_highest_priority(self) -> None:
-        candidate = make_orbis_candidate(has_hq_entry=True, is_guo_self=True)
-        assert determine_hq_method(candidate) == "HQ_TABLE"
-
-    def test_consolidating_entity(self) -> None:
-        candidate = make_orbis_candidate(consolidation_code="C1")
-        assert determine_hq_method(candidate) == "CONSOLIDATING_ENTITY"
-
-    def test_root_domain_presence_new_signal(self) -> None:
-        """Neues Signal, Priorität 3 - siehe batch01_review.md (Microsoft/Google)."""
-        candidate = make_orbis_candidate(matches_root_domain=True)
-        assert determine_hq_method(candidate) == "ROOT_DOMAIN_PRESENCE"
-
-    def test_root_domain_presence_beats_oldest_founding(self) -> None:
-        candidate = make_orbis_candidate(matches_root_domain=True, date_incorporation="1990-01-01")
-        assert determine_hq_method(candidate) == "ROOT_DOMAIN_PRESENCE"
-
-    def test_oldest_founding_when_no_higher_signal(self) -> None:
-        candidate = make_orbis_candidate(date_incorporation="1990-01-01")
-        assert determine_hq_method(candidate) == "OLDEST_FOUNDING"
-
-    def test_bvdid_fallback_when_nothing_else(self) -> None:
-        candidate = make_orbis_candidate()
-        assert determine_hq_method(candidate) == "BVDID_FALLBACK"
 
 
 class TestHqMethodPriorityOrder:
@@ -410,3 +382,43 @@ class TestResolveHeadquartersBatch:
     def test_org_without_candidates_skipped(self) -> None:
         results = resolve_headquarters_batch({1: []})
         assert 1 not in results
+
+
+# Je Signal: der AU-Kandidat hat den "stärkeren" Wert (älter, mehr Umsatz, mehr Mitarbeiter,
+# bei Ja/Nein-Signalen die kleinere bvd_id), bestätigt ist aber nur der FR-Kandidat.
+SIGNAL_PAIRS = {
+    "CONSOLIDATING_ENTITY": ({"consolidation_code": "C1"}, {"consolidation_code": "C1"}),
+    "OLDEST_FOUNDING": ({"date_incorporation": "1990-01-01"}, {"date_incorporation": "2000-01-01"}),
+    "HIGHEST_REVENUE": ({"operating_revenue": 1000.0}, {"operating_revenue": 500.0}),
+    "GUO_SELF": ({"is_guo_self": True}, {"is_guo_self": True}),
+    "LARGE_CORP_HQ": ({"number_of_employees": 5000}, {"number_of_employees": 2000}),
+    "IS_PARENT": ({"is_parent": True}, {"is_parent": True}),
+}
+
+
+def _signal_pair(method):
+    strong, weak = SIGNAL_PAIRS[method]
+    au = make_orbis_candidate(bvd_id="AU111", name="Acme", country_iso="AU", **strong)
+    fr = make_orbis_candidate(bvd_id="FR222", name="Acme", country_iso="FR", **weak)
+    return [au, fr]
+
+
+class TestEverySignalNeedsCorroboration:
+    """Die Bestätigungsregel gilt für alle Signale, nicht nur für 1, 2 und 9 (E16, H2)."""
+
+    @pytest.mark.parametrize("method", sorted(SIGNAL_PAIRS))
+    def test_signal_uses_only_corroborated_candidates(self, method) -> None:
+        resolution = resolve_headquarters(
+            _signal_pair(method), github_name="Acme", github_login="acme", github_country="FR"
+        )
+
+        assert resolution.bvd_id == "FR222"
+        assert resolution.hq_method == method
+
+    @pytest.mark.parametrize("method", sorted(SIGNAL_PAIRS))
+    def test_signal_without_country_needs_domain(self, method) -> None:
+        resolution = resolve_headquarters(
+            _signal_pair(method), github_name="Acme", github_login="acme", github_country=None
+        )
+
+        assert resolution is None

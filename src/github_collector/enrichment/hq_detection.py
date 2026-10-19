@@ -113,54 +113,6 @@ INDEPENDENCE_PRIORITY = {
 
 
 # ---------------------------------------------------------------------------
-# Kernlogik: HQ-Signal-Bestimmung pro Kandidat
-# ---------------------------------------------------------------------------
-
-
-def determine_hq_method(candidate: MatchCandidate) -> str:
-    """Bestimme die HQ-Methode für einen einzelnen Kandidaten.
-
-    Gibt den Namen des stärksten verfügbaren Signals zurück.
-    Die Priorität entspricht der korrigierten Kaskade basierend auf
-    Validierungsergebnissen (März 2026).
-
-    Args:
-        candidate: Ein einzelner ORBIS-Treffer mit befüllten Signal-Feldern.
-
-    Returns:
-        Name der HQ-Methode (z.B. ``"HQ_TABLE"``, ``"OLDEST_FOUNDING"``).
-    """
-    if candidate.has_hq_entry:
-        return "HQ_TABLE"
-
-    if candidate.consolidation_code in ("C1", "C2"):
-        return "CONSOLIDATING_ENTITY"
-
-    if candidate.matches_root_domain:
-        return "ROOT_DOMAIN_PRESENCE"
-
-    # Für OLDEST_FOUNDING und HIGHEST_REVENUE brauchen wir den Gruppen-
-    # kontext (alle Kandidaten). Deshalb wird das in resolve_headquarters()
-    # entschieden. Hier nur die Flags prüfen.
-    if candidate.date_incorporation is not None:
-        return "OLDEST_FOUNDING"
-
-    if candidate.operating_revenue is not None:
-        return "HIGHEST_REVENUE"
-
-    if candidate.is_guo_self:
-        return "GUO_SELF"
-
-    if candidate.number_of_employees is not None and candidate.number_of_employees >= 1000:
-        return "LARGE_CORP_HQ"
-
-    if candidate.is_parent:
-        return "IS_PARENT"
-
-    return "BVDID_FALLBACK"
-
-
-# ---------------------------------------------------------------------------
 # Kernlogik: Multi-Hit Resolution (Hauptsitz-Auswahl)
 # ---------------------------------------------------------------------------
 
@@ -300,8 +252,13 @@ def resolve_headquarters(  # noqa: C901
         if len(country_matches) == 1:
             return _make_resolution(country_matches[0], "ROOT_DOMAIN_PRESENCE", candidate_list)
 
+    # Ab hier gilt die Bestätigungsregel für alle übrigen Signale: nur Kandidaten,
+    # die Land oder Domain bestätigen, kommen in Frage; Eindeutigkeit und Sortierung
+    # werden innerhalb dieser Menge bestimmt (Entscheidung E16, Befund H2).
+    corroborated = _corroborate(candidate_list, github_country)
+
     # --- Signal 4: OLDEST_FOUNDING (nur wenn eindeutig) ---
-    with_founding = [c for c in candidate_list if c.date_incorporation is not None]
+    with_founding = [c for c in corroborated if c.date_incorporation is not None]
     if with_founding:
         oldest_date = min(c.date_incorporation for c in with_founding)
         oldest_candidates = [c for c in with_founding if c.date_incorporation == oldest_date]
@@ -309,7 +266,7 @@ def resolve_headquarters(  # noqa: C901
             return _make_resolution(oldest_candidates[0], "OLDEST_FOUNDING", candidate_list)
 
     # --- Signal 5: HIGHEST_REVENUE (nur wenn eindeutig) ---
-    with_revenue = [c for c in candidate_list if c.operating_revenue is not None]
+    with_revenue = [c for c in corroborated if c.operating_revenue is not None]
     if with_revenue:
         max_revenue = max(c.operating_revenue for c in with_revenue)
         top_revenue = [c for c in with_revenue if c.operating_revenue == max_revenue]
@@ -317,7 +274,7 @@ def resolve_headquarters(  # noqa: C901
             return _make_resolution(top_revenue[0], "HIGHEST_REVENUE", candidate_list)
 
     # --- Signal 6: GUO_SELF ---
-    guo_self = [c for c in candidate_list if c.is_guo_self]
+    guo_self = [c for c in corroborated if c.is_guo_self]
     if guo_self:
         # Sub-Ranking nach Independence Indicator
         guo_self.sort(
@@ -332,7 +289,7 @@ def resolve_headquarters(  # noqa: C901
     # --- Signal 7: LARGE_CORP_HQ ---
     large_corps = [
         c
-        for c in candidate_list
+        for c in corroborated
         if c.number_of_employees is not None and c.number_of_employees >= 1000
     ]
     if large_corps:
@@ -340,7 +297,7 @@ def resolve_headquarters(  # noqa: C901
         return _make_resolution(large_corps[0], "LARGE_CORP_HQ", candidate_list)
 
     # --- Signal 8: IS_PARENT ---
-    parents = [c for c in candidate_list if c.is_parent]
+    parents = [c for c in corroborated if c.is_parent]
     if parents:
         parents.sort(key=lambda c: c.bvd_id)
         return _make_resolution(parents[0], "IS_PARENT", candidate_list)
@@ -365,10 +322,9 @@ def resolve_headquarters(  # noqa: C901
     # inhaltlichen Bezug. In diesem Fall lieber unaufgelöst (PENDING) lassen,
     # statt eine unbestätigte Vermutung zu schreiben. Ohne bekanntes
     # github_country zählt nur die Domain-Bestätigung (Entscheidung E16).
-    fallback_pool = _corroborate(candidate_list, github_country)
-    if not fallback_pool:
+    if not corroborated:
         return None
-    fallback_pool = sorted(fallback_pool, key=lambda c: c.bvd_id)
+    fallback_pool = sorted(corroborated, key=lambda c: c.bvd_id)
     return _make_resolution(fallback_pool[0], "BVDID_FALLBACK", candidate_list)
 
 
