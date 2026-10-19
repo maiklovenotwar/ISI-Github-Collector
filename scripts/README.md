@@ -59,6 +59,7 @@ cache summary read a local file only.
 | Script | Purpose | Writes | External access |
 |--------|---------|--------|-----------------|
 | `diagnostics/check_orbis_schema.py` | Lists the Orbis tables and columns available for headquarters resolution. | nothing | Orbis database (VPN) |
+| `diagnostics/count_orbis_non_latin_names.py` | Counts Orbis company names without Latin letters, in total and for the 20 countries with the most, and whether `CONTACT_INFO` has a further name column. Prints numbers and country codes only. | nothing | Orbis database (VPN) |
 | `diagnostics/diagnose_hq_signals.py` | Analyses the headquarters signals of organizations with several Orbis candidates. | nothing | Orbis database (VPN) |
 | `diagnostics/summarize_collection_audit.py` | Summarizes the audit log of the repository collection (`logs/collection_audit.jsonl`) and lists the periods in which fewer repositories arrived than GitHub announced, a response was marked incomplete, or the result was truncated. | nothing | none |
 | `diagnostics/inspect_geocoding_cache.py` | Counts the entries of the local geocoding cache with and without a country and separates the entries without a country into those the current rules resolve, those recognised as not a place, and the rest. | nothing | none |
