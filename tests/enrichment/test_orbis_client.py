@@ -517,7 +517,7 @@ class TestOrbisClientLookupByNames:
         """Mehrere Orbis-Zeilen für denselben Namen werden alle gesammelt."""
         rows = [
             ("XX000012", "Studec", "www.studec.fr", "FR", "Ivry Sur Seine"),
-            ("GBML7634128", "Studec", "www.studecorators.co.uk", "GB", "Worthing"),
+            ("XX000902", "Studec", "www.studecorators.co.uk", "GB", "Worthing"),
         ]
         fake_conn = FakeConnection(cursor_rows=rows)
         client = OrbisClient(connection=fake_conn)
@@ -526,7 +526,7 @@ class TestOrbisClientLookupByNames:
 
         assert len(results["studec"]) == 2
         bvd_ids = {c["bvd_id"] for c in results["studec"]}
-        assert bvd_ids == {"XX000012", "GBML7634128"}
+        assert bvd_ids == {"XX000012", "XX000902"}
 
 
 class TestExtractRootDomain:

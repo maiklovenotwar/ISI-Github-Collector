@@ -1,6 +1,6 @@
 """No identifiers from the licensed Orbis database in tracked files (plan task 0, E24).
 
-BvD identifiers have the form of a two-letter country prefix followed by seven to twelve
+BvD identifiers have the form of a two- to four-letter prefix followed by six to twelve
 digits, sometimes with a trailing letter. Tests use placeholders of the form `XX000001`.
 """
 
@@ -10,7 +10,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-BVD_LIKE = re.compile(r"\b(?!XX)[A-Z]{2}[0-9]{7,12}L?\b")
+BVD_LIKE = re.compile(r"\b(?!XX)[A-Z]{2,4}[0-9]{6,12}[A-Z]?\b")
 
 # Deliberate exceptions (path, identifier). Kept empty: every hit is replaced.
 ALLOWED: set = set()

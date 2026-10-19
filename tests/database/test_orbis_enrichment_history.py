@@ -136,7 +136,7 @@ def test_reverted_enrichment_is_still_queryable_by_bvd_id(test_db) -> None:
     org = _make_org(test_db, 1, "otoci")
     test_db.record_orbis_enrichment(
         organization_id=org.id,
-        bvd_id="YYVS8133889",
+        bvd_id="XX000901",
         match_type="combined_high",
         score=50,
         run_id="run-1",
@@ -144,7 +144,7 @@ def test_reverted_enrichment_is_still_queryable_by_bvd_id(test_db) -> None:
     test_db.rollback_orbis_enrichment_run("run-1")
 
     with session_scope(test_db.session_factory) as session:
-        history = session.query(OrbisEnrichment).filter_by(bvd_id="YYVS8133889").all()
+        history = session.query(OrbisEnrichment).filter_by(bvd_id="XX000901").all()
         assert len(history) == 1
         assert history[0].organization_id == org.id
         assert history[0].reverted_at is not None
