@@ -30,11 +30,16 @@ ALTER TABLE organizations
     ADD COLUMN enrichment_checked_at DATETIME DEFAULT NULL
     COMMENT 'Timestamp of the last profile fetch attempt (also set when GitHub returned nothing)';
 
--- 2. Carry over the timestamps written by the GitHub profile fetch.
+-- 2. Carry over the timestamps written by the GitHub profile fetch. A row that the
+--    updated profile script has already stamped keeps its newer enrichment_checked_at.
+--    On a large table, run steps 2 and 3 in blocks over id (e.g. 10,000 ids), each block
+--    in one transaction with step 2 before step 3, and save the affected rows first
+--    (id, orbis_enriched_at, orbis_run_id, enrichment_checked_at, bvd_id).
 UPDATE organizations
 SET enrichment_checked_at = orbis_enriched_at
 WHERE orbis_enriched_at IS NOT NULL
-  AND bvd_id IS NULL;
+  AND bvd_id IS NULL
+  AND enrichment_checked_at IS NULL;
 
 -- 3. Remove them from the Orbis column, so that orbis_enriched_at IS NOT NULL again
 --    means "this organization has an Orbis match".
@@ -58,6 +63,9 @@ WHERE orbis_enriched_at IS NOT NULL
 --   (expected: 0)
 -- SELECT COUNT(*) FROM organizations WHERE enrichment_checked_at IS NOT NULL;
 --   (expected: the number counted before under "has_timestamp = 1, has_bvd_id = 0")
+
+-- Restore steps 2 and 3 from the CSV backup, one execution per saved row:
+-- UPDATE organizations SET orbis_enriched_at = :orbis_enriched_at, enrichment_checked_at = :enrichment_checked_at WHERE id = :id;
 
 -- Revert this migration:
 -- UPDATE organizations
