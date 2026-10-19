@@ -72,6 +72,13 @@ class TestTransliteration:
             ("ООО Дата", "Data", "dataorg"),  # Kern zu kurz
             ("张", "Zhang", "zhang"),  # ein Schriftzeichen
             ("李", "Li Lab", "lilab"),
+            # die Rechtsform darf die fehlenden Zeichen nicht liefern (Review I4)
+            ("张有限公司", "Zhang", "zhang"),
+            ("黄有限公司", "Huang", "huang"),
+            ("张公司", "Zhang", "zhang"),
+            ("Дата ЕООД", "Data", "data"),
+            ("ТОВ Дата", "Data", "data"),
+            ("ИП Дата", "Data", "data"),
         ],
     )
     def test_short_or_legal_form_only_transliterations_do_not_count(
@@ -81,6 +88,13 @@ class TestTransliteration:
 
         assert similarity < 0.5
         assert via_transliteration is False
+
+    def test_cyrillic_legal_forms_do_not_cut_chinese_syllables(self) -> None:
+        # "ao" is a Russian legal form but also a pinyin syllable (奥 -> "Ao", Review M1).
+        # unidecode: "Ao Si Qia"; without "ao" the core would fall below five letters
+        similarity, _, via = name_similarity_details("奥斯卡", "Aosiqia", "aosiqia")
+        assert via is True
+        assert similarity == 1.0
 
     def test_transliteration_can_be_switched_off(self) -> None:
         similarity, _, via = name_similarity_details(

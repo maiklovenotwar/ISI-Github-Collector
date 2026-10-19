@@ -347,11 +347,19 @@ def _calculate_name_similarity_detailed(
 
 
 _LATIN_LETTER = re.compile(r"[A-Za-z]")
-# Rechtsformen in der Umschrift (unidecode) - sie tragen keinen Namensbestandteil
-# und würden sonst Zufallstreffer erzeugen ("有限公司" -> "You Xian Gong Si").
-_TRANSLITERATED_LEGAL_FORMS = re.compile(
-    r"\b(?:gu fen you xian gong si|you xian ze ren gong si|you xian gong si|gong si|"
-    r"zhu shi hui she|jusighoesa|yuhanhoesa|ooo|oao|zao|pao|ao)\b"
+# Rechtsformen im Original, getrennt nach Schrift: Sie tragen keinen Namensbestandteil
+# und würden sonst Zufallstreffer erzeugen ("张有限公司" gegen den Login "zhang"). Sie
+# werden VOR dem Zählen der Zeichen entfernt, damit sie den Kern nicht auffüllen.
+# Chinesisch und Japanisch als Teilzeichenkette (keine Leerzeichen zwischen Wörtern),
+# kyrillische und griechische Kürzel nur als eigenes Wort - so trifft das russische
+# "АО" keine chinesische Silbe "ao" (奥).
+_CJK_LEGAL_FORMS = re.compile(
+    r"股份有限公司|有限责任公司|有限責任公司|有限公司|株式会社|有限会社|"
+    r"주식회사|유한회사|\(株\)|（株）|㈱|公司"
+)
+_WORD_LEGAL_FORMS = re.compile(
+    r"(?<!\w)(?:ООО|ОАО|ЗАО|ПАО|АО|ЕООД|ООД|ЕАД|АД|ТОВ|ПП|ИП|ТОО|"
+    r"Α\.?Ε\.?|Ε\.?Π\.?Ε\.?|Ο\.?Ε\.?)(?!\w)"
 )
 _MIN_TRANSLITERATED_LETTERS = 5
 _MIN_SOURCE_CHARACTERS = 2
@@ -362,15 +370,16 @@ def _transliteration(orbis_name: str) -> Optional[str]:
 
     Ohne Umschrift fiele jeder solche Name am Namensfilter heraus (Befund M1). Damit
     kurze Silben keine Zufallstreffer erzeugen ("李" -> "Li" gegen "Li Lab"), werden
-    Rechtsformen entfernt und ein Kern von mindestens fünf Buchstaben aus mindestens
-    zwei Schriftzeichen verlangt. Grenze: Japanisch mit Kanji wird chinesisch gelesen
-    ("株式会社メルカリ" -> 0,44 gegen "Mercari").
+    zuerst die Rechtsformen entfernt; der verbleibende Kern braucht mindestens zwei
+    Schriftzeichen und nach der Umschrift mindestens fünf Buchstaben. Grenze: Kanji in
+    japanischen Namen werden chinesisch gelesen.
     """
     if not orbis_name or _LATIN_LETTER.search(orbis_name):
         return None
-    if len(re.sub(r"\W", "", orbis_name)) < _MIN_SOURCE_CHARACTERS:
+    core = _WORD_LEGAL_FORMS.sub(" ", _CJK_LEGAL_FORMS.sub(" ", orbis_name))
+    if len(re.sub(r"\W", "", core)) < _MIN_SOURCE_CHARACTERS:
         return None
-    text = _TRANSLITERATED_LEGAL_FORMS.sub(" ", unidecode(orbis_name).lower())
+    text = unidecode(core).lower()
     if len(_normalize_for_similarity(text)) < _MIN_TRANSLITERATED_LETTERS:
         return None
     return text

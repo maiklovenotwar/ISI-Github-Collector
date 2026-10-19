@@ -56,13 +56,14 @@ display name and the login; the higher value counts.
 
 An Orbis name without any Latin letter would reduce to nothing. Such a name
 is also compared through its transliteration (`unidecode`), and the higher
-value counts, under three restrictions: legal forms are removed first
-(`You Xian Gong Si`, `Zhu Shi Hui She`, `OOO`, `AO`, and others), the
-remaining core needs at least five letters from at least two characters,
-and the transliteration counts towards a name match (below) only for
-candidates found by their domain. Japanese names containing kanji are read
-in their Chinese pronunciation and are compared poorly. Candidates matched
-this way are flagged and validated separately.
+value counts, under three restrictions: legal forms are removed from the
+original name first (`有限公司`, `株式会社`, `주식회사`, `ООО`, `АО`, `ЕООД`,
+`ΑΕ`, and others), the remaining core needs at least two characters and,
+after transliteration, at least five letters, and the transliteration
+counts towards a name match (below) only for candidates found by their
+domain. Kanji in Japanese names are read in their Chinese pronunciation and
+are compared poorly. Candidates matched this way are flagged and validated
+separately.
 
 - **Plausibility filter:** a candidate with a similarity below 0.5 is
   discarded before any scoring.
