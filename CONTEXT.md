@@ -55,10 +55,11 @@ _Avoid_: Candidate, Contender.
 
 A conceptually separate, downstream problem: matching decides which company
 belongs to a GitHub organization; headquarters resolution then decides which
-of several Orbis entries is chosen. In practice the entries of a `pending`
-organization are not always entries of the same company: the resolution also
-separates name collisions between different companies, which is why every
-choice needs a corroboration by country or domain.
+Orbis entry is chosen for a `pending` organization, also when only one
+candidate is left. In practice the entries of a `pending` organization are
+not always entries of the same company: the resolution also separates name
+collisions between different companies, which is why every choice needs a
+corroboration by country or domain.
 
 **Headquarters**:
 The actual corporate headquarters of an already-matched company — a fact
@@ -67,10 +68,11 @@ _Avoid_: Headquarters Resolution (that is the procedure that estimates it,
 not the headquarters itself).
 
 **Headquarters Resolution**:
-The procedure that, given multiple Orbis entries for the same (already
-matched) company, produces a headquarters estimate via a prioritized signal
-cascade, together with the method that produced it. Carries a known,
-non-eliminable error rate; its result is an estimate, not a verified fact.
+The procedure that, given the remaining Orbis candidates of a `pending`
+organization, chooses one via a prioritized signal cascade and records the
+signal that decided, or chooses none if no candidate is corroborated. Its
+error rate is not known yet (see `docs/methodology/manual_validation.md`);
+its result is an estimate, not a verified fact.
 _Avoid_: Headquarters (do not equate the two — resolution is an
 approximation, not a fact).
 

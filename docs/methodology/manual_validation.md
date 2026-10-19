@@ -28,9 +28,12 @@ blacklist requires a new round.
 
 ## 2. Population and Strata
 
-The population is every organization the run processed, that is, every
-organization in `organizations` without an Orbis result. Each organization
-falls into one stratum, taken from the outcome list:
+The population is every organization the run processed. For a validation
+round this has to be a full run: every organization in `organizations` with
+a name or a login and without an Orbis result. A run restricted with
+`--limit` (the lowest identifiers, not a random selection) or `--logins`
+describes only that selection and cannot serve as a reference run. Each
+organization falls into one stratum, taken from the outcome list:
 
 | Stratum | Definition | Drawn |
 |---|---|---:|
@@ -62,7 +65,8 @@ The labeller answers three questions in this order.
    assigned an Orbis entity counts as a wrong assignment; the shares of the
    categories are reported per stratum.
 2. **Is the assigned Orbis entity the same company?** `yes`, `no`, or `no
-   entity assigned`. For a case without an assignment: does the company
+   entity assigned`. A subsidiary or branch of the right company counts as
+   `yes` here; whether its country is that of the headquarters is question 3. For a case without an assignment: does the company
    exist in Orbis (`missed`) or not (`absent`)?
 3. **Is `country_code_orbis` the country of the company's actual
    headquarters?** Answered for every case with an assignment, also when
@@ -99,12 +103,15 @@ the adjudicated value is used.
 - **Precision per stratum:** among the cases with an assigned entity, the
   share with question 2 = `yes` (an organization that is not a company counts
   as `no`); likewise the share with question 3 = `yes`. Cases answered
-  `unclear` in question 1 are reported and excluded from the denominator.
-  Each estimate with a 95% Wilson interval; at 50 cases the interval is at
-  most ±14 percentage points wide.
+  `unclear` in question 1 are reported and excluded from the denominator;
+  as a sensitivity bound, the precision is also reported with them counted
+  as wrong. Each estimate with a 95% Wilson interval; at 50 cases the
+  interval is at most ±14 percentage points wide.
 - **Weighted precision of the written results:** over the strata with an
   assignment (`unique`, `consensus`, `pending_resolved`),
-  p = Σ_h W_h · p_h with W_h = N_h / N, variance
+  p = Σ_h W_h · p_h with W_h = N_h / N, where N_h is the number of
+  organizations in stratum h and N = Σ_h N_h over these three strata only;
+  variance
   Σ_h W_h² · p_h (1 − p_h) / (n_h − 1) · (1 − n_h / N_h).
   Reported next to the per-stratum values.
 - **Missed companies:** only as a bound, from `pending_unresolved` and
@@ -120,6 +127,12 @@ Fixed before labelling: a stratum is used in analyses only if the lower bound
 of the 95% Wilson interval of its precision is at least 0.80, both for the
 company (question 2) and the country (question 3). A stratum below the
 criterion is not used, also if the overall estimate passes.
+
+What the criterion implies: with 50 cases a stratum passes with at least 46
+correct (lower bound 0.812; 45 correct give 0.786). A stratum with fewer than
+16 cases cannot pass even if every case is correct (the lower bound for n of
+n is n / (n + 3.84)); a small stratum, for example `consensus` in a small
+run, is therefore not used.
 
 ## 8. Recorded Columns
 

@@ -539,8 +539,8 @@ LEFT JOIN organizations o ON o.id = r.owner_id;</pre>
     together with company attributes such as size and industry. The matched entity can be a
     subsidiary, so its country is not necessarily that of the headquarters.</p>
     <p>The matching has not yet been run on the project database, and there is no accuracy
-    estimate for it. Every choice among several candidates needs a corroboration by country
-    or website. A validation protocol with a stratified random sample, blind labelling and
+    estimate for it. Whenever the first matching step leaves the case open, a candidate is
+    chosen only if its country or website confirms it, also when it is the only one left. A validation protocol with a stratified random sample, blind labelling and
     an acceptance criterion fixed in advance (<code>manual_validation.md</code>) has to be
     met before the Orbis country is used. Orbis data are licensed and are not part of the
     public repository. Results of this report do not use them.</p>

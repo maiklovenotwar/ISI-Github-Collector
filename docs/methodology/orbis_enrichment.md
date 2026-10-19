@@ -141,6 +141,14 @@ pipeline does not query the Orbis tables they need; they never decide
 today. Before the cascade, implausible names are filtered again and
 branches are merged.
 
+An organization that is `pending` only because all its hits come from the
+name or login fallback (section 5) passes through the same cascade. Such
+candidates have no website confirmation, so with a geocoded country the
+cascade chooses among the candidates in that country, and a
+namesake company in the same country can be chosen. These cases carry the
+Match-Type `name_only` or `login_fallback` and are validated as a group of
+their own (`manual_validation.md`, section 2).
+
 The written row records the Match-Status (`pending`), the Match-Type of the
 chosen candidate and the signal (`hq_method`). A further check of candidates
 without an Orbis name found no effect (they cannot reach the minimum score),

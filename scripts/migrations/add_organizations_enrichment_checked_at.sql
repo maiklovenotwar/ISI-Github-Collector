@@ -62,7 +62,9 @@ WHERE orbis_enriched_at IS NOT NULL
 -- SELECT COUNT(*) FROM organizations WHERE orbis_enriched_at IS NOT NULL AND bvd_id IS NULL;
 --   (expected: 0)
 -- SELECT COUNT(*) FROM organizations WHERE enrichment_checked_at IS NOT NULL;
---   (expected: the number counted before under "has_timestamp = 1, has_bvd_id = 0")
+--   (expected: the rows that already carried enrichment_checked_at before, plus the rows
+--   counted under "has_timestamp = 1, has_bvd_id = 0", minus the rows in both groups;
+--   on 2026-10-19 the overlap was empty and the result 410,066)
 
 -- Restore steps 2 and 3 from the CSV backup, one execution per saved row:
 -- UPDATE organizations SET orbis_enriched_at = :orbis_enriched_at, enrichment_checked_at = :enrichment_checked_at WHERE id = :id;
