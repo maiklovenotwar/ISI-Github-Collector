@@ -98,6 +98,7 @@ CONFIG_FILE = REPO_ROOT / "config" / "orbis_matching.yaml"
 OUTCOME_COLUMNS = [
     "login",
     "name",
+    "blog",
     "github_country",
     "search_path",
     "status",
@@ -143,6 +144,7 @@ def outcome_rows(
             {
                 "login": org["login"],
                 "name": org["name"],
+                "blog": org.get("blog", ""),
                 "github_country": org["country_code"],
                 "search_path": search_paths.get(org_id, "not_searchable"),
                 "status": result.status.value,

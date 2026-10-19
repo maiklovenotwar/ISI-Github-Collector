@@ -1,112 +1,137 @@
-# Manual Validation Protocol
+# Validation Protocol for the Orbis Matching
 
-Protocol used to manually assess the accuracy of GitHub-to-Orbis matching
-and headquarters (HQ) detection against a hand-reviewed sample
-(a "goldstandard"). See `docs/methodology/orbis_enrichment.md` for the
-matching/HQ-resolution methodology being assessed, and `CONTEXT.md` for
-terminology.
+Protocol for estimating how often the matching of GitHub organizations to
+companies in the Orbis database (Bureau van Dijk) assigns the right company
+and the right country. It is fixed before any labelling, so that the
+procedure cannot be adjusted to the result. See
+`docs/methodology/orbis_enrichment.md` for the matching itself and
+`CONTEXT.md` for the terminology (Match-Status, Match-Type).
 
-The protocol assesses two independent questions per sampled organization:
+**Status:** no validation round has been carried out under this protocol.
+Until one has passed the acceptance criterion below, `country_code_orbis`
+is not used in analyses.
 
-1. **Match correctness**: do the GitHub organization and the selected
-   Orbis company refer to the same real-world entity?
-2. **HQ correctness** (only meaningful if the match is correct): does the
-   algorithm's selected headquarters country match the company's actual
-   headquarters?
+## 1. Reference Run
 
-## Validation Columns
+A validation round refers to exactly one run of
+`scripts/enrichment/orbis_matching_pipeline.py`, identified by the metadata
+file that `--export-csv` writes next to its outcome list (`run_id`, Git
+commit, SHA-256 of `config/orbis_matching.yaml`, Orbis schema, start time,
+counts per Match-Status). The results that are written to the database are
+validated by drawing the sample from the outcome list of the same run, or
+of a dry run with the same commit and configuration hash. A later change to
+the code or the configuration requires a new round.
 
-### Match Assessment
+## 2. Population and Strata
 
-| Column | Values | Description |
-|--------|--------|--------------|
-| `manual_match_correct` | TRUE / FALSE | Do the GitHub org and Orbis company refer to the same entity? |
-| `manual_match_reasoning` | text | Free-text justification (e.g. matching name and website; different industries) |
-| `manual_match_confidence` | HIGH / MEDIUM / LOW | Confidence in the match judgment |
-| `algorithm_match_assessment` | TP / FP / TN / FN | Confusion-matrix classification of the algorithm's match decision against the manual one |
+The population is every organization the run processed, that is, every
+organization in `organizations` without an Orbis result. Each organization
+falls into one stratum, taken from the outcome list:
 
-### HQ Assessment
+| Stratum | Definition | Drawn |
+|---|---|---:|
+| `unique` | Match-Status `unique` | 50 |
+| `consensus` | Match-Status `consensus` | 50 |
+| `pending_resolved` | Match-Status `pending`, headquarters resolution chose a candidate | 50 |
+| `pending_unresolved` | Match-Status `pending`, no corroborated candidate | 100 |
+| `searched_no_candidate` | searched by domain or name, Match-Status `no_match` | 100 |
+| `not_searchable` | neither a usable blog domain nor a name or login of at least five characters | counted only |
 
-| Column | Values | Description |
-|--------|--------|--------------|
-| `manual_hq_country` | ISO-2 country code | Researched actual headquarters country |
-| `manual_hq_reasoning` | text | Source and justification |
-| `manual_hq_confidence` | HIGH / MEDIUM / LOW | HIGH: official source (company site, regulatory filing); MEDIUM: indirect evidence (founding location, CEO location); LOW: no clear information found |
-| `manual_hq_data_source` | text | Specific source used |
-| `algorithm_hq_assessment` | TP / FP / TN / FN | Algorithm country vs. manual country |
+In addition, the cases matched through the transliteration of a non-Latin
+company name, and those found by the name or login fallback, are
+oversampled from the remaining cases (up to 50 each) and evaluated on their
+own. Organizations whose cases were used to develop the rules (the review
+batches of 2026) are excluded and listed in an ignored file passed with
+`--exclude-logins`.
 
-### Overall
+`scripts/diagnostics/draw_orbis_validation_sample.py` draws the sample with
+a fixed seed, without replacement within each stratum, and numbers the cases
+in random order.
 
-| Column | Values | Description |
-|--------|--------|--------------|
-| `algorithm_overall_correct` | TRUE / FALSE | True only if both the match and the HQ country are correct |
-| `error_category` | MATCH_ERROR / HQ_ERROR / BOTH / NONE | Where the error, if any, is located |
-| `difficulty_level` | EASY / MEDIUM / HARD | Subjective difficulty of the validation case |
-| `validation_notes`, `validator_name`, `validation_date`, `validation_time_minutes` | — | Audit trail and effort tracking |
+## 3. Questions per Case
 
-## Data Sources, in Order of Preference
+The labeller answers three questions in this order.
 
-1. Official company website ("About", "Contact", "Locations")
-2. Regulatory filings (e.g. SEC 10-K/10-Q for US companies)
-3. Company registers (e.g. Companies House in the UK, Handelsregister in
-   Germany)
-4. Annual reports / investor relations materials
-5. Wikipedia and LinkedIn — treated as backup sources only, and always
-   cross-checked against one of the above
+1. **Is the organization a company that could be listed in Orbis?** One of
+   `company`, `project`, `community`, `university or research institute`,
+   `public body`, `unclear`. An organization that is not a company but was
+   assigned an Orbis entity counts as a wrong assignment; the shares of the
+   categories are reported per stratum.
+2. **Is the assigned Orbis entity the same company?** `yes`, `no`, or `no
+   entity assigned`. For a case without an assignment: does the company
+   exist in Orbis (`missed`) or not (`absent`)?
+3. **Is `country_code_orbis` the country of the company's actual
+   headquarters?** Answered for every case with an assignment, also when
+   the entity is a subsidiary of the right company.
 
-## Workflow
+Sources, in order of preference: the company's own website (imprint,
+"About", "Contact"); a company register (Companies House, Handelsregister,
+SEC filings); annual reports. Wikipedia and LinkedIn only as a supplement.
+Every answer names at least one source outside Orbis.
 
-1. Sample organizations with multiple Orbis candidates (stratified by
-   company size/type where possible, e.g. well-known "tech giant" cases
-   first as an easy baseline, then progressively less well-documented
-   companies).
-2. For each case, judge match correctness first; only proceed to HQ
-   validation if the match is judged correct.
-3. Classify the algorithm's decisions against the manual judgment using the
-   confusion-matrix columns above.
-4. Categorize any error and estimate difficulty.
-5. Record validator, date, and time spent.
+## 4. Procedure
 
-## Quality Control
+1. **Blind stage.** The labeller receives only the blind file (`case_id`,
+   login, name, blog, GitHub country) and answers question 1, identifies the
+   company from the sources above and searches Orbis for it independently.
+2. **Comparison stage.** Only after the blind stage is complete is the key
+   file opened. The labeller answers questions 2 and 3 against the assigned
+   entity and records both the blind identification and the final judgment.
+   Disagreements between them are resolved by a second person.
 
-- **Double validation**: a subset of cases (e.g. 10%) is independently
-  re-validated by a second reviewer.
-- **Inter-rater reliability**: agreement between validators is measured on
-  the double-validated subset.
-- **Consistency checks**: the same company should receive the same
-  judgment wherever it recurs in the sample.
-- Cases marked `LOW` confidence are reviewed again before being treated as
-  final.
+The independent Orbis search shares some blind spots with the procedure (the
+same website field, names in non-Latin script). Companies that both miss are
+not counted as missed, so the share of missed companies is underestimated.
 
-## Common Pitfalls
+## 5. Double Labelling
 
-- **Name collisions**: a matching name does not guarantee the same company
-  (e.g. an unrelated company that happens to share a word with a
-  well-known one).
-- **Subsidiary vs. parent**: Orbis frequently surfaces a subsidiary entity
-  rather than the ultimate parent.
-- **Headquarters relocation**: use the most current information; a
-  company's HQ can have moved since an older source was published.
-- **Multiple offices**: the official, legally registered headquarters is
-  the target — not simply the largest office.
+At least 40 cases, spread across all strata, are labelled independently by
+two people. Reported are the raw agreement and Cohen's kappa with a 95%
+interval for each of the three questions. Disagreements are adjudicated and
+the adjudicated value is used.
 
-## Resulting Metrics
+## 6. Estimates
 
-From the validated sample:
+- **Precision per stratum:** among the cases with an assigned entity, the
+  share with question 2 = `yes` (an organization that is not a company counts
+  as `no`); likewise the share with question 3 = `yes`. Cases answered
+  `unclear` in question 1 are reported and excluded from the denominator.
+  Each estimate with a 95% Wilson interval; at 50 cases the interval is at
+  most ±14 percentage points wide.
+- **Weighted precision of the written results:** over the strata with an
+  assignment (`unique`, `consensus`, `pending_resolved`),
+  p = Σ_h W_h · p_h with W_h = N_h / N, variance
+  Σ_h W_h² · p_h (1 − p_h) / (n_h − 1) · (1 − n_h / N_h).
+  Reported next to the per-stratum values.
+- **Missed companies:** only as a bound, from `pending_unresolved` and
+  `searched_no_candidate` (share `missed`, with Wilson interval), and with
+  the caveat of section 4. `not_searchable` is reported as a count; for these
+  organizations the procedure cannot find a company.
+- The oversampled groups are evaluated separately and are not mixed into the
+  weighted estimate.
 
-- **Match accuracy**: share of cases with `manual_match_correct = TRUE`
-- **HQ accuracy**: share of correctly-matched cases with
-  `algorithm_hq_assessment = TP`
-- **Overall accuracy**: share with `algorithm_overall_correct = TRUE`
-- Accuracy can be further broken down by the HQ-resolution signal used
-  (`hq_method_used`) and by validator confidence, to identify which
-  signals in the priority cascade (see `docs/methodology/orbis_enrichment.md`)
-  are driving errors
+## 7. Acceptance Criterion
 
-## Status
+Fixed before labelling: a stratum is used in analyses only if the lower bound
+of the 95% Wilson interval of its precision is at least 0.80, both for the
+company (question 2) and the country (question 3). A stratum below the
+criterion is not used, also if the overall estimate passes.
 
-This protocol was used for the goldstandard validation rounds described in
-`docs/methodology/orbis_enrichment.md` (Section 4). The scripts that
-generated and managed those goldstandard datasets have since been
-superseded and removed; the protocol itself remains applicable to any
-future validation round.
+## 8. Recorded Columns
+
+| Column | Values |
+|---|---|
+| `case_id` | from the sample files |
+| `entity_kind` | question 1 |
+| `blind_identification` | company and source found in the blind stage |
+| `orbis_entity_correct` | question 2 |
+| `hq_country_actual` | ISO 3166-1 alpha-2 code from the sources |
+| `hq_country_correct` | question 3 |
+| `hq_method_used` | from the key file (`hq_method`) |
+| `sources` | at least one source outside Orbis |
+| `labeller`, `date`, `minutes` | audit trail |
+| `second_labeller`, `adjudicated_value` | for double-labelled cases |
+
+The labelled files contain Orbis data and stay in ignored paths
+(`workstreams/orbis_matching/data/`). Only the aggregated results are
+published.

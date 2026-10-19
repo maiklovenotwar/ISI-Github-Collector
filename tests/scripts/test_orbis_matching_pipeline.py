@@ -46,8 +46,14 @@ class TestOutcomeExport:
             3: make_match_result(github_id=3, status=MatchStatus.NO_MATCH),
         }
         orgs = {
-            1: {"id": 1, "login": "acme", "name": "Acme", "country_code": "DE"},
-            3: {"id": 3, "login": "x", "name": "", "country_code": None},
+            1: {
+                "id": 1,
+                "login": "acme",
+                "name": "Acme",
+                "blog": "https://acme.example",
+                "country_code": "DE",
+            },
+            3: {"id": 3, "login": "x", "name": "", "blog": "", "country_code": None},
         }
         rows = outcome_rows(results, orgs, {}, {1: "domain", 3: "not_searchable"})
         meta_path = write_outcome_export(tmp_path / "run.csv", rows, {"run_id": "r1"})
@@ -56,6 +62,7 @@ class TestOutcomeExport:
             exported = list(csv.DictReader(f))
         assert [r["login"] for r in exported] == ["acme", "x"]
         assert exported[0]["search_path"] == "domain"
+        assert exported[0]["blog"] == "https://acme.example"  # labellers' main evidence
         assert exported[0]["via_transliteration"] == "True"
         assert exported[1]["bvd_id"] == ""
         assert json.loads(meta_path.read_text(encoding="utf-8")) == {"run_id": "r1"}
