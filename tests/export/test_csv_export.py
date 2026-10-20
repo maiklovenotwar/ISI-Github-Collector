@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, insert
 
 from github_collector.cli import export_command
 from github_collector.database.database import GitHubDatabase
-from github_collector.database.models import Contributor, Organization
+from github_collector.database.models import Base, Contributor, Organization
 from github_collector.export import csv_export
 
 
@@ -107,3 +107,35 @@ def test_table_failing_midway_leaves_no_file_and_exit_code_1(tmp_path, monkeypat
     )
     assert export_command.main() == 1
     assert list(out_dir.iterdir()) == []
+
+
+def test_all_exports_every_table_of_the_database(tmp_path, monkeypatch):
+    # "all" used to mean three tables; repository_contributors and orbis_enrichments were
+    # not exportable at all (functional test, F-7).
+    db = _db_with_contributors(tmp_path, 2)
+    monkeypatch.setattr(
+        sys, "argv", ["export", "--db-path", db.db_url, "--output-dir", str(tmp_path / "exp")]
+    )
+    assert export_command.main() == 0
+    written = sorted(p.stem for p in (tmp_path / "exp").glob("*.csv"))
+    assert written == sorted(Base.metadata.tables)
+
+
+def test_a_single_link_table_can_be_chosen(tmp_path, monkeypatch):
+    db = _db_with_contributors(tmp_path, 1)
+    out = tmp_path / "exp"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "export",
+            "--db-path",
+            db.db_url,
+            "--output-dir",
+            str(out),
+            "--tables",
+            "repository_contributors",
+        ],
+    )
+    assert export_command.main() == 0
+    assert [p.name for p in out.glob("*.csv")] == ["repository_contributors.csv"]

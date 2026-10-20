@@ -9,7 +9,7 @@ import os
 import sys
 
 from github_collector import config
-from github_collector.database.database import GitHubDatabase
+from github_collector.database.database import _MODEL_REGISTRY, GitHubDatabase
 from github_collector.database.engine import redact_db_url
 from github_collector.export.csv_export import export_tables
 from github_collector.utils.logging_config import get_export_logger
@@ -39,7 +39,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--tables",
         nargs="+",
-        choices=["contributors", "organizations", "repositories", "all"],
+        choices=[*_MODEL_REGISTRY, "all"],
         default=["all"],
         help="Zu exportierende Tabellen (Standard: all)",
     )
@@ -84,7 +84,7 @@ def main() -> int:
         # Bestimme die zu exportierenden Tabellen
         tables = []
         if "all" in args.tables:
-            tables = ["contributors", "organizations", "repositories"]
+            tables = list(_MODEL_REGISTRY)
         else:
             tables = args.tables
 

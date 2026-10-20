@@ -32,6 +32,8 @@ _MODEL_REGISTRY: Dict[str, Base] = {
     "repositories": Repository,
     "contributors": Contributor,
     "organizations": Organization,
+    "repository_contributors": RepositoryContributor,
+    "orbis_enrichments": OrbisEnrichment,
 }
 
 logger = logging.getLogger(__name__)

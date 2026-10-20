@@ -342,11 +342,16 @@ exit code 1.
 - **repositories.csv**: repository metadata and statistics
 - **organizations.csv**: organization information
 - **contributors.csv**: account data
+- **repository_contributors.csv**: the contributors of each repository with their number of
+  contributions
+- **orbis_enrichments.csv**: the log of Orbis matches per organization and run
 
 The files contain the raw columns of these tables. They include personal
 data that account holders entered in their GitHub profiles (name, e-mail
-address, biography, location); handle and share them accordingly. They do
-not contain `repository_contributors`, and they do not contain a country
+address, biography, location), and for anonymous contributors the e-mail
+address or name recorded with the commits; handle and share them
+accordingly. `orbis_enrichments.csv` contains data taken from Orbis, whose
+licence restricts passing them on. The files do not contain a country
 per repository: the rule that assigns a country to a repository is
 described in `docs/methodology/country_attribution.md` and has to be
 applied to the exported columns.
