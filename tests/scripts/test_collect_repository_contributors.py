@@ -342,3 +342,21 @@ def test_repositories_with_lost_rows_are_reported(failing_writes, caplog):
         failing_writes.flush_rows(None, rows)
     lost = [r.getMessage() for r in caplog.records if "unvollständig" in r.getMessage()]
     assert len(lost) == 1 and "7" in lost[0] and "8" not in lost[0]
+
+
+def test_lost_connection_stops_the_run_instead_of_retrying_each_row(module, monkeypatch):
+    # _write_batch already retries a lost connection; row by row would repeat that per row.
+    from sqlalchemy.exc import OperationalError
+
+    calls = []
+
+    def write(engine, rows):
+        calls.append(len(rows))
+        raise OperationalError("INSERT", {}, Exception("Lost connection to MySQL server"))
+
+    monkeypatch.setattr(module, "upsert_statement", lambda rows: rows)
+    monkeypatch.setattr(module, "_write_batch", write)
+
+    with pytest.raises(OperationalError):
+        module.flush_rows(None, _rows("a", "b", "c"))
+    assert calls == [3]

@@ -211,6 +211,8 @@ def flush_rows(engine, rows: List[Dict[str, Any]]) -> int:
     try:
         _write_batch(engine, upsert_statement(rows))
         return len(rows)
+    except OperationalError:
+        raise  # Verbindung weg: _write_batch hat schon wiederholt, einzeln hilft nicht
     except Exception as e:
         logger.error("Flush von %d Zeilen fehlgeschlagen, schreibe einzeln: %s", len(rows), e)
 
