@@ -7,6 +7,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -15,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.sql import text
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,7 @@ class Contributor(Base):
     country_code = Column(String(2), index=True)  # ISO-Ländercode
     region = Column(String(100))  # Region innerhalb des Landes oder Kontinents
     # ccTLD-Anreicherung (scripts/enrichment/enrich_cctld.py --entity contributors) - siehe
-    # add_cctld_contributors_no_index.py; bewusst ohne Index, anders als bei Organization.
+    # add_cctld_contributors_no_index.py; der Index kam dort nachträglich per Hand hinzu.
     country_code_cctld = Column(String(2))
     cctld_source = Column(String(20))
     cctld_enriched_at = Column(DateTime)
@@ -55,6 +57,8 @@ class Contributor(Base):
     # echte Profile haben name/location/company alle leer, diese Spalte unterscheidet
     # "nie versucht" von "versucht, nichts gefunden".
     enrichment_checked_at = Column(DateTime, index=True)
+
+    __table_args__ = (Index("idx_contributors_cctld", "country_code_cctld"),)
 
     # Beziehungen
     owned_repositories = relationship(
@@ -172,8 +176,8 @@ class OrbisEnrichment(Base):
 
     id = Column(Integer, primary_key=True)
     organization_id = Column(
-        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )  # kein eigener Index: uk_org_run (organization_id, run_id) dient dem Fremdschlüssel
     bvd_id = Column(String(50), nullable=False, index=True)
     company_name = Column(String(255))  # NAME_NATIVE zum Zeitpunkt des Matches
     company_country = Column(String(2))  # CTRYISO
@@ -185,13 +189,16 @@ class OrbisEnrichment(Base):
     # waren unique und consensus nicht unterscheidbar (Befund H5).
     match_status = Column(String(20), nullable=True)
     score = Column(Integer, nullable=False, index=True)
-    blog_matched = Column(Boolean, nullable=False, default=False)
+    blog_matched = Column(Boolean, nullable=False, default=False, server_default="0")
     run_id = Column(String(36), nullable=False, index=True)  # UUID des Enrichment-Laufs
     enriched_at = Column(DateTime, nullable=False)
     reverted_at = Column(DateTime, nullable=True)  # NULL = weiterhin aktiv
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
 
-    __table_args__ = (UniqueConstraint("organization_id", "run_id", name="uk_org_run"),)
+    __table_args__ = (
+        UniqueConstraint("organization_id", "run_id", name="uk_org_run"),
+        Index("idx_orbis_enrichments_reverted_at", "reverted_at"),
+    )
 
     # Beziehungen (foreign_keys explizit nötig, siehe Organization.orbis_enrichments)
     organization = relationship(
@@ -283,7 +290,7 @@ class RepositoryContributor(Base):
     github_user_id = Column(Integer, index=True)  # Stabile GitHub-User-ID (== contributors.id)
     github_type = Column(String(20))  # Account-Typ laut API (User, Bot, ...)
     contributions = Column(Integer)  # Commit-Anzahl auf dem Default-Branch laut GitHub API
-    is_anonymous = Column(Boolean, nullable=False, default=False)
+    is_anonymous = Column(Boolean, nullable=False, default=False, server_default="0")
     collected_at = Column(DateTime, nullable=False)
     run_id = Column(String(36), index=True)  # UUID des Sammel-Laufs (für Revert)
 

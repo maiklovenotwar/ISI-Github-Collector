@@ -105,3 +105,6 @@ SQL files:
   schema change).
 - `add_orbis_enrichments_match_status.sql` (2026-10-19): column `match_status` on
   `orbis_enrichments`.
+- `align_schema_with_models.sql` (2026-10-20): widens `contributors.cctld_source` to 20
+  characters and drops four duplicate indexes, so that the production schema and a rebuild
+  from the models agree.
