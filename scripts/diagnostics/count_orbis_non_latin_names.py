@@ -14,9 +14,10 @@ Usage:
     python scripts/diagnostics/count_orbis_non_latin_names.py
 """
 
+import argparse
 import sys
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional, Sequence
 
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -50,7 +51,8 @@ def build_queries(schema: str) -> Dict[str, str]:
     }
 
 
-def main() -> int:
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args(argv)
     client = OrbisClient()
     try:
         schema = client.config.get("schema", "ORBIS_23J")

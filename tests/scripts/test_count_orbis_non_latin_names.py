@@ -55,3 +55,19 @@ def test_non_latin_means_no_latin_letter():
     query = load().build_queries("ORBIS_23J")["non_latin_total"]
     assert "REGEXP_LIKE(NAME_NATIVE, '[A-Za-z]')" in query
     assert "NAME_NATIVE IS NOT NULL" in query
+
+
+def test_help_does_not_connect(monkeypatch, capsys):
+    """Functional test 2026-10-20: `--help` started the full scan of Orbis."""
+    import pytest
+
+    module = load()
+
+    def no_connection(*args, **kwargs):
+        raise AssertionError("--help must not connect to Orbis")
+
+    monkeypatch.setattr(module, "OrbisClient", no_connection)
+    with pytest.raises(SystemExit) as exit_info:
+        module.main(["--help"])
+    assert exit_info.value.code == 0
+    assert "Orbis" in capsys.readouterr().out
