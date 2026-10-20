@@ -300,7 +300,8 @@ python scripts/enrichment/orbis_matching_pipeline.py --limit 1000
 **Export the outcome for every organization as CSV**, in a dry run or a writing run. The
 file contains Orbis data and must go to a path Git ignores (the script refuses others);
 next to it, `<name>.meta.json` records the run identifier, the Git commit, the hash of
-`config/orbis_matching.yaml`, the Orbis schema and the counts per Match-Status:
+`config/orbis_matching.yaml`, the Orbis schema, the counts per Match-Status and whether
+the Latin name column was read:
 ```bash
 python scripts/enrichment/orbis_matching_pipeline.py --dry-run --limit 1000 \
     --export-csv workstreams/orbis_matching/data/dry_run.csv
@@ -398,6 +399,7 @@ python scripts/enrichment/enrich_repository_stats.py --retry-failed failed_repos
 | `DATABASE_URL` | Database connection string | see below -- no SQLite fallback |
 | `LOG_LEVEL` | Logging level | `INFO` |
 | `ENABLE_PERFORMANCE_TRACKING` | Enable performance tracking | `true` |
+| `ORBIS_LATIN_NAME_COLUMN` | Name of the Latin company-name column in Orbis; kept out of the repository (licensed schema). Without it, non-Latin names are compared only through the transliteration | unset |
 
 ### Database Configuration
 

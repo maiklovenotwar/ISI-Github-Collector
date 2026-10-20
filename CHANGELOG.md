@@ -8,6 +8,11 @@ Notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Orbis matching: domain candidates whose company name has no Latin letter are also
+  compared through the Latin name held in Orbis (column name from
+  `ORBIS_LATIN_NAME_COLUMN`, switch `plausibility.use_latin_name`); such hits are flagged
+  (`via_latin_name`), exported and oversampled for validation. Blog platforms from China,
+  Russia, Korea and Japan are added to `config/blog_blacklist.txt`.
 - Orbis matching: `--export-csv` writes the outcome for every organization (also without a
   result, with the search path) and a metadata file (Git commit, configuration hash, Orbis schema,
   counts per Match-Status), also in writing runs, and only to paths Git ignores.

@@ -42,7 +42,10 @@ fill missing countries.
    and the GitHub name (or, without a name, the login) has at least five
    characters, Orbis is searched for that exact string in `NAME_NATIVE`
    (case-insensitive). Company names in non-Latin script are never found
-   this way, because the GitHub name is written in Latin script.
+   this way, because the GitHub name is written in Latin script. Orbis also
+   holds a Latin name for most such companies (section 3), but that column has
+   no index for a case-insensitive search, and a search there is not
+   implemented.
 3. An organization with neither a usable domain nor a long enough name is
    not searched; the outcome list records it as `not_searchable`.
 
@@ -64,6 +67,24 @@ counts towards a name match (below) only for candidates found by their
 domain. Kanji in Japanese names are read in their Chinese pronunciation and
 are compared poorly. Candidates matched this way are flagged and validated
 separately.
+
+For candidates found by their domain whose original name contains no Latin
+letter, the Latin name that Orbis holds in a second name column is compared
+as well, and the highest of the three values (original name, Latin name,
+transliteration) counts. The Latin name is mostly a romanisation with an
+English legal form ("Co., Ltd."), occasionally a literal translation. English
+legal forms (`co., ltd.`, `company limited`, `limited liability company`,
+`llc`, `ltd`, `limited`, `kk`, `k.k.`, `y.k.`, `inc`, `corp`, `corporation`,
+`jsc`, `pjsc`, `ojsc`, `cjsc`) are removed from it first; unlike the
+transliteration, it has no minimum length. The test whether the complete
+login appears inside a longer company name, used to rank candidates, also
+checks this Latin name. Names
+that mix Latin letters with another script are compared only as they are.
+Candidates matched through the Latin name are flagged and validated
+separately (section 7 of `manual_validation.md`); the switch
+`plausibility.use_latin_name` in `config/orbis_matching.yaml` turns the
+comparison off. The name of the column is read from the local environment
+variable `ORBIS_LATIN_NAME_COLUMN`; without it, the comparison is not made.
 
 - **Plausibility filter:** a candidate with a similarity below 0.5 is
   discarded before any scoring.
@@ -170,13 +191,17 @@ an acceptance criterion before any labelling takes place.
 - **Coverage of Orbis.** Orbis does not cover all countries and company
   types equally; organizations that are projects, communities or public
   bodies have no company to find.
-- **Non-Latin names.** Found only through the domain, and compared through a
-  restricted transliteration. The romanisation often differs from the name a
-  company uses in Latin script (`Яндекс` becomes `Iandeks`, similarity 0.62
-  against `Yandex`); such a candidate then stays below the name-match
-  threshold, earns only the blog points and is not a hit. The share of Orbis names without Latin
-  letters is measured with `scripts/diagnostics/count_orbis_non_latin_names.py`
-  (requires access to Orbis); the result is not yet available.
+- **Non-Latin names.** Found only through the domain, and compared through
+  the Latin name held in Orbis and a restricted transliteration. Without the
+  Latin name, the romanisation often differs from the name a company uses in
+  Latin script (`Яндекс` becomes `Iandeks`, similarity 0.62 against `Yandex`).
+  On the domain path, name points are not reduced for short or contained
+  names (section 4), so only the blacklist of shared platform domains guards
+  against matches through a domain used by many companies. The share of Orbis
+  names without Latin letters is measured with
+  `scripts/diagnostics/count_orbis_non_latin_names.py` (requires access to
+  Orbis); the figures are not published until the licence terms for
+  aggregate figures are clarified.
 - **Entity, not headquarters.** See section 1.
 - **Heuristic scores.** See section 4.
 
@@ -185,7 +210,10 @@ an acceptance criterion before any labelling takes place.
 `--export-csv` writes the outcome for every processed organization (also
 those without a result) and, next to it, a metadata file with the run
 identifier, the Git commit, the SHA-256 hash of `config/orbis_matching.yaml`,
-the Orbis schema and the counts per Match-Status. Outputs that contain Orbis
+the Orbis schema, the counts per Match-Status and whether the Latin name
+column was read (`latin_name_column_used`). The outcome list carries the
+Latin name (`company_latin_name`) and the flag `via_latin_name`; the database
+stores only the original name in `company_name`. Outputs that contain Orbis
 data are written only to paths that Git ignores. Every run can be rolled back
 with `--rollback <run-id>`; rolled-back rows stay in `orbis_enrichments` with
 `reverted_at` set.

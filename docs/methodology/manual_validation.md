@@ -45,7 +45,8 @@ organization falls into one stratum, taken from the outcome list:
 | `not_searchable` | neither a usable blog domain nor a name or login of at least five characters | counted only |
 
 In addition, the cases matched through the transliteration of a non-Latin
-company name, and those found by the name or login fallback, are
+company name, those matched through the Latin name held in Orbis
+(`via_latin_name`), and those found by the name or login fallback, are
 oversampled from the remaining cases (up to 50 each) and evaluated on their
 own. Organizations whose cases were used to develop the rules (the review
 batches of 2026) are excluded and listed in an ignored file passed with
@@ -88,7 +89,8 @@ Every answer names at least one source outside Orbis.
    Disagreements between them are resolved by a second person.
 
 The independent Orbis search shares some blind spots with the procedure (the
-same website field, names in non-Latin script). Companies that both miss are
+same website field, names in non-Latin script without a usable Latin name).
+Companies that both miss are
 not counted as missed, so the share of missed companies is underestimated.
 
 ## 5. Double Labelling
@@ -127,6 +129,11 @@ Fixed before labelling: a stratum is used in analyses only if the lower bound
 of the 95% Wilson interval of its precision is at least 0.80, both for the
 company (question 2) and the country (question 3). A stratum below the
 criterion is not used, also if the overall estimate passes.
+
+The same criterion applies to the oversampled group `via_latin_name`. If it
+fails, or if the group has fewer than 16 cases (too few to reach a lower
+bound of 0.80), `plausibility.use_latin_name` is set to `false` before any
+result is used.
 
 What the criterion implies: with 50 cases a stratum passes with at least 46
 correct (lower bound 0.812; 45 correct give 0.786). A stratum with fewer than
