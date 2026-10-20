@@ -203,3 +203,24 @@ def test_repository_of_an_organization_gets_its_organization_id(collector):
     )
 
     assert [(row["owner_id"], row["organization_id"]) for row in rows] == [(20, 20), (1, None)]
+
+
+def test_overlong_text_fields_are_cut_to_the_column_length(collector, caplog):
+    # A branch name longer than the column aborted the whole collection (functional test).
+    repositories = [
+        {
+            "id": 1,
+            "name": "a",
+            "full_name": "alice/a",
+            "owner": {"login": "alice", "type": "User"},
+            "default_branch": "b" * 150,
+            "homepage": "https://example.org/" + "x" * 300,
+        }
+    ]
+
+    with caplog.at_level("WARNING"):
+        (row,) = collector._normalize_repositories_for_db(repositories, {"alice": 1}, {})
+
+    assert row["default_branch"] == "b" * 100
+    assert len(row["homepage"]) == 255
+    assert "default_branch" in caplog.text and "alice/a" in caplog.text

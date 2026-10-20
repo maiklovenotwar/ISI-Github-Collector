@@ -23,6 +23,7 @@ from github_collector.config import (
     MAX_WORKER_THREADS,
     STATE_CONFIG,
 )
+from github_collector.database.models import Repository
 from github_collector.monitoring import (
     batch_processing_seconds,
     record_repository_processed,
@@ -935,7 +936,25 @@ class RepositoryCollector:
                 skipped_no_mapping,
             )
 
+        for row in normalized:
+            self._cut_to_column_length(row)
         return normalized
+
+    @staticmethod
+    def _cut_to_column_length(row: Dict[str, Any]) -> None:
+        """Kürze Textfelder auf die Spaltenlänge, statt den ganzen Batch scheitern zu lassen."""
+        for field, value in row.items():
+            column = Repository.__table__.columns.get(field)
+            max_len = getattr(column.type, "length", None) if column is not None else None
+            if isinstance(value, str) and max_len and len(value) > max_len:
+                logger.warning(
+                    "Feld %s von %s zu lang (%d Zeichen), kuerze auf %d.",
+                    field,
+                    row.get("full_name"),
+                    len(value),
+                    max_len,
+                )
+                row[field] = value[:max_len]
 
     def _validate_repositories(
         self, repositories_data: List[Dict[str, Any]]
