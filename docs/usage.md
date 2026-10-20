@@ -463,5 +463,57 @@ python scripts/maintenance/reset_and_collect.py --yes
 | `scripts/maintenance/cleanup_orphaned_owners.py` | Removes contributors and organizations that are no longer referenced by any repository; reports only, unless `--write` is given |
 | `scripts/maintenance/manage_gold_standard.py` | Samples and labels locations for the geocoding gold standard (`tests/resources/geocoding_gold_standard.json`) |
 | `scripts/maintenance/benchmark_geocoding.py` | Measures the accuracy of the geocoding service against the gold standard |
+| `scripts/maintenance/clone_schema.py` | Copies the table design of a MySQL database into an empty test database (see below) |
 | `scripts/diagnostics/diagnose_hq_signals.py` | Reports the distribution of headquarters-resolution signals; requires Orbis access |
 | `scripts/diagnostics/check_orbis_schema.py` | Lists the Orbis tables and columns available for headquarters resolution; requires Orbis access |
+
+### Test Instance
+
+A second MySQL server on the same machine lets every script run against real data without
+touching the project database. It uses the same MySQL installation, its own data directory
+(`data/mysql_test/`, ignored by Git) and port 3307, and it does not read the server's `my.ini`.
+
+1. Read the settings of the project database (read only): `SHOW CREATE DATABASE`,
+   `SHOW TRIGGERS`, and `SHOW VARIABLES` for `sql_mode`, `character_set_server`,
+   `collation_server`, `lower_case_table_names`, `time_zone`, `innodb_strict_mode`,
+   `group_concat_max_len`, `max_allowed_packet`, `explicit_defaults_for_timestamp`.
+2. Initialise and start the server with these values; `--no-defaults` must be the first option:
+
+   ```powershell
+   mysqld --no-defaults --initialize-insecure --lower-case-table-names=<value> `
+       --datadir=<repo>\data\mysql_test
+   mysqld --no-defaults --basedir="C:\Program Files\MySQL\MySQL Server 8.0" `
+       --datadir=<repo>\data\mysql_test --port=3307 --bind-address=127.0.0.1 --mysqlx=OFF `
+       --enable-named-pipe=OFF --shared-memory=OFF --socket=MYSQL_TEST3307 `
+       --shared-memory-base-name=MYSQL_TEST3307 --disable-log-bin `
+       --tmpdir=<repo>\data\test_run\tmp --secure-file-priv=<repo>\data\test_run\uploads `
+       --log-error=<repo>\data\test_run\mysqld.err <settings from step 1>
+   ```
+
+3. Connect only with `mysql --no-defaults --protocol=TCP -h 127.0.0.1 -P 3307 -u root`; without
+   `--protocol=TCP` a client can reach the project server through a named pipe. Set a root
+   password, create the database with the character set and collation of step 1, and a user
+   that exists only on the test server, with rights on that database only.
+4. Copy the tables (from a shell in which `DATABASE_URL` is not set to the test server):
+
+   ```bash
+   python scripts/maintenance/clone_schema.py --source-url <project database URL> \
+       --target-url mysql+mysqlconnector://<test user>:<password>@127.0.0.1:3307/github_data
+   ```
+
+   The script copies every base table with `SHOW CREATE TABLE` (indexes, foreign keys and table
+   options included; tables starting with `tmp_` are left out), refuses port 3306 and a target
+   that already has tables, and only reads the source.
+5. Run scripts with all paths redirected. Set every variable, including `CACHE_DIR`; scripts
+   that find no value fall back to `.env` and the project directories:
+
+   | Variable | Test value |
+   |---|---|
+   | `DATABASE_URL` | the target URL of step 4 |
+   | `DATA_DIR` | `<repo>/data/test_run/data` |
+   | `LOG_DIR` | `<repo>/data/test_run/logs` |
+   | `CACHE_DIR` | a copy of `data/cache` in `<repo>/data/test_run/cache` |
+   | `EXPORT_DIR` | `<repo>/data/test_run/exports` |
+
+6. Stop the server with
+   `mysqladmin --no-defaults --protocol=TCP -h 127.0.0.1 -P 3307 -u root -p shutdown`.
