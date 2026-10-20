@@ -198,13 +198,15 @@ def build_run_metadata(
     started_at: str,
     status_counts: Dict[str, int],
     cli_args: Optional[Dict[str, object]] = None,
+    use_latin_name: Optional[bool] = None,
 ) -> Dict[str, object]:
     """Was einen Lauf reproduzierbar macht: alles, was sein Ergebnis verändert.
 
     Code-Stand (Commit und ob uncommittete Änderungen vorlagen), Konfiguration und
     Blog-Sperrliste (Hashes), die Optionen, die Organisationen auswählen oder Schwellen
     verschieben (`--limit`, `--logins`, `--min-name-similarity`), das Orbis-Schema und ob
-    die lateinische Namensspalte gelesen wurde (`ORBIS_LATIN_NAME_COLUMN`, E28).
+    die lateinische Namensspalte gelesen wurde (`ORBIS_LATIN_NAME_COLUMN`, E28) und ob der
+    Vergleich über sie eingeschaltet war (`plausibility.use_latin_name`, E37).
     """
 
     def git(*args: str) -> str:
@@ -224,6 +226,7 @@ def build_run_metadata(
         "started_at": started_at,
         "status_counts": status_counts,
         "latin_name_column_used": latin_name_column() is not None,
+        "use_latin_name": use_latin_name,
     }
 
 
@@ -662,6 +665,7 @@ def run_pipeline(  # noqa: C901
                     "logins": sorted(logins) if logins else None,
                     "min_name_similarity": min_name_similarity,
                 },
+                use_latin_name=scoring_config.use_latin_name,
             )
             rows = outcome_rows(results, orgs_by_id, hq_methods, search_paths)
             write_outcome_export(export_path, rows, metadata)

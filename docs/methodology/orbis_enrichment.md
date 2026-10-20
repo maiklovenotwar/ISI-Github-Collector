@@ -82,7 +82,7 @@ login appears inside a longer company name, used to rank candidates, also
 checks this Latin name. Names
 that mix Latin letters with another script are compared only as they are.
 Candidates matched through the Latin name are flagged and validated
-separately (section 7 of `manual_validation.md`); the switch
+separately (sections 2 and 7 of `manual_validation.md`); the switch
 `plausibility.use_latin_name` in `config/orbis_matching.yaml` turns the
 comparison off. The name of the column is read from the local environment
 variable `ORBIS_LATIN_NAME_COLUMN`; without it, the comparison is not made.
@@ -212,7 +212,8 @@ an acceptance criterion before any labelling takes place.
 those without a result) and, next to it, a metadata file with the run
 identifier, the Git commit, the SHA-256 hash of `config/orbis_matching.yaml`,
 the Orbis schema, the counts per Match-Status and whether the Latin name
-column was read (`latin_name_column_used`). The outcome list carries the
+column was read and the comparison switched on (`latin_name_column_used`,
+`use_latin_name`). The outcome list carries the
 Latin name (`company_latin_name`) and the flag `via_latin_name`; the database
 stores only the original name in `company_name`. Outputs that contain Orbis
 data are written only to paths that Git ignores. Every run can be rolled back

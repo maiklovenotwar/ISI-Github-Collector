@@ -114,8 +114,10 @@ class TestOutcomeExport:
             "started_at",
             "status_counts",
             "latin_name_column_used",
+            "use_latin_name",
         }
         assert meta["latin_name_column_used"] is False
+        assert meta["use_latin_name"] is None  # nicht übergeben
         expected = hashlib.sha256(
             (REPO / "config" / "orbis_matching.yaml").read_bytes()
         ).hexdigest()
@@ -156,8 +158,12 @@ class TestLatinNameInThePipeline:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("ORBIS_LATIN_NAME_COLUMN", "LATIN_NAME_TEST")
-        meta = build_run_metadata("r1", True, "ORBIS_23J", "2026-10-20T10:00:00+00:00", {})
+        meta = build_run_metadata(
+            "r1", True, "ORBIS_23J", "2026-10-20T10:00:00+00:00", {}, use_latin_name=False
+        )
         assert meta["latin_name_column_used"] is True
+        # Spalte gelesen, Vergleich aber per Schalter aus (Final Review, Befund 4)
+        assert meta["use_latin_name"] is False
 
 
 class TestTransliterationInThePipeline:
