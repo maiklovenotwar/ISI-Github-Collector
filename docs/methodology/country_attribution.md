@@ -72,7 +72,7 @@ organization (42.8%) had a country on that day (on 2026-10-13, before the
 corrections described in `geocoding.md`, 51.6% and 43.7%).
 
 A repository whose owner has no country has no country. The CSV export
-writes the three tables separately and does not apply this rule; it has
+writes each table separately and does not apply this rule; it has
 to be applied in the analysis.
 
 ## Three Sources of a Country

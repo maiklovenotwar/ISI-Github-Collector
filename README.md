@@ -98,7 +98,7 @@ python scripts/enrichment/update_location_geocoding.py --no-interactive-filters
 # 3. Check what was collected
 python scripts/collection/collect_repositories.py --stats
 
-# 4. Export all three tables to exports/*.csv
+# 4. Export all tables to exports/*.csv
 python scripts/export/export_tables_to_csv.py --tables all
 ```
 

@@ -41,7 +41,7 @@ The schema has five tables:
 | following | Integer | Following count |
 | created_at | DateTime | GitHub account creation date |
 | updated_at | DateTime | GitHub account last-update date |
-| country_code_cctld | String(2) | ISO country code derived from the country-code top-level domain of `blog` or `email` (see `scripts/enrichment/enrich_cctld.py`) |
+| country_code_cctld | String(2), indexed | ISO country code derived from the country-code top-level domain of `blog` or `email` (see `scripts/enrichment/enrich_cctld.py`) |
 | cctld_source | String(20) | Field from which the code was derived: `blog`, `email`, or `both` |
 | cctld_enriched_at | DateTime | Timestamp of the ccTLD enrichment |
 | cctld_run_id | String(36) | UUID of the ccTLD enrichment run; used to revert a run |
@@ -93,7 +93,7 @@ back independently.
 | Column | Type | Description |
 |--------|------|-------------|
 | id | Integer | Primary key |
-| organization_id | Integer, FK → organizations.id (`CASCADE` on delete), not null, indexed | Organization this row belongs to |
+| organization_id | Integer, FK → organizations.id (`CASCADE` on delete), not null | Organization this row belongs to; served by the unique key on (`organization_id`, `run_id`) |
 | bvd_id | String, not null, indexed | Matched Orbis BvD identifier |
 | company_name | String | Company name at match time (Orbis `NAME_NATIVE`) |
 | company_country | String(2) | Company country at match time (Orbis `CTRYISO`) |
@@ -103,11 +103,11 @@ back independently.
 | hq_method | String | Headquarters-resolution signal that was used (`ROOT_DOMAIN_PRESENCE`, `BVDID_FALLBACK`, ...; see `docs/methodology/orbis_enrichment.md`) |
 | match_status | String(20), nullable | Match-Status at match time (`unique`, `consensus`, `pending`; see `CONTEXT.md`). A resolved `pending` case carries the Match-Type of the chosen candidate in `match_type`. `NULL` for rows written before the migration `add_orbis_enrichments_match_status.sql` |
 | score | Integer, not null, indexed | Matching score |
-| blog_matched | Boolean, not null | Whether the match was corroborated by a blog-domain match |
+| blog_matched | Boolean, not null, default 0 | Whether the match was corroborated by a blog-domain match |
 | run_id | String, not null, indexed | UUID of the enrichment run |
 | enriched_at | DateTime, not null | Timestamp of this match attempt |
-| reverted_at | DateTime, nullable | Set when this run was rolled back; `NULL` while the match is active |
-| created_at | DateTime | Row creation timestamp |
+| reverted_at | DateTime, nullable, indexed | Set when this run was rolled back; `NULL` while the match is active |
+| created_at | DateTime, default `CURRENT_TIMESTAMP` | Row creation timestamp |
 
 Unique constraint on (`organization_id`, `run_id`).
 
@@ -134,7 +134,7 @@ Orbis data changed between runs.
 | language | String, indexed | Primary language |
 | private | Boolean | Whether the repository is private |
 | fork | Boolean | Whether the repository is a fork |
-| default_branch | String | Default branch name |
+| default_branch | String(100) | Default branch name |
 | size | Integer | Repository size in KB |
 | stargazers_count | Integer, indexed | Star count |
 | watchers_count | Integer | Watcher count |
@@ -168,7 +168,7 @@ procedure and its limits are described in
 | github_user_id | Integer, indexed | Stable GitHub user ID (equals `contributors.id` when linked) |
 | github_type | String | Account type reported by the API (`User`, `Bot`, ...) |
 | contributions | Integer | Number of commits attributed to the contributor, as reported by the API |
-| is_anonymous | Boolean, not null | True for anonymous (email-only, no linked account) contributors |
+| is_anonymous | Boolean, not null, default 0 | True for anonymous (email-only, no linked account) contributors |
 | collected_at | DateTime, not null | Timestamp of this crawl |
 | run_id | String, indexed | UUID of the collection run (for revert) |
 
@@ -251,12 +251,20 @@ that directory and applied manually against the database.
 
 The `cctld_*` columns were added to `organizations` by
 `add_cctld_columns.sql` and to `contributors` by
-`add_cctld_contributors_no_index.py`. The two migrations differ in two
-respects: only `organizations.cctld_run_id` is indexed, and
-`cctld_source` is declared as `VARCHAR(20)` for organizations but as
-`VARCHAR(10)` for contributors, whereas `models.py` declares `String(20)`
-for both tables. The stored values (`blog`, `email`, `both`) fit either
-length.
+`add_cctld_contributors_no_index.py`. Only `organizations.cctld_run_id` is
+indexed; `contributors.country_code_cctld` received its index
+(`idx_contributors_cctld`) after the migration.
+
+Because the migrations were applied by hand, the project database and a
+database built from `models.py` had drifted apart. A comparison on
+2026-10-20 led to `align_schema_with_models.sql`, which widened
+`contributors.cctld_source` from `VARCHAR(10)` to `VARCHAR(20)` and dropped
+four indexes that duplicated another index, and to model changes that
+declare the remaining indexes and the database-side defaults. Since then a
+database initialised from the models has the same columns, types, defaults,
+indexes and foreign keys as the project database, except for
+`repositories.country_code_inf`, a column that exists only in the project
+database and is not used by the code. Index names may differ.
 
 ## Write Paths of the Enrichment Scripts
 
@@ -303,7 +311,11 @@ data:
 ## Initialization
 
 The database is initialized automatically on first use. Initialization can
-also be triggered manually via `init_db(db_url)`.
+also be triggered manually via `init_db(db_url)`, which creates the tables
+from `models.py` (see Migrations for how this matches the project
+database). Text values longer than their column, such as a default branch
+name of more than 100 characters, are shortened to the column length by the
+collectors and logged, so that a single value cannot stop a batch.
 
 ## Performance
 

@@ -469,7 +469,7 @@ python scripts/maintenance/reset_and_collect.py --yes
 | `scripts/maintenance/manage_gold_standard.py` | Samples and labels locations for the geocoding gold standard (`tests/resources/geocoding_gold_standard.json`) |
 | `scripts/maintenance/benchmark_geocoding.py` | Measures the accuracy of the geocoding service against the gold standard |
 | `scripts/maintenance/clone_schema.py` | Copies the table design of a MySQL database into an empty test database (see below) |
-| `scripts/diagnostics/diagnose_hq_signals.py` | Reports the distribution of headquarters-resolution signals; requires Orbis access |
+| `scripts/diagnostics/diagnose_hq_signals.py` | Reports the Orbis ownership tables and how many of the current matches in the database have shareholder data; requires Orbis access |
 | `scripts/diagnostics/check_orbis_schema.py` | Lists the Orbis tables and columns available for headquarters resolution; requires Orbis access |
 
 ### Test Instance
@@ -517,7 +517,7 @@ touching the project database. It uses the same MySQL installation, its own data
    | `DATABASE_URL` | the target URL of step 4 |
    | `DATA_DIR` | `<repo>/data/test_run/data` |
    | `LOG_DIR` | `<repo>/data/test_run/logs` |
-   | `CACHE_DIR` | a copy of `data/cache` in `<repo>/data/test_run/cache` |
+   | `CACHE_DIR` | `<repo>/data/test_run/cache`, holding a copy of `geocoding_cache.json` from the configured `CACHE_DIR` |
    | `EXPORT_DIR` | `<repo>/data/test_run/exports` |
 
 6. Stop the server with

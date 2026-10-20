@@ -38,7 +38,12 @@ which GitHub returned an empty list. Rows are written with an
 upsert on the unique key (`repository_id`, `github_login`), so a repeated
 run updates existing rows instead of duplicating them. Every row carries
 the identifier of the run that wrote it (`run_id`), which allows the rows
-of a single run to be removed.
+of a single run to be removed. Values longer than their column are
+shortened to the column length and logged. If a block of rows cannot be
+written, its rows are written one at a time, so that a single invalid row
+does not discard the others; a repository of which only some rows could be
+written is listed in the log and is completed with `--force`. A lost
+database connection ends the run.
 
 Step 3 starts one process per configured GitHub token. The accounts are
 divided among the processes by their numeric identifier, so that no

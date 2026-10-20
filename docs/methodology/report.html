@@ -235,6 +235,9 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule);
       announced, the number retrieved, and the number stored.</li>
       <li>A state file belongs to one collection; a call with other arguments cannot resume
       someone else's collection by accident.</li>
+      <li>A text value longer than its database field, such as a branch name of more than 100
+      characters, is shortened and logged; it cannot stop the collection or keep other
+      repositories from being stored.</li>
     </ul>
     <h3>Limits</h3>
     <div class="limit"><strong>The announced total is approximate.</strong> GitHub documents the
@@ -440,7 +443,9 @@ LEFT JOIN organizations o ON o.id = r.owner_id;</pre>
     are collected from GitHub's list of contributors, with the number of commits of each. New
     accounts are added to the table of accounts, their profiles retrieved and geocoded in the
     same way as owners. Accounts are identified by their numeric GitHub identifier, which stays
-    stable when an account is renamed.</p>
+    stable when an account is renamed. If a list cannot be stored as a whole, its rows are
+    stored one at a time; a repository whose list was stored only in part is reported and
+    collected again.</p>
     <div class="table-wrap">
       <table>
         <caption>Coverage on 2026-08-29 (cumulative by star threshold)</caption>
@@ -522,6 +527,13 @@ LEFT JOIN organizations o ON o.id = r.owner_id;</pre>
       <li><code>scripts/maintenance/reset_stale_countries.py</code> (without
       <code>--write</code>): rows whose stored country no longer matches the current procedure.</li>
     </ul>
+    <p>All tables, including the contributor lists, can be exported to CSV files with
+    <code>scripts/export/export_tables_to_csv.py</code>.</p>
+    <p>Every script of the pipeline was also run end to end on a separate database with the
+    same table design, filled with the 9,083 repositories created on 1 January 2026. The
+    defects this revealed stopped a run or affected exports and diagnostics; none of them
+    changed stored values. They were corrected, and a database built from the code now has the
+    same table design as the one the figures come from.</p>
     <p>Corrections that changed stored data were preceded by a CSV backup of the affected rows.
     The table of corrections, <code>src/github_collector/geocoding/data/location_corrections.csv</code>,
     lists every corrected string with the country and the reason.</p>

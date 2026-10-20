@@ -120,7 +120,10 @@ The collector takes the following measures against silent loss.
   collection ends with an error, the period remains open, and the script
   exits with code 1. Invalid tokens end the collection at once. The same
   applies when the retrieved repositories cannot be written to the
-  database. The same call resumes at the open period.
+  database. The same call resumes at the open period. Text values longer
+  than their database column (for example a default branch name of more
+  than 100 characters) are shortened to the column length and logged
+  instead of stopping the collection.
 - **The state file belongs to one collection.** It records the mode and
   the star range of the collection it describes and whether that
   collection has finished. A call with other arguments starts a new
