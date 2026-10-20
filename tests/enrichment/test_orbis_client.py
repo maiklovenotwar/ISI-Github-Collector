@@ -650,6 +650,18 @@ class TestOrbisClientRootDomainBlacklist:
         assert len(results["blog.acme.io"]) == 1
         assert results["blog.acme.io"][0]["matched_via_root_domain"] is True
 
+    def test_subdomains_sharing_a_root_all_get_the_root_candidates(self) -> None:
+        """Fund aus dem Probelauf 2026-10-20: zwei angefragte Subdomains derselben
+        Root-Domain (bk.tencent.com, cdc.tencent.com) - vorher bekam nur eine die
+        Kandidaten, welche, hing von der zufälligen Reihenfolge eines Sets ab."""
+        rows = [("XX000041", "Acme Co", "https://acme.io", "US", "Springfield", None)]
+        client = OrbisClient(connection=FakeConnection(cursor_rows=rows))
+
+        results = client.lookup_batch_by_websites_all_candidates(["blog.acme.io", "docs.acme.io"])
+
+        assert [c["bvd_id"] for c in results["blog.acme.io"]] == ["XX000041"]
+        assert [c["bvd_id"] for c in results["docs.acme.io"]] == ["XX000041"]
+
     def test_blacklisted_root_domain_is_not_searched(self) -> None:
         """Eine blacklisted Root-Domain wird nicht als Fallback-Suchbegriff verwendet."""
         rows = [

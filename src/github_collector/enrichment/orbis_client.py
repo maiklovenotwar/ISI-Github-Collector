@@ -706,14 +706,15 @@ class OrbisClient:
 
         unique_domains = list({d.lower().strip() for d in domains if d})
 
-        # Root-Domain-Fallback-Kandidaten sammeln (Subdomain -> Root-Domain-Suchbegriff)
-        root_domain_for: dict[str, str] = {}
+        # Root-Domain-Fallback-Kandidaten sammeln (Root-Domain -> alle angefragten Subdomains;
+        # mehrere Subdomains können dieselbe Root haben, z.B. bk./cdc.tencent.com)
+        root_domain_for: dict[str, list[str]] = {}
         search_domains = set(unique_domains)
         if include_root_domain_fallback:
             for d in unique_domains:
                 root = extract_root_domain(d)
                 if root and not is_root_fallback_blocked(root, root_domain_blacklist or set()):
-                    root_domain_for[root] = d
+                    root_domain_for.setdefault(root, []).append(d)
                     search_domains.add(root)
 
         logger.info(
@@ -724,7 +725,7 @@ class OrbisClient:
         )
 
         self.consecutive_errors = 0
-        search_list = list(search_domains)
+        search_list = sorted(search_domains)  # feste Reihenfolge -> reproduzierbare Batches
         total_batches = (len(search_list) + batch_size - 1) // batch_size
         for i in range(0, len(search_list), batch_size):
             batch = search_list[i : i + batch_size]
@@ -757,9 +758,8 @@ class OrbisClient:
                         c["matched_via_root_domain"] = False
                     results[matched_domain].extend(candidates)
 
-                original = root_domain_for.get(matched_domain)
-                if original:
-                    # Treffer über den Root-Domain-Fallback
+                # Treffer über den Root-Domain-Fallback, für jede Subdomain dieser Root
+                for original in root_domain_for.get(matched_domain, []):
                     for c in candidates:
                         results[original].append({**c, "matched_via_root_domain": True})
 
