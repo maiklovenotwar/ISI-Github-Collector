@@ -421,17 +421,6 @@ def non_interactive_mode(args, api_client, db):
     except Exception as e:
         report_aborted_collection(collector, e)
         collection_failed = True
-        # Bei Fehlern in der Sammlung: Session zurücksetzen
-        try:
-            db.session.rollback()
-        except Exception as rollback_error:
-            logger.error(f"Fehler beim Rollback nach Repository-Sammlung: {rollback_error}")
-
-        # Bei anhaltenden Problemen: Session neu erstellen
-        try:
-            db.refresh_session()
-        except Exception as refresh_error:
-            logger.error(f"Fehler beim Erneuern der Session: {refresh_error}")
 
     return not collection_failed
 
