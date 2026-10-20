@@ -417,7 +417,9 @@ def _filter_by_name_plausibility(
             plausible.append(c)
             continue
 
-        similarity = calculate_name_similarity(c.orbis_name, github_name, github_login or "")
+        similarity = calculate_name_similarity(
+            c.orbis_name, github_name, github_login or "", latin_name=c.orbis_latin_name
+        )
         if similarity >= min_similarity:
             plausible.append(c)
         else:

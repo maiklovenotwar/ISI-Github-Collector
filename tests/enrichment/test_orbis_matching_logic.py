@@ -17,6 +17,7 @@ from github_collector.enrichment.orbis_matching_logic import (
     MatchType,
     ScoringConfig,
     _calculate_name_similarity_detailed,
+    _latin_name_core,
     analyze_matches,
     calculate_country_code_adjustment,
     calculate_name_similarity,
@@ -75,7 +76,9 @@ class TestTransliteration:
     def test_short_or_legal_form_only_transliterations_do_not_count(
         self, orbis_name, github_name, login
     ) -> None:
-        similarity, _, via_transliteration = name_similarity_details(orbis_name, github_name, login)
+        similarity, _, via_transliteration, _ = name_similarity_details(
+            orbis_name, github_name, login
+        )
 
         assert similarity < 0.5
         assert via_transliteration is False
@@ -83,12 +86,12 @@ class TestTransliteration:
     def test_cyrillic_legal_forms_do_not_cut_chinese_syllables(self) -> None:
         # "ao" is a Russian legal form but also a pinyin syllable (奥 -> "Ao", Review M1).
         # unidecode: "Ao Si Qia"; without "ao" the core would fall below five letters
-        similarity, _, via = name_similarity_details("奥斯卡", "Aosiqia", "aosiqia")
+        similarity, _, via, _ = name_similarity_details("奥斯卡", "Aosiqia", "aosiqia")
         assert via is True
         assert similarity == 1.0
 
     def test_transliteration_can_be_switched_off(self) -> None:
-        similarity, _, via = name_similarity_details(
+        similarity, _, via, _ = name_similarity_details(
             "华为技术有限公司", "Huawei", "huawei", allow_transliteration=False
         )
         assert (similarity, via) == (0.0, False)
@@ -97,6 +100,81 @@ class TestTransliteration:
         assert calculate_name_similarity("Huawei 华为", "Huawei", "huawei") == 1.0
         assert calculate_name_similarity("Société Générale", "Société Générale", "socgen") == 1.0
         assert calculate_name_similarity("Яндекс", "Google", "google") < 0.5
+
+
+class TestLatinName:
+    """Lateinischer Name aus der zweiten Orbis-Namensspalte (E30, E34–E36).
+
+    Die Beispiele sind öffentlich bekannte Firmennamen; die lateinischen Namen sind erfunden.
+    """
+
+    def test_latin_name_beats_the_transliteration(self) -> None:
+        # Umschrift "iandeks": 0,615
+        assert name_similarity_details("Яндекс", "Yandex", "yandex", latin_name="Yandex") == (
+            1.0,
+            False,
+            False,
+            True,
+        )
+
+    def test_english_legal_forms_are_removed(self) -> None:
+        similarity, containment, _, via_latin = name_similarity_details(
+            "Яндекс", "Yandex", "yandex", latin_name="Yandex Limited Liability Company"
+        )
+        assert (similarity, containment, via_latin) == (1.0, False, True)
+
+    @pytest.mark.parametrize(
+        "latin_name, core",
+        [
+            ("Seogang Energy Co.,Ltd", "Seogang Energy"),
+            ("Akurando, KK", "Akurando"),
+            ("Y.K. Bizgate", "Bizgate"),
+            ("Co., Ltd.", None),
+            ("", None),
+            (None, None),
+            ("华为", None),
+        ],
+    )
+    def test_latin_name_core(self, latin_name, core) -> None:
+        result = _latin_name_core(latin_name)
+        assert (result.strip(" ,.") if result else None) == core
+
+    def test_transliteration_wins_over_a_poor_translation(self) -> None:
+        similarity, _, via_translit, via_latin = name_similarity_details(
+            "华为技术有限公司", "Huawei", "huawei", latin_name="Splendid China Technology"
+        )
+        assert via_translit and not via_latin and similarity > 0.86
+
+    @pytest.mark.parametrize("latin_name", [None, "", "华为", "Co., Ltd."])
+    def test_unusable_latin_name_changes_nothing(self, latin_name) -> None:
+        assert name_similarity_details(
+            "华为技术有限公司", "Huawei", "huawei", latin_name=latin_name
+        ) == name_similarity_details("华为技术有限公司", "Huawei", "huawei")
+
+    @pytest.mark.parametrize("orbis_name", ["Huawei 华为", "Société Générale"])
+    def test_latin_or_mixed_original_names_ignore_the_latin_name(self, orbis_name) -> None:
+        assert name_similarity_details(
+            orbis_name, "Google", "google", latin_name="Google"
+        ) == name_similarity_details(orbis_name, "Google", "google")
+        assert (
+            has_exact_login_substring(orbis_name, "googleinc", latin_name="Googleinc Labs") is False
+        )
+
+    def test_short_latin_name_counts_like_a_short_latin_original(self) -> None:
+        # kein eigener Längenschutz: auf dem Domain-Weg schützt nur die Domain
+        assert calculate_name_similarity("Кедр", "Kedr", "kedr", latin_name="Kedr") == 1.0
+
+    def test_login_substring_uses_the_latin_name(self) -> None:
+        assert has_exact_login_substring("Сбербанк", "sberbank", latin_name="Sberbank Rossii PJSC")
+        assert not has_exact_login_substring("Сбербанк", "sberbank")
+
+    def test_filter_sets_flags_from_the_candidate(self) -> None:
+        candidate = make_candidate(orbis_name="Яндекс", github_name="Yandex", login="yandex")
+        candidate.orbis_latin_name = "Yandex"
+
+        assert filter_implausible_candidates([candidate], min_similarity=0.5) == [candidate]
+        assert candidate.name_via_latin_name is True
+        assert candidate.name_via_transliteration is False
 
 
 def make_candidate(**overrides) -> MatchCandidate:

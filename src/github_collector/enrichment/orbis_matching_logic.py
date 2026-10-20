@@ -211,6 +211,12 @@ class MatchCandidate:
     # lateinische Buchstaben zustande kam (siehe name_similarity_details) - solche
     # Treffer werden eigens validiert (Entscheidung E19).
     name_via_transliteration: bool = False
+    # Lateinischer Name aus der zweiten Orbis-Namensspalte; nur für Domain-Kandidaten
+    # befüllt (E29) und nur bei eingeschaltetem plausibility.use_latin_name (E37).
+    orbis_latin_name: Optional[str] = None
+    # Ob name_similarity über diesen lateinischen Namen zustande kam - solche Treffer
+    # werden eigens validiert (E37).
+    name_via_latin_name: bool = False
 
     # Anzahl Filial-Rohdatensätze, die auf diesen Kandidaten dedupliziert wurden
     # (siehe select_branch_representative) - Proxy für "ist die aktive
@@ -385,28 +391,69 @@ def _transliteration(orbis_name: str) -> Optional[str]:
     return text
 
 
+# Englische Rechtsformen im lateinischen Namen der zweiten Orbis-Namensspalte (E34). Sie
+# tragen keinen Namensbestandteil und drücken bei langen Namen die Teilstring-Ähnlichkeit
+# unter die Schwelle. Nur als ganzes Wort, Satzzeichen dazwischen erlaubt ("Co.,Ltd").
+_ENGLISH_LEGAL_FORMS = re.compile(
+    r"(?<![a-z0-9])(?:limited\s+liability\s+company|company\s+limited|co\.?\s*,?\s*ltd\.?|"
+    r"ltd\.?|limited|llc|k\.k\.?|kk|y\.k\.?|inc\.?|corporation|corp\.?|[poc]?jsc)"
+    r"(?![a-z0-9])",
+    re.IGNORECASE,
+)
+
+
+def _latin_name_core(latin_name: Optional[str]) -> Optional[str]:
+    """Lateinischer Name ohne englische Rechtsformen, sonst None.
+
+    None, wenn der Name leer ist, keinen lateinischen Buchstaben enthält oder nur aus
+    Rechtsformen besteht.
+    """
+    if not latin_name or not _LATIN_LETTER.search(latin_name):
+        return None
+    core = re.sub(r"\s+", " ", _ENGLISH_LEGAL_FORMS.sub(" ", latin_name)).strip(" ,.")
+    return core if _LATIN_LETTER.search(core) else None
+
+
+def _usable_latin_name(orbis_name: str, latin_name: Optional[str]) -> Optional[str]:
+    """Bereinigter lateinischer Name, nur für Originalnamen ohne lateinischen Buchstaben (E36)."""
+    if not orbis_name or _LATIN_LETTER.search(orbis_name):
+        return None
+    return _latin_name_core(latin_name)
+
+
 def name_similarity_details(
     orbis_name: str,
     github_name: Optional[str],
     github_login: str,
     allow_transliteration: bool = True,
-) -> Tuple[float, bool, bool]:
-    """Ähnlichkeit, ob über Teilstring, ob über Umschrift (Maximum beider Varianten).
+    latin_name: Optional[str] = None,
+) -> Tuple[float, bool, bool, bool]:
+    """Ähnlichkeit, ob über Teilstring, ob über Umschrift, ob über den lateinischen Namen.
 
-    Die beiden Flags gehören zur gewinnenden Variante, damit der Teilstring-Malus
-    (`score_candidate()`) auch für umgeschriebene Namen greift.
+    Maximum aus Originalname, lateinischem Namen aus der zweiten Orbis-Namensspalte (nur bei
+    Originalnamen ohne lateinischen Buchstaben, ohne englische Rechtsformen) und geschützter
+    Umschrift (E30); bei Gleichstand gilt diese Reihenfolge. Die Flags gehören zur gewinnenden
+    Variante, damit der Teilstring-Malus (`score_candidate()`) auch für sie greift.
     """
     similarity, via_containment = _calculate_name_similarity_detailed(
         orbis_name, github_name, github_login
     )
+    best = (similarity, via_containment, False, False)
+    core = _usable_latin_name(orbis_name, latin_name)
+    if core:
+        alt_similarity, alt_containment = _calculate_name_similarity_detailed(
+            core, github_name, github_login
+        )
+        if alt_similarity > best[0]:
+            best = (alt_similarity, alt_containment, False, True)
     transliterated = _transliteration(orbis_name) if allow_transliteration else None
     if transliterated:
         alt_similarity, alt_containment = _calculate_name_similarity_detailed(
             transliterated, github_name, github_login
         )
-        if alt_similarity > similarity:
-            return alt_similarity, alt_containment, True
-    return similarity, via_containment, False
+        if alt_similarity > best[0]:
+            best = (alt_similarity, alt_containment, True, False)
+    return best
 
 
 def calculate_name_similarity(
@@ -414,6 +461,7 @@ def calculate_name_similarity(
     github_name: Optional[str],
     github_login: str,
     allow_transliteration: bool = True,
+    latin_name: Optional[str] = None,
 ) -> float:
     """Berechne die beste Namens-Ähnlichkeit zwischen Orbis-Name und GH Name/Login.
 
@@ -436,12 +484,14 @@ def calculate_name_similarity(
         github_login: Login der GitHub-Org (immer vorhanden).
         allow_transliteration: Umschrift nicht-lateinischer Orbis-Namen zulassen
             (siehe name_similarity_details); der Namens-Rückfall schaltet sie ab.
+        latin_name: Lateinischer Name aus der zweiten Orbis-Namensspalte, falls
+            vorhanden (siehe name_similarity_details).
 
     Returns:
         Ähnlichkeit zwischen 0.0 und 1.0.
     """
-    similarity, _, _ = name_similarity_details(
-        orbis_name, github_name, github_login, allow_transliteration
+    similarity, _, _, _ = name_similarity_details(
+        orbis_name, github_name, github_login, allow_transliteration, latin_name
     )
     return similarity
 
@@ -450,6 +500,7 @@ def has_exact_login_substring(
     orbis_name: str,
     github_login: str,
     min_login_length: int = 5,
+    latin_name: Optional[str] = None,
 ) -> bool:
     """Prüfe, ob der komplette GH-Login wortwörtlich im Orbis-Namen steckt.
 
@@ -483,6 +534,9 @@ def has_exact_login_substring(
         github_login: Login der GitHub-Org.
         min_login_length: Mindestlänge des normalisierten Logins, ab der der
             Test überhaupt greift.
+        latin_name: Lateinischer Name aus der zweiten Orbis-Namensspalte; wird bei
+            Originalnamen ohne lateinischen Buchstaben ohne englische Rechtsformen
+            mitgeprüft (E35). Die geschätzte Umschrift dagegen nie (E19).
 
     Returns:
         True, wenn der normalisierte Login als ECHTER (nicht-identischer)
@@ -494,10 +548,11 @@ def has_exact_login_substring(
     login_normalized = _normalize_for_similarity(github_login)
     if len(login_normalized) < min_login_length:
         return False
-    orbis_normalized = _normalize_for_similarity(orbis_name)
-    if login_normalized == orbis_normalized:
-        return False
-    return login_normalized in orbis_normalized
+    for name in filter(None, (orbis_name, _usable_latin_name(orbis_name, latin_name))):
+        name_normalized = _normalize_for_similarity(name)
+        if login_normalized != name_normalized and login_normalized in name_normalized:
+            return True
+    return False
 
 
 def filter_implausible_candidates(
@@ -528,8 +583,13 @@ def filter_implausible_candidates(
             c.name_similarity,
             c.name_similarity_via_containment,
             c.name_via_transliteration,
-        ) = name_similarity_details(c.orbis_name, c.github_name, c.login)
-        c.login_exact_match = has_exact_login_substring(c.orbis_name, c.login)
+            c.name_via_latin_name,
+        ) = name_similarity_details(
+            c.orbis_name, c.github_name, c.login, latin_name=c.orbis_latin_name
+        )
+        c.login_exact_match = has_exact_login_substring(
+            c.orbis_name, c.login, latin_name=c.orbis_latin_name
+        )
 
         if not c.orbis_name:
             plausible.append(c)

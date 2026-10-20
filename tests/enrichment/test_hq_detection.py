@@ -321,6 +321,25 @@ class TestResolveHeadquartersNamePlausibility:
         assert resolution.bvd_id == "XX000011"
         assert resolution.hq_method == "BVDID_FALLBACK"
 
+    def test_latin_name_makes_a_non_latin_candidate_plausible(self) -> None:
+        """Lateinischer Name aus der zweiten Orbis-Namensspalte (E30); ohne ihn liegt
+        die Umschrift "iandeks" mit 0,615 unter der Schwelle."""
+        with_latin = make_orbis_candidate(
+            bvd_id="XX000021", name="Яндекс", orbis_latin_name="Yandex", country_iso="RU"
+        )
+        without_latin = make_orbis_candidate(bvd_id="XX000021", name="Яндекс", country_iso="RU")
+        kwargs = {
+            "github_name": "Yandex",
+            "github_login": "yandex",
+            "github_country": "RU",
+            "min_name_similarity": 0.7,
+        }
+
+        resolution = resolve_headquarters([with_latin], **kwargs)
+
+        assert resolution is not None and resolution.bvd_id == "XX000021"
+        assert resolve_headquarters([without_latin], **kwargs) is None
+
     def test_all_candidates_implausible_returns_none(self) -> None:
         candidates = [make_orbis_candidate(name="Unrelated Company")]
         resolution = resolve_headquarters(candidates, github_name="OpenAI", github_login="openai")
