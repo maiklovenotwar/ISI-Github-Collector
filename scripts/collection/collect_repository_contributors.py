@@ -107,6 +107,24 @@ def fetch_all_contributors(
     return contributors
 
 
+#  Spaltenlaengen aus models.py (RepositoryContributor) - defensiv einhalten, da
+# GitHub-Freitextfelder gelegentlich laengere/kaputte Werte liefern als das Schema erwartet
+# (siehe Absturz 2026-10-08: "Data too long for column 'github_type'" hat einen ueber
+# 29 Tage laufenden Sammel-Lauf gekillt, weil der Fehler ungefangen bis main() durchschlug -
+# analoger Fall zum 2026-08-10-Absturz bei twitter_username in enrichment/contributor_profiles.py).
+_MAX_LEN = {"github_login": 255, "github_type": 20}
+
+
+def _truncate(value: Optional[str], field: str) -> Optional[str]:
+    if value is None:
+        return None
+    max_len = _MAX_LEN[field]
+    if len(value) > max_len:
+        logger.warning("Feld %s zu lang (%d Zeichen), kuerze auf %d.", field, len(value), max_len)
+        return value[:max_len]
+    return value
+
+
 def contributor_rows(
     repository_id: int, contributors: List[Dict[str, Any]], collected_at: datetime
 ) -> List[Dict[str, Any]]:
@@ -123,9 +141,9 @@ def contributor_rows(
         rows.append(
             {
                 "repository_id": repository_id,
-                "github_login": github_login[:255],
+                "github_login": _truncate(github_login, "github_login"),
                 "github_user_id": c.get("id") if not is_anon else None,
-                "github_type": c.get("type") if not is_anon else None,
+                "github_type": _truncate(c.get("type"), "github_type") if not is_anon else None,
                 "contributions": c.get("contributions"),
                 "is_anonymous": is_anon,
                 "collected_at": collected_at,
@@ -177,6 +195,49 @@ def upsert_statement(rows: List[Dict[str, Any]]):
     )
 
 
+def flush_rows(engine, rows: List[Dict[str, Any]]) -> int:
+    """Schreibt die Zeilen und gibt die Anzahl der geschriebenen zurück.
+
+    Schlägt der gemeinsame Schreibvorgang fehl, wird Zeile für Zeile geschrieben, damit ein
+    einzelner unzulässiger Wert nicht den ganzen Batch verwirft (analog zu
+    enrichment/contributor_profiles.py:flush_rows). Ein Repo, von dem gar keine Zeile
+    geschrieben wurde, wählt der nächste Lauf über den NOT-EXISTS-Filter erneut aus. Ein Repo,
+    von dem nur ein Teil geschrieben wurde, wählt er nicht mehr aus (der Filter fragt nur, ob es
+    überhaupt eine Zeile gibt); solche Repos werden als unvollständig geloggt und lassen sich mit
+    `--force` nachholen.
+    """
+    if not rows:
+        return 0
+    try:
+        _write_batch(engine, upsert_statement(rows))
+        return len(rows)
+    except Exception as e:
+        logger.error("Flush von %d Zeilen fehlgeschlagen, schreibe einzeln: %s", len(rows), e)
+
+    written = 0
+    written_repos, failed_repos = set(), set()
+    for row in rows:
+        try:
+            _write_batch(engine, upsert_statement([row]))
+            written += 1
+            written_repos.add(row["repository_id"])
+        except Exception as e:
+            failed_repos.add(row["repository_id"])
+            logger.error(
+                "Zeile fuer Repo %s / Login %s nicht schreibbar: %s",
+                row["repository_id"],
+                row["github_login"],
+                e,
+            )
+    incomplete = sorted(written_repos & failed_repos)
+    if incomplete:
+        logger.error(
+            "Repos unvollständig, werden nicht erneut ausgewählt (nachholen mit --force): %s",
+            ", ".join(str(r) for r in incomplete),
+        )
+    return written
+
+
 def flush_buffer(engine, buffer: List[Dict[str, Any]], run_id: str, dry_run: bool) -> int:
     """Löst Contributor-IDs auf und schreibt den Buffer als einen Bulk-Upsert."""
     if not buffer:
@@ -196,8 +257,7 @@ def flush_buffer(engine, buffer: List[Dict[str, Any]], run_id: str, dry_run: boo
         logger.info("DRY-RUN: %d Contributor-Zeilen wuerden geschrieben.", len(buffer))
         return len(buffer)
 
-    _write_batch(engine, upsert_statement(buffer))
-    return len(buffer)
+    return flush_rows(engine, buffer)
 
 
 def parse_arguments(argv: Optional[List[str]] = None) -> argparse.Namespace:

@@ -302,3 +302,43 @@ def test_dry_run_requests_the_lists_and_writes_nothing(module, monkeypatch, star
     failed_files = list(tmp_path.glob("failed_repos_*.txt"))
     assert len(failed_files) == 1
     assert failed_files[0].read_text(encoding="utf-8") == "alice/r500"
+
+
+def _rows(*logins, repository_id=7):
+    return [
+        {"repository_id": repository_id, "github_login": login, "github_type": "User"}
+        for login in logins
+    ]
+
+
+@pytest.fixture
+def failing_writes(module, monkeypatch):
+    """Batch writes always fail; a single row fails if its login is "bad"."""
+    monkeypatch.setattr(module, "upsert_statement", lambda rows: rows)
+
+    def write(engine, rows):
+        if len(rows) > 1 or rows[0]["github_login"] == "bad":
+            raise RuntimeError("Data too long")
+
+    monkeypatch.setattr(module, "_write_batch", write)
+    return module
+
+
+def test_overlong_type_is_shortened_and_logged(module, caplog):
+    with caplog.at_level("WARNING"):
+        assert len(module._truncate("x" * 30, "github_type")) == 20
+    assert "github_type" in caplog.text
+
+
+def test_failed_batch_is_written_row_by_row(failing_writes):
+    assert failing_writes.flush_rows(None, _rows("a", "bad", "c")) == 2
+
+
+def test_repositories_with_lost_rows_are_reported(failing_writes, caplog):
+    # NOT EXISTS selects a repository again only if it has no row at all, so a repository
+    # with some rows written stays incomplete (final review of the functional-test plan, C8).
+    rows = _rows("a", "bad") + _rows("d", repository_id=8)
+    with caplog.at_level("ERROR"):
+        failing_writes.flush_rows(None, rows)
+    lost = [r.getMessage() for r in caplog.records if "unvollständig" in r.getMessage()]
+    assert len(lost) == 1 and "7" in lost[0] and "8" not in lost[0]
