@@ -62,6 +62,8 @@ def _oversample_group(row: Dict[str, str]) -> Optional[str]:
         return None
     if row.get("via_transliteration") == "True":
         return "via_transliteration"
+    if row.get("via_latin_name") == "True":
+        return "via_latin_name"
     if row.get("match_type") in ("name_only", "login_fallback"):
         return "name_or_login_fallback"
     return None

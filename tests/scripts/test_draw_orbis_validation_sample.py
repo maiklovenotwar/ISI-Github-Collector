@@ -38,6 +38,7 @@ def row(login, status, bvd_id="", search_path="domain", match_type="", via="Fals
         "score": "60" if bvd_id else "",
         "hq_method": "",
         "via_transliteration": via,
+        "via_latin_name": "False",
     }
 
 
@@ -87,6 +88,14 @@ def test_transliterated_hits_are_oversampled(drawer):
     sample = drawer.draw_sample(population(), seed=1, exclude_logins=set())
     transliterated = [r for r in sample if r["via_transliteration"] == "True"]
     assert len(transliterated) == 5
+
+
+def test_hits_through_the_latin_name_are_oversampled(drawer):
+    hit = {**row("a", "unique", "XX000001"), "via_latin_name": "True"}
+    assert drawer._oversample_group(hit) == "via_latin_name"
+    both = {**hit, "via_transliteration": "True"}
+    assert drawer._oversample_group(both) == "via_transliteration"
+    assert drawer._oversample_group({**row("b", "no_match"), "via_latin_name": "True"}) is None
 
 
 def test_case_order_does_not_reveal_the_stratum(drawer):

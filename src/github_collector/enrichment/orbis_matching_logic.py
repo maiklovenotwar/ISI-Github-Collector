@@ -135,6 +135,9 @@ class ScoringConfig:
     # und Charge-11-Fund (Fund aus Charge 11).
     containment_only_malus: int = 15
 
+    # Vergleich über den lateinischen Namen aus der zweiten Orbis-Namensspalte (E37).
+    use_latin_name: bool = True
+
     @classmethod
     def from_yaml(cls, config: Dict[str, Any]) -> "ScoringConfig":
         """Erstelle ScoringConfig aus einem geladenen YAML-Dict."""
@@ -172,6 +175,7 @@ class ScoringConfig:
             containment_only_malus=plausibility.get(
                 "containment_only_malus", cls.containment_only_malus
             ),
+            use_latin_name=plausibility.get("use_latin_name", cls.use_latin_name),
         )
 
 

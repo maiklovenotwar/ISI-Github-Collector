@@ -69,6 +69,7 @@ from github_collector.enrichment.orbis_client import (  # noqa: E402
     OrbisClient,
     extract_root_domain,
     is_domain_blacklisted,
+    latin_name_column,
     load_blog_blacklist,
 )
 from github_collector.enrichment.orbis_matching_logic import (  # noqa: E402
@@ -106,12 +107,14 @@ OUTCOME_COLUMNS = [
     "match_type",
     "bvd_id",
     "company_name",
+    "company_latin_name",
     "company_country",
     "company_city",
     "company_website",
     "score",
     "hq_method",
     "via_transliteration",
+    "via_latin_name",
 ]
 
 
@@ -152,12 +155,14 @@ def outcome_rows(
                 "match_type": result.match_type.value if result.match_type else "",
                 "bvd_id": c.bvd_id if c else "",
                 "company_name": c.orbis_name if c else "",
+                "company_latin_name": (c.orbis_latin_name or "") if c else "",
                 "company_country": c.orbis_country if c else "",
                 "company_city": c.city if c else "",
                 "company_website": c.website if c else "",
                 "score": c.total_score if c else "",
                 "hq_method": hq_methods.get(org_id, ""),
                 "via_transliteration": c.name_via_transliteration if c else "",
+                "via_latin_name": c.name_via_latin_name if c else "",
             }
         )
     return rows
@@ -198,7 +203,8 @@ def build_run_metadata(
 
     Code-Stand (Commit und ob uncommittete Änderungen vorlagen), Konfiguration und
     Blog-Sperrliste (Hashes), die Optionen, die Organisationen auswählen oder Schwellen
-    verschieben (`--limit`, `--logins`, `--min-name-similarity`), und das Orbis-Schema.
+    verschieben (`--limit`, `--logins`, `--min-name-similarity`), das Orbis-Schema und ob
+    die lateinische Namensspalte gelesen wurde (`ORBIS_LATIN_NAME_COLUMN`, E28).
     """
 
     def git(*args: str) -> str:
@@ -217,6 +223,7 @@ def build_run_metadata(
         "orbis_schema": orbis_schema,
         "started_at": started_at,
         "status_counts": status_counts,
+        "latin_name_column_used": latin_name_column() is not None,
     }
 
 
@@ -287,6 +294,7 @@ def build_match_candidates(
     org: Dict,
     domain_candidates: List[dict],
     root_domain: Optional[str],
+    use_latin_name: bool = True,
 ) -> List[MatchCandidate]:
     """Baue MatchCandidate-Objekte aus den rohen Orbis-Domain-Treffern.
 
@@ -299,11 +307,17 @@ def build_match_candidates(
     ohnehin nur den blog_score (20) - unter min_score (30) - und wird von
     meets_min_score() natürlich herausgefiltert, ohne dass ein eigenes Label
     dafür nötig wäre.
+
+    `use_latin_name` (Schalter `plausibility.use_latin_name`, E37): nur dann wird der
+    lateinische Name aus der zweiten Orbis-Namensspalte übernommen und verglichen.
     """
     candidates = []
     for c in domain_candidates:
         orbis_name = c["name"] or ""
-        similarity = calculate_name_similarity(orbis_name, org["name"] or None, org["login"])
+        latin_name = c.get("latin_name") if use_latin_name else None
+        similarity = calculate_name_similarity(
+            orbis_name, org["name"] or None, org["login"], latin_name=latin_name
+        )
         has_name_match = similarity >= NAME_MATCH_SIMILARITY_THRESHOLD
 
         candidates.append(
@@ -318,6 +332,7 @@ def build_match_candidates(
                 github_name=org["name"] or None,
                 bvd_id=c["bvd_id"],
                 orbis_name=orbis_name,
+                orbis_latin_name=latin_name,
                 orbis_country=c.get("country_iso"),
                 city=c.get("city"),
                 website=c.get("website"),
@@ -529,7 +544,10 @@ def run_pipeline(  # noqa: C901
         for org_id, domain in domain_for_org.items():
             raw_candidates = domain_results.get(domain, [])
             grouped_candidates[org_id] = build_match_candidates(
-                orgs_by_id[org_id], raw_candidates, root_domain_for_org[org_id]
+                orgs_by_id[org_id],
+                raw_candidates,
+                root_domain_for_org[org_id],
+                use_latin_name=scoring_config.use_latin_name,
             )
 
         # Orgs ohne Domain trotzdem mit leerer Kandidatenliste führen, damit

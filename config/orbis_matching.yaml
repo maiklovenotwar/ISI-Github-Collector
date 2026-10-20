@@ -59,6 +59,14 @@ plausibility:
   # Score-Abzug für generische Namen ohne Blog-Bestätigung.
   generic_name_malus: 15
 
+  # Domain-Kandidaten, deren Orbis-Name keinen lateinischen Buchstaben hat, auch
+  # über den lateinischen Namen aus der zweiten Orbis-Namensspalte vergleichen
+  # (wirkt nur, wenn ORBIS_LATIN_NAME_COLUMN gesetzt ist). Annahmekriterium vorab
+  # (E37): in der Überstichprobe via_latin_name muss die untere Wilson-Grenze der
+  # Präzision mindestens 0,80 sein (unter 16 Fällen: nicht bestanden), sonst wird
+  # dieser Schalter auf false gesetzt, bevor Ergebnisse genutzt werden.
+  use_latin_name: true
+
   # Score-Abzug für Kandidaten, deren Namens-Ähnlichkeit NUR über
   # Teilstring-Enthaltensein zustande kam (siehe calculate_name_similarity())
   # UND die keine weitere Bestätigung (Blog-Match oder Länder-

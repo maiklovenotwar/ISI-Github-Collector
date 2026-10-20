@@ -19,6 +19,7 @@ REPO = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(REPO / "scripts" / "enrichment"))
 
 from orbis_matching_pipeline import (  # noqa: E402
+    OUTCOME_COLUMNS,
     apply_hq_resolution_to_match_result,
     apply_hq_signals,
     build_match_candidates,
@@ -50,7 +51,12 @@ class TestOutcomeExport:
         assert search_path_for(3, domains, names) == "not_searchable"
 
     def test_export_has_one_row_per_organization_and_a_metadata_file(self, tmp_path) -> None:
-        winner = make_candidate(bvd_id="XX000903", name_via_transliteration=True)
+        winner = make_candidate(
+            bvd_id="XX000903",
+            name_via_transliteration=True,
+            orbis_latin_name="Acme Latin",
+            name_via_latin_name=True,
+        )
         results = {
             1: make_match_result(status=MatchStatus.UNIQUE, best_candidate=winner),
             3: make_match_result(github_id=3, status=MatchStatus.NO_MATCH),
@@ -74,10 +80,16 @@ class TestOutcomeExport:
         assert exported[0]["search_path"] == "domain"
         assert exported[0]["blog"] == "https://acme.example"  # labellers' main evidence
         assert exported[0]["via_transliteration"] == "True"
+        assert exported[0]["company_latin_name"] == "Acme Latin"
+        assert exported[0]["via_latin_name"] == "True"
+        assert list(exported[0]) == OUTCOME_COLUMNS
         assert exported[1]["bvd_id"] == ""
         assert json.loads(meta_path.read_text(encoding="utf-8")) == {"run_id": "r1"}
 
-    def test_run_metadata_identifies_code_configuration_and_orbis_schema(self) -> None:
+    def test_run_metadata_identifies_code_configuration_and_orbis_schema(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("ORBIS_LATIN_NAME_COLUMN", raising=False)
         cli_args = {"limit": 1000, "logins": None, "min_name_similarity": 0.6}
         meta = build_run_metadata(
             run_id="r1",
@@ -101,7 +113,9 @@ class TestOutcomeExport:
             "orbis_schema",
             "started_at",
             "status_counts",
+            "latin_name_column_used",
         }
+        assert meta["latin_name_column_used"] is False
         expected = hashlib.sha256(
             (REPO / "config" / "orbis_matching.yaml").read_bytes()
         ).hexdigest()
@@ -115,6 +129,35 @@ class TestOutcomeExport:
 
 HUAWEI_ORG = {"id": 1, "login": "huawei", "name": "Huawei", "blog": "", "country_code": None}
 HUAWEI_ROW = {"bvd_id": "XX900001", "name": "华为技术有限公司", "country_iso": "CN"}
+YANDEX_ORG = {"id": 2, "login": "yandex", "name": "Yandex", "blog": "", "country_code": "RU"}
+YANDEX_ROW = {"bvd_id": "XX900002", "name": "Яндекс", "country_iso": "RU", "latin_name": "Yandex"}
+
+
+class TestLatinNameInThePipeline:
+    """Lateinischer Name nur für Domain-Kandidaten (E29) und nur mit Schalter (E37)."""
+
+    def test_domain_candidate_uses_the_latin_name(self) -> None:
+        (c,) = build_match_candidates(YANDEX_ORG, [YANDEX_ROW], "yandex.example")
+        assert c.orbis_latin_name == "Yandex"
+        assert c.has_name_match is True
+
+    def test_switch_off_ignores_the_latin_name(self) -> None:
+        (c,) = build_match_candidates(
+            YANDEX_ORG, [YANDEX_ROW], "yandex.example", use_latin_name=False
+        )
+        assert c.orbis_latin_name is None
+        assert c.has_name_match is False
+
+    def test_name_fallback_has_no_latin_name(self) -> None:
+        (c,) = build_name_only_candidates(HUAWEI_ORG, [HUAWEI_ROW])
+        assert c.orbis_latin_name is None
+
+    def test_metadata_records_whether_the_column_was_used(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ORBIS_LATIN_NAME_COLUMN", "LATIN_NAME_TEST")
+        meta = build_run_metadata("r1", True, "ORBIS_23J", "2026-10-20T10:00:00+00:00", {})
+        assert meta["latin_name_column_used"] is True
 
 
 class TestTransliterationInThePipeline:
