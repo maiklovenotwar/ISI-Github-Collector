@@ -55,6 +55,8 @@ def main() -> int:
     try:
         schema = client.config.get("schema", "ORBIS_23J")
         client._ensure_connection()  # die Verbindung wird erst bei Bedarf aufgebaut
+        # Die Zählungen lesen die ganze Tabelle; die 180 s des Clients reichen dafür nicht.
+        client.connection.call_timeout = 30 * 60 * 1000
         cursor = client.connection.cursor()
         for key, query in build_queries(schema).items():
             cursor.execute(query)
