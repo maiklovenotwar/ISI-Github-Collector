@@ -22,8 +22,15 @@ from github_collector.enrichment.orbis_client import (
     OrbisQueryError,
     extract_root_domain,
     is_domain_blacklisted,
+    latin_name_column,
     load_blog_blacklist,
 )
+
+
+@pytest.fixture(autouse=True)
+def no_latin_name_column(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ohne lateinische Namensspalte liefert die Domain-Abfrage sechs Spalten (E28)."""
+    monkeypatch.delenv("ORBIS_LATIN_NAME_COLUMN", raising=False)
 
 
 class FakeCursor:
@@ -129,6 +136,56 @@ class FakeConnection:
     def close(self) -> None:
         """Schließt die Connection."""
         self.closed = True
+
+
+class TestOrbisClientLatinName:
+    """Lateinischer Name aus der zweiten Namensspalte, Spaltenname nur aus der Umgebung (E28)."""
+
+    def test_latin_name_is_returned(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("ORBIS_LATIN_NAME_COLUMN", "LATIN_NAME_TEST")
+        rows = [
+            ("XX000011", "Яндекс", "https://yandex.example", "RU", "Moskva", "119021", "Yandex")
+        ]
+        client = OrbisClient(connection=FakeConnection(cursor_rows=rows))
+
+        result = client.lookup_batch_by_websites_all_candidates(["yandex.example"])
+
+        assert result["yandex.example"][0]["latin_name"] == "Yandex"
+        assert "LATIN_NAME_TEST" in client.connection._cursors[0].executed_queries[0][0]
+
+    def test_without_variable_the_query_is_unchanged(self) -> None:
+        rows = [("XX000011", "ACME GmbH", "https://acme.example", "DE", "Berlin", "10115")]
+        client = OrbisClient(connection=FakeConnection(cursor_rows=rows))
+
+        result = client.lookup_batch_by_websites_all_candidates(["acme.example"])
+
+        assert result["acme.example"][0]["latin_name"] is None
+        assert "LATIN_NAME_TEST" not in client.connection._cursors[0].executed_queries[0][0]
+
+    def test_row_with_wrong_column_count_is_skipped(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        monkeypatch.setenv("ORBIS_LATIN_NAME_COLUMN", "LATIN_NAME_TEST")
+        rows = [("XX000011", "ACME GmbH", "https://acme.example", "DE", "Berlin", "10115")]
+        client = OrbisClient(connection=FakeConnection(cursor_rows=rows))
+
+        with caplog.at_level(logging.WARNING):
+            result = client.lookup_batch_by_websites_all_candidates(["acme.example"])
+
+        assert result.get("acme.example", []) == []
+        assert "Spaltenformat" in caplog.text
+
+    @pytest.mark.parametrize("value", ["NAME; DROP TABLE X", "name_lower", "1NAME"])
+    def test_invalid_column_name_is_refused(
+        self, monkeypatch: pytest.MonkeyPatch, value: str
+    ) -> None:
+        monkeypatch.setenv("ORBIS_LATIN_NAME_COLUMN", value)
+        with pytest.raises(ValueError):
+            latin_name_column()
+
+    def test_empty_variable_means_no_column(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("ORBIS_LATIN_NAME_COLUMN", "")
+        assert latin_name_column() is None
 
 
 class TestOrbisClientLazyConnect:

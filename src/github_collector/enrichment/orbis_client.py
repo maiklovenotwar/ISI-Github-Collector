@@ -19,6 +19,8 @@ Architektur-Entscheidungen:
 """
 
 import logging
+import os
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Protocol
 
@@ -47,6 +49,32 @@ ORACLE_MAX_IN_LIST_SIZE = 1000
 # begrenzt werden, der mit der 12x-Multiplikation unter dem Oracle-Limit bleibt.
 URL_VARIANTS_PER_DOMAIN = 12
 MAX_DOMAINS_PER_BATCH = ORACLE_MAX_IN_LIST_SIZE // URL_VARIANTS_PER_DOMAIN
+
+# Name der zweiten, lateinischen Namensspalte von CONTACT_INFO. Steht bewusst nicht im
+# Repository (Orbis ist lizenziert, keine Schema-Details, E28), sondern nur lokal in der
+# Umgebung bzw. `.env`. Ohne Wert liest die Domain-Abfrage dieselben sechs Spalten wie
+# bisher, und der Namensvergleich verhält sich wie vor E28.
+LATIN_NAME_COLUMN_ENV = "ORBIS_LATIN_NAME_COLUMN"
+_ORACLE_COLUMN_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
+_BASE_CANDIDATE_COLUMNS = 6
+
+
+def latin_name_column() -> Optional[str]:
+    """Name der lateinischen Namensspalte aus `ORBIS_LATIN_NAME_COLUMN`, sonst None.
+
+    Wird bei jedem Aufruf gelesen. Der Wert wird in SQL eingesetzt und muss deshalb ein
+    einfacher Oracle-Bezeichner in Großbuchstaben sein.
+
+    Raises:
+        ValueError: Wenn der Wert kein solcher Bezeichner ist.
+    """
+    value = os.environ.get(LATIN_NAME_COLUMN_ENV, "").strip()
+    if not value:
+        return None
+    if not _ORACLE_COLUMN_NAME.fullmatch(value):
+        raise ValueError(f"{LATIN_NAME_COLUMN_ENV} ist kein gültiger Spaltenname")
+    return value
+
 
 # Maximale Anzahl Kandidaten, die lookup_batch_by_websites_all_candidates()
 # pro Domain zurückgibt (Schutz gegen Speicher-Explosion bei extrem
@@ -462,6 +490,7 @@ class OrbisClient:
                     "city": "Berlin",
                     "postcode": "10115",
                     "website": "www.acme.com",
+                    "latin_name": None,  # nur mit ORBIS_LATIN_NAME_COLUMN befüllt
                 },
                 ...
             }
@@ -640,7 +669,10 @@ class OrbisClient:
             Dictionary mit der ANGEFRAGTEN Domain als Key und einer Liste
             aller gefundenen Orbis-Kandidaten als Value (kann leer sein).
             Jeder Kandidat: {bvd_id, name, country_iso, city, postcode,
-            website, matched_via_root_domain}.
+            website, latin_name, matched_via_root_domain}. `latin_name` ist der
+            Name aus der zweiten, lateinischen Namensspalte, falls
+            `ORBIS_LATIN_NAME_COLUMN` gesetzt ist (siehe `latin_name_column()`),
+            sonst None.
 
         Raises:
             OrbisQueryError: Bei Query-Fehlern oder nach zu vielen
@@ -764,8 +796,11 @@ class OrbisClient:
         bind_names = [f":v{i}" for i in range(len(all_variants))]
         bind_vars = {f"v{i}": variant for i, variant in enumerate(all_variants)}
 
+        latin_column = latin_name_column()
+        extra_columns = f", {latin_column}" if latin_column else ""
+        expected_columns = _BASE_CANDIDATE_COLUMNS + bool(latin_column)
         query = f"""
-            SELECT BVDID, NAME_NATIVE, WEBSITE, CTRYISO, CITY_NATIVE, POSTCODE
+            SELECT BVDID, NAME_NATIVE, WEBSITE, CTRYISO, CITY_NATIVE, POSTCODE{extra_columns}
             FROM {schema}.CONTACT_INFO
             WHERE LOWER(WEBSITE) IN ({', '.join(bind_names)})
             AND BVDID IS NOT NULL
@@ -778,14 +813,15 @@ class OrbisClient:
             try:
                 cursor.execute(query, bind_vars)
                 for row in cursor:
-                    try:
-                        bvd_id, name, website, country_iso, city, postcode = row
-                    except ValueError:
+                    if not row or len(row) != expected_columns:
                         logger.warning(
-                            "Unerwartetes Spaltenformat in Orbis-Response: %d Spalten statt 6",
+                            "Unerwartetes Spaltenformat in Orbis-Response: %d Spalten statt %d",
                             len(row) if row else 0,
+                            expected_columns,
                         )
                         continue
+                    bvd_id, name, website, country_iso, city, postcode = row[:6]
+                    latin_name = row[6] if latin_column else None
 
                     if not website:
                         continue
@@ -818,6 +854,7 @@ class OrbisClient:
                             "city": city,
                             "postcode": postcode,
                             "website": website,
+                            "latin_name": latin_name,
                         }
                     )
             finally:
