@@ -755,6 +755,35 @@ class TestBlogBlacklistCoversKnownPlatformSubdomains:
         ), f"{domain} (echte Blog-Domain von Org '{source_login}') sollte blacklisted sein"
 
 
+class TestAsianAndRussianBlogPlatforms:
+    """Plattformen aus CN/RU/KR/JP (E33). Bisher schützte die Unvergleichbarkeit
+    nicht-lateinischer Orbis-Namen vor Treffern über solche geteilten Domains; mit dem
+    lateinischen Namen fällt dieser Schutz weg. Firmenportale bleiben als Firmendomain
+    auffindbar, gesperrt sind nur ihre Blog-Subdomains."""
+
+    @pytest.mark.parametrize(
+        "domain",
+        [
+            "gitee.com",
+            "foo.gitee.io",
+            "blog.csdn.net",
+            "cnblogs.com",
+            "zhuanlan.zhihu.com",
+            "foo.tistory.com",
+            "qiita.com",
+            "vk.com",
+            "blog.naver.com",
+            "user.qzone.qq.com",
+        ],
+    )
+    def test_platform_is_blacklisted(self, domain: str) -> None:
+        assert is_domain_blacklisted(domain, load_blog_blacklist())
+
+    @pytest.mark.parametrize("domain", ["naver.com", "yandex.ru", "qq.com", "163.com"])
+    def test_company_portal_stays_searchable(self, domain: str) -> None:
+        assert not is_domain_blacklisted(domain, load_blog_blacklist())
+
+
 class TestOrbisClientDomainBatchSizeCap:
     """Tests für die ORA-01795-Absicherung ('maximum number of expressions in a
     list is 1000').

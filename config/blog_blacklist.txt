@@ -82,3 +82,41 @@ surge.sh
 now.sh
 *.glitch.me
 glitch.me
+
+# Plattformen aus China, Russland, Korea und Japan (E33, Plan 2026-10-20). Seit dem
+# Vergleich über den lateinischen Orbis-Namen sind Kandidaten mit nicht-lateinischem
+# Originalnamen vergleichbar; auf dem Domain-Weg schützt dann nur diese Liste vor Treffern
+# über geteilte Plattform-Domains. Aufgenommen, was in der DB vorkommt (2026-10-20,
+# organizations.blog ohne Orbis-Ergebnis, ~296k Zeilen); Wildcard nur bei Subdomain-Treffern.
+# Firmenportale (naver.com, qq.com, 163.com, yandex.ru) bleiben als Firmendomain
+# auffindbar, gesperrt sind nur ihre Blog-Subdomains.
+gitee.com
+*.gitee.io
+gitee.io
+*.csdn.net
+csdn.net
+*.cnblogs.com
+cnblogs.com
+*.oschina.net
+oschina.net
+jianshu.com
+*.zhihu.com
+zhihu.com
+juejin.cn
+segmentfault.com
+*.tistory.com
+tistory.com
+velog.io
+*.qiita.com
+qiita.com
+zenn.dev
+*.hatenablog.com
+hatenablog.com
+note.com
+*.vk.com
+vk.com
+habr.com
+dzen.ru
+blog.naver.com
+*.qzone.qq.com
+qzone.qq.com
