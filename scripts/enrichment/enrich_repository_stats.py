@@ -211,7 +211,7 @@ def main(argv=None):  # noqa: C901
         from datetime import datetime
 
         today = datetime.now().strftime("%Y%m%d")
-        fail_path = f"failed_repo_ids_{today}.txt"
+        fail_path = config.LOG_DIR / f"failed_repo_ids_{today}.txt"
         failed_ids = set()
         for batch in failed_batches:
             for r in batch:
