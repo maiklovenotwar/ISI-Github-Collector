@@ -3,6 +3,7 @@
 Prüft verfügbare ORBIS-Tabellen und deren Spalten für HQ-Resolution.
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -76,8 +77,9 @@ def check_orbis_tables(client: OrbisClient):
             print(f"❌ Tabelle nicht verfügbar: {e}")
 
 
-def main():
-    """Hauptfunktion."""
+def main(argv=None):
+    """Hauptfunktion; Abfragen nur lesend gegen Orbis."""
+    argparse.ArgumentParser(description=__doc__.strip().splitlines()[0]).parse_args(argv)
     try:
         client = OrbisClient()
         client._ensure_connection()
