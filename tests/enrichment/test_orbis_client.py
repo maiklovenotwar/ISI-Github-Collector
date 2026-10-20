@@ -783,6 +783,31 @@ class TestAsianAndRussianBlogPlatforms:
     def test_company_portal_stays_searchable(self, domain: str) -> None:
         assert not is_domain_blacklisted(domain, load_blog_blacklist())
 
+    @pytest.mark.parametrize(
+        "subdomain, root",
+        [
+            ("mp.weixin.qq.com", "qq.com"),
+            ("cafe.naver.com", "naver.com"),
+            ("zen.yandex.ru", "yandex.ru"),
+            ("foo.blog.163.com", "163.com"),
+        ],
+    )
+    def test_portal_subdomain_does_not_fall_back_to_the_portal(
+        self, subdomain: str, root: str
+    ) -> None:
+        """Final review, Befund 1: eine Seite auf einem Firmenportal ist keine
+        Firmen-Website; der Root-Rückfall würde alle Orbis-Firmen mit der
+        Portal-Domain als Blog-Treffer liefern."""
+        rows = [("XX000031", "Portal Co", f"https://{root}", "CN", None, None)]
+        client = OrbisClient(connection=FakeConnection(cursor_rows=rows))
+
+        results = client.lookup_batch_by_websites_all_candidates(
+            [subdomain, root], root_domain_blacklist=load_blog_blacklist()
+        )
+
+        assert results[subdomain] == []
+        assert [c["bvd_id"] for c in results[root]] == ["XX000031"]
+
 
 class TestOrbisClientDomainBatchSizeCap:
     """Tests für die ORA-01795-Absicherung ('maximum number of expressions in a

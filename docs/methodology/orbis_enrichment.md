@@ -37,7 +37,8 @@ fill missing countries.
 1. **Domain.** For each organization with a blog URL, the domain and its root
    domain are taken from the URL; domains on the list
    `config/blog_blacklist.txt` (hosting and social-media services) are
-   skipped. All Orbis entities whose `WEBSITE` matches are candidates.
+   skipped; for company portals listed there as `root:` entries, a subdomain
+   is not searched under the portal domain. All Orbis entities whose `WEBSITE` matches are candidates.
 2. **Name fallback.** Only if the domain search yields no candidate at all,
    and the GitHub name (or, without a name, the login) has at least five
    characters, Orbis is searched for that exact string in `NAME_NATIVE`

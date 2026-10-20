@@ -249,7 +249,8 @@ def load_blog_blacklist(path: Optional[Path] = None) -> set[str]:
             `config/blog_blacklist.txt` relativ zum Projekt-Root verwendet.
 
     Returns:
-        Set aus Zeilen der Datei (exakte Domains und `*.`-Wildcard-Muster),
+        Set aus Zeilen der Datei (exakte Domains, `*.`-Wildcard-Muster und
+        `root:`-Einträge, siehe `is_root_fallback_blocked()`),
         Kommentarzeilen (`#`) und Leerzeilen sind ausgeschlossen. Leeres Set
         falls die Datei nicht existiert.
     """
@@ -266,6 +267,18 @@ def load_blog_blacklist(path: Optional[Path] = None) -> set[str]:
             if line and not line.startswith("#"):
                 entries.add(line)
     return entries
+
+
+def is_root_fallback_blocked(root: str, blacklist: set[str]) -> bool:
+    """Darf die Root-Domain NICHT als Rückfall für eine Subdomain gesucht werden?
+
+    Gesperrt, wenn die Root-Domain selbst auf der Blacklist steht oder als
+    `root:<domain>` eingetragen ist. Letzteres gilt für Firmenportale (qq.com,
+    naver.com, ...): die Firma selbst bleibt über ihre eigene Domain auffindbar, aber
+    eine Seite auf dem Portal (`mp.weixin.qq.com/...`) ist keine Firmen-Website und
+    darf nicht auf alle Orbis-Firmen mit der Portal-Domain zurückfallen.
+    """
+    return is_domain_blacklisted(root, blacklist) or f"root:{root}" in blacklist
 
 
 def is_domain_blacklisted(domain: str, blacklist: set[str]) -> bool:
@@ -699,7 +712,7 @@ class OrbisClient:
         if include_root_domain_fallback:
             for d in unique_domains:
                 root = extract_root_domain(d)
-                if root and not is_domain_blacklisted(root, root_domain_blacklist or set()):
+                if root and not is_root_fallback_blocked(root, root_domain_blacklist or set()):
                     root_domain_for[root] = d
                     search_domains.add(root)
 

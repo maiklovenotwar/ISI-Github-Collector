@@ -12,7 +12,8 @@ Notable changes to this project are recorded here. The format follows
   compared through the Latin name held in Orbis (column name from
   `ORBIS_LATIN_NAME_COLUMN`, switch `plausibility.use_latin_name`); such hits are flagged
   (`via_latin_name`), exported and oversampled for validation. Blog platforms from China,
-  Russia, Korea and Japan are added to `config/blog_blacklist.txt`.
+  Russia, Korea and Japan are added to `config/blog_blacklist.txt`; for company portals
+  (`root:` entries such as qq.com) a subdomain no longer falls back to the portal domain.
 - Orbis matching: `--export-csv` writes the outcome for every organization (also without a
   result, with the search path) and a metadata file (Git commit, configuration hash, Orbis schema,
   counts per Match-Status), also in writing runs, and only to paths Git ignores.

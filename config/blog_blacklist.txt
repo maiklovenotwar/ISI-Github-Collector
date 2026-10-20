@@ -120,3 +120,11 @@ dzen.ru
 blog.naver.com
 *.qzone.qq.com
 qzone.qq.com
+
+# Firmenportale: die Domain selbst bleibt suchbar, aber keine Subdomain fällt auf sie
+# zurück (mp.weixin.qq.com, cafe.naver.com, zen.yandex.ru, *.blog.163.com sind Seiten
+# auf dem Portal, keine Firmen-Websites; Final Review 2026-10-20, Befund 1).
+root:qq.com
+root:naver.com
+root:163.com
+root:yandex.ru
