@@ -11,7 +11,40 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from sqlalchemy import text  # noqa: E402
+
+from github_collector import config  # noqa: E402
+from github_collector.database.engine import make_engine  # noqa: E402
 from github_collector.enrichment.orbis_client import OrbisClient  # noqa: E402
+
+
+def matched_bvd_ids(engine) -> list:
+    """BvD-IDs der aktuellen Orbis-Treffer aus der Sammel-Datenbank (zurückgerollte nicht)."""
+    query = text(
+        "SELECT DISTINCT e.bvd_id FROM organizations o "
+        "JOIN orbis_enrichments e ON e.id = o.current_orbis_enrichment_id ORDER BY e.bvd_id"
+    )
+    with engine.connect() as conn:
+        return [bvd_id for (bvd_id,) in conn.execute(query)]
+
+
+def shareholder_coverage(cursor, bvd_ids: list, chunk_size: int = 1000) -> tuple:
+    """(Treffer, davon mit Basic Shareholder Info, davon mit Controlling Shareholders).
+
+    Oracle erlaubt höchstens 1000 Ausdrücke in einer IN-Liste, daher blockweise.
+    """
+    counts = {"BASIC_SHAREHOLDER_INFO": 0, "CONTROLLING_SHAREHOLDERS": 0}
+    for start in range(0, len(bvd_ids), chunk_size):
+        chunk = bvd_ids[start : start + chunk_size]
+        binds = {f"b{i}": bvd_id for i, bvd_id in enumerate(chunk)}
+        in_list = ", ".join(f":{name}" for name in binds)
+        for table in counts:
+            cursor.execute(
+                f"SELECT COUNT(DISTINCT BVDID) FROM ORBIS_23J.{table} WHERE BVDID IN ({in_list})",
+                binds,
+            )
+            counts[table] += cursor.fetchone()[0]
+    return len(bvd_ids), counts["BASIC_SHAREHOLDER_INFO"], counts["CONTROLLING_SHAREHOLDERS"]
 
 
 def search_ultimate_owner_tables(client: OrbisClient):  # noqa: C901
@@ -382,20 +415,11 @@ def execute_ownership_analysis(client: OrbisClient):
     print("\nQUERY 4: COVERAGE GEGEN GITHUB-ORBIS MATCHES")
     print("-" * 40)
 
-    query4 = """
-    SELECT
-        COUNT(DISTINCT r.bvdid) AS total_matched,
-        COUNT(DISTINCT b.BVDID) AS with_basic_info,
-        COUNT(DISTINCT c.BVDID) AS with_controlling_shareholder
-    FROM GITHUB_COMBINED_RESULTS r
-    LEFT JOIN ORBIS_23J.BASIC_SHAREHOLDER_INFO b ON r.bvdid = b.BVDID
-    LEFT JOIN ORBIS_23J.CONTROLLING_SHAREHOLDERS c ON r.bvdid = c.BVDID
-    """
-
-    cursor.execute(query4)
-    results4 = cursor.fetchone()
-
-    total, basic, controlling = results4
+    # Die Treffer stehen in der Sammel-Datenbank; die frühere Hilfstabelle in Orbis gibt es
+    # nicht mehr (Funktionstest 2026-10-20, ORA-00942).
+    total, basic, controlling = shareholder_coverage(
+        cursor, matched_bvd_ids(make_engine(config.DB_URL))
+    )
     print(f"Total Matched BVDIDs: {total:,}")
     print(f"With Basic Shareholder Info: {basic:,}")
     print(f"With Controlling Shareholders: {controlling:,}")
