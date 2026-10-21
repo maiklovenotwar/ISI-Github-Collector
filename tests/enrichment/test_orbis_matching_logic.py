@@ -173,7 +173,7 @@ class TestLatinName:
         )
 
     def test_short_latin_name_counts_like_a_short_latin_original(self) -> None:
-        # kein eigener Längenschutz: auf dem Domain-Weg schützt nur die Domain
+        # ab drei Zeichen kein eigener Längenschutz: auf dem Domain-Weg schützt die Domain
         assert calculate_name_similarity("Кедр", "Kedr", "kedr", latin_name="Kedr") == 1.0
 
     def test_login_substring_uses_the_latin_name(self) -> None:
