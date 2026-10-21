@@ -107,91 +107,67 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule);
 <div class="page">
 
 <header class="doc">
-  <div class="eyebrow">Methodology report · GitHub data collection pipeline</div>
-  <h1>GitHub Collection Methodology</h1>
-  <p class="lede">How the collector selects public GitHub repositories, retrieves their owners
-  and contributors, and assigns a country to accounts and repositories; what has been
-  checked, and which limits remain.</p>
+  <div class="eyebrow">Methodology Report</div>
+  <h1>A Country-Attributed Dataset of Public GitHub Repositories, Their Owners and Contributors</h1>
+  <p class="lede">This report describes the construction of a dataset of public software repositories hosted on GitHub, the accounts that own them and, for repositories above a popularity threshold, the accounts that contributed to them. The principal analytical variable is a country for each account and, derived from the owner, for each repository. Countries are inferred from the location that account holders state voluntarily in their public profiles. The report defines the population of repositories, describes the retrieval procedure and the measures taken to ensure completeness, explains how free-text locations are converted into countries, and reports the results of the validation exercises. It closes with the limitations that remain and should accompany any analysis based on the data. Technical details of the implementation are documented separately in a technical methodology report.</p>
   <div class="meta">
-    <span>Data status: 2026-10-16</span>
+    <span>Data status: 16 October 2026</span>
+    <span>Version of 21 October 2026</span>
     <span>Code: <a href="https://github.com/maiklovenotwar/ISI-Github-Collector">ISI-Github-Collector</a></span>
-    <span>Detailed sources: <code>docs/methodology/*.md</code></span>
   </div>
   <nav class="toc" aria-label="Contents">
     <ol>
-      <li><a href="#scope">Purpose and scope</a></li>
-      <li><a href="#pipeline">The pipeline at a glance</a></li>
-      <li><a href="#population">Population of repositories</a></li>
-      <li><a href="#completeness">Completeness of the collection</a></li>
-      <li><a href="#owners">Owners and their profiles</a></li>
-      <li><a href="#geocoding">From a profile location to a country</a></li>
-      <li><a href="#attribution">Country of an account and of a repository</a></li>
-      <li><a href="#cctld">Web domains as a sensitivity analysis</a></li>
-      <li><a href="#network">Contributors of a repository</a></li>
-      <li><a href="#statistics">Repository statistics</a></li>
-      <li><a href="#limits">Limits that remain</a></li>
-      <li><a href="#reproduce">Reproducing the figures</a></li>
-      <li><a href="#orbis">Outlook: company data from Orbis</a></li>
+      <li><a href="#introduction">Introduction</a></li>
+      <li><a href="#data-source-and-units-of-observation">Data Source and Units of Observation</a></li>
+      <li><a href="#definition-of-the-population">Definition of the Population</a></li>
+      <li><a href="#data-collection-and-completeness">Data Collection and Completeness</a></li>
+      <li><a href="#account-information">Account Information</a></li>
+      <li><a href="#country-assignment-for-accounts">Country Assignment for Accounts</a></li>
+      <li><a href="#country-attribution-for-repositories">Country Attribution for Repositories</a></li>
+      <li><a href="#web-domains-as-a-sensitivity-indicator">Web Domains as a Sensitivity Indicator</a></li>
+      <li><a href="#contributor-networks">Contributor Networks</a></li>
+      <li><a href="#repository-activity-measures">Repository Activity Measures</a></li>
+      <li><a href="#quality-assurance-and-reproducibility">Quality Assurance and Reproducibility</a></li>
+      <li><a href="#limitations">Limitations</a></li>
+      <li><a href="#outlook-firm-level-data">Outlook: Firm-Level Data</a></li>
     </ol>
   </nav>
 </header>
 
-<section class="chapter" id="scope">
+<section class="chapter" id="introduction">
   <div class="num">1</div>
   <div class="body">
-    <h2>Purpose and scope</h2>
-    <p>The collector builds a database of public GitHub repositories, the accounts that own
-    them, and, for repositories above a star threshold, the accounts that contributed to them.
-    Its main analytical product is a country for each account and, through the owner, for each
-    repository. The country is derived from the location that an account states in its
-    profile.</p>
-    <p>This report describes the procedure as implemented in the code at the data status given
-    above. It is written for readers who do not work with the code. Each chapter states what a
-    step does, what it does not capture, and what is known about its accuracy. Implementation
-    details are given in collapsible notes and in the documents in
-    <code>docs/methodology/</code>, which this report summarises.</p>
-    <p>The matching of organizations to companies in the Orbis database is a separate
-    workstream and not part of this report; chapter 13 gives an outlook.</p>
+    <h2>Introduction</h2>
+    <p>Open-source software is developed in public repositories, most of which are hosted on GitHub. The geographic distribution of this activity is of interest for research on innovation, digital sovereignty and international collaboration, yet GitHub does not record where a repository or its developers are located. The dataset described here addresses this gap by attributing a country to accounts and repositories on the basis of information that account holders publish themselves.</p>
+    <p>The report is intended for readers who use the data rather than the software that produced it. Each section states what a step of the procedure does, which information it cannot capture, and what is known about its accuracy. Figures refer to the state of the project database on 16 October 2026 unless another date is given.</p>
+    <p>A separate workstream links organisations on GitHub to company records in a commercial firm database. It is not part of the dataset described here; Section 13 gives a brief outlook.</p>
   </div>
 </section>
 
-<section class="chapter" id="pipeline">
+<section class="chapter" id="data-source-and-units-of-observation">
   <div class="num">2</div>
   <div class="body">
-    <h2>The pipeline at a glance</h2>
-    <p>The steps run one after another. Each writes to its own columns, so a later step does
-    not overwrite the result of an earlier one.</p>
-    <div class="wide table-wrap" role="figure" aria-label="Pipeline stages">
-      <div class="pipeline">
-        <div class="stage"><b>Search</b><span>Repositories created in a period, above a star threshold</span><code>collect_repositories.py</code></div>
-        <div class="stage"><b>Owners</b><span>One account per repository; organizations also in their own table</span><code>repository_collector.py</code></div>
-        <div class="stage"><b>Profiles</b><span>Name, website, e-mail, location of each account</span><code>enrich_*_profiles</code></div>
-        <div class="stage"><b>Geocoding</b><span>Free-text location to a country code</span><code>update_location_geocoding.py</code></div>
-        <div class="stage"><b>Country rule</b><span>Repository takes the country of its owner</span><code>SQL, chapter 7</code></div>
-        <div class="stage"><b>Contributors</b><span>Accounts that committed to a repository</span><code>collect_contributor_network.py</code></div>
-      </div>
-    </div>
-    <p class="note">Two further steps add information that is reported separately: a country from
-    the web domain of an account (chapter 8) and commit and pull-request counts per repository
-    (chapter 10).</p>
+    <h2>Data Source and Units of Observation</h2>
+    <p>All data are obtained from the public interfaces of GitHub. Three units of observation are distinguished:</p>
+    <ul>
+    <li><strong>Repositories</strong>: public software projects, each owned by exactly one account.</li>
+    <li><strong>Accounts</strong>: personal user accounts and organisation accounts. An account enters the dataset either as the owner of a repository or as a contributor to one.</li>
+    <li><strong>Contributions</strong>: the relation between a repository and an account that committed code to it, together with the number of commits.</li>
+    </ul>
+    <p>Accounts are identified by the numeric identifier that GitHub assigns and that remains stable when an account is renamed. Automated accounts that GitHub labels as bots are retained in the data but are not counted as persons.</p>
   </div>
 </section>
 
-<section class="chapter" id="population">
+<section class="chapter" id="definition-of-the-population">
   <div class="num">3</div>
   <div class="body">
-    <h2>Population of repositories</h2>
-    <p>The collector records public repositories that are not forks, that were created in a
-    chosen time range, and that had at least a chosen number of stars when they were
-    retrieved. The population is defined by the query sent to the GitHub repository search:</p>
-    <pre>created:&lt;start&gt;..&lt;end&gt; stars:&gt;=&lt;minimum&gt;</pre>
-    <h3>Forks are excluded</h3>
-    <p>A fork is a copy of a repository under another account; most forks carry no development
-    of their own. The search returns forks only when the query asks for them, and it does not.
-    The size of the exclusion depends on the star threshold. Counts announced by the search on
-    2026-10-13:</p>
+    <h2>Definition of the Population</h2>
+    <h3>3.1  Inclusion criteria</h3>
+    <p>The population consists of public repositories that are not forks, that were created within a chosen period, and that had at least a chosen number of stars at the time of retrieval. Stars are a lightweight form of endorsement by other users and serve as a common, if imperfect, indicator of attention. The population is thus defined by the query submitted to GitHub's repository search rather than by a sample drawn from it.</p>
+    <h3>3.2  Exclusion of forks</h3>
+    <p>A fork is a copy of a repository created under another account, usually in order to propose changes to the original. Most forks carry no independent development and would, if included, count the same project several times. The size of the exclusion depends on the star threshold, as Table 1 shows: at low thresholds forks are numerous, while among repositories with at least 1,000 stars they amount to about one per hundred.</p>
     <div class="table-wrap">
-      <table>
+      <table><caption>Table 1. Forks and non-fork repositories by star threshold (counts announced by the GitHub search, 13 October 2026)</caption>
         <thead><tr><th class="n">Stars at least</th><th class="n">Forks</th><th class="n">Non-fork repositories</th><th class="n">Forks per 100 non-forks</th></tr></thead>
         <tbody>
           <tr><td class="n">1</td><td class="n">7,095,401</td><td class="n">32,534,721</td><td class="n">21.8</td></tr>
@@ -201,136 +177,49 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule);
         </tbody>
       </table>
     </div>
-    <h3>Membership depends on the star count at retrieval</h3>
-    <p>A repository that reaches the threshold only after its creation period was retrieved is
-    not collected. Private and deleted repositories are not visible to the search.</p>
-    <h3>Reference date</h3>
-    <p>The collection is not a snapshot of one day. Each repository carries the time of its
-    retrieval and its star count at that time. The 27,498,495
-    repositories in the project database were retrieved between 2025-11-28 and 2026-01-18,
-    16.8 million of them in December 2025. For 5,294,213 (19%) the time of retrieval is not
-    recorded, because they were stored before the column existed. Two repositories were
-    retrieved again on 2026-10-13.</p>
-    <div class="limit"><strong>Recent repositories are under-represented.</strong> A repository
-    created shortly before its retrieval had little time to gather stars. Repositories created
-    in December 2025 number 239,748, against about 310,000 per month earlier in that year.
-    Comparisons over time should end some months before the retrieval.</div>
+    <h3>3.3  Temporal reference</h3>
+    <p>The dataset is not a snapshot taken on a single day. Each repository carries the time of its retrieval and its star count at that time. The 27,498,495 repositories in the project database were retrieved between 28 November 2025 and 18 January 2026, 16.8 million of them in December 2025. For 5,294,213 repositories (19 per cent) the time of retrieval was not recorded because they were stored before this information was collected.</p>
+    <p>Because membership depends on the star count at retrieval, a repository that reached the threshold only after its creation period had been retrieved is not included. This affects recent repositories most, as they had little time to accumulate stars: repositories created in December 2025 number 239,748, compared with about 310,000 per month earlier in that year. Comparisons over time should therefore end some months before the retrieval.</p>
   </div>
 </section>
 
-<section class="chapter" id="completeness">
+<section class="chapter" id="data-collection-and-completeness">
   <div class="num">4</div>
   <div class="body">
-    <h2>Completeness of the collection</h2>
-    <p>The GitHub search returns at most 1,000 results per query. The collector therefore
-    divides the time range into periods of 30 days and divides any period with more than
-    1,000 matches further, until each part fits. It retrieves 100 results per page, sorted by
-    stars, and records its progress after every page.</p>
-    <h3>Measures against silent loss</h3>
-    <ul>
-      <li>A failed search request is retried up to three times. If it still fails, the
-      collection stops with an error and the period stays open, so that a new call resumes
-      there. A period is never recorded as empty because of an error.</li>
-      <li>Every finished period is written to an audit log with the number of matches GitHub
-      announced, the number retrieved, and the number stored.</li>
-      <li>A state file belongs to one collection; a call with other arguments cannot resume
-      someone else's collection by accident.</li>
-      <li>A text value longer than its database field, such as a branch name of more than 100
-      characters, is shortened and logged; it cannot stop the collection or keep other
-      repositories from being stored.</li>
-    </ul>
-    <h3>Limits</h3>
-    <div class="limit"><strong>The announced total is approximate.</strong> GitHub documents the
-    number of matches as an estimate, so agreement between announced and collected numbers is
-    not proof of completeness.</div>
-    <div class="limit"><strong>GitHub may answer incompletely.</strong> A search that exceeds
-    GitHub's time limit returns the matches found so far, marked as incomplete. Such answers
-    are logged but the missing matches cannot be recovered.</div>
-    <div class="limit"><strong>One second cannot be divided.</strong> If more than 1,000 matching
-    repositories were created in the same second, only the first 1,000 by stars are
-    collected.</div>
-    <h3>Check of the result</h3>
-    <p>Counting the repositories per month of creation shows every month from January 2008 to
-    December 2025, with no month markedly below both of its neighbours. The count shows one
-    break: among repositories created before August 2012, about 51,300 per month have fewer
-    than five stars, afterwards about 17,900, while the number with at least ten stars stays
-    the same. The break coincides with the introduction of stars on GitHub in August 2012,
-    when the earlier "watching" of a repository, which included the creator's own, was
-    converted into stars. Counts of one or a few stars are therefore not comparable across that
-    month.</p>
-    <details>
-      <summary>Collections made with earlier versions</summary>
-      <p>Before 2026-10-13 six defects could lose data silently, among them failed searches
-      recorded as empty periods and a skipped first part of divided periods. The monthly count
-      above found no gap that would indicate such a loss in the project database. The defects
-      are listed in <code>repository_collection.md</code>.</p>
-    </details>
+    <h2>Data Collection and Completeness</h2>
+    <h3>4.1  Retrieval procedure</h3>
+    <p>The GitHub search returns at most 1,000 results for any query. The collection therefore divides the period of interest into intervals of 30 days and subdivides any interval with more than 1,000 matching repositories until every part can be retrieved in full. Results are retrieved in pages of 100, and progress is recorded after each page so that an interrupted collection can be resumed without gaps or duplicates.</p>
+    <h3>4.2  Safeguards against data loss</h3>
+    <p>The procedure is designed so that errors become visible rather than silently reducing the data. A failed request is repeated; if it continues to fail, the collection stops and the affected interval remains open until it is retrieved successfully. An interval is never recorded as empty because of an error. For every completed interval, the number of matches announced by GitHub, the number retrieved and the number stored are recorded in an audit log. Text values that exceed the storage capacity of a field, such as unusually long branch names, are shortened and logged instead of interrupting the collection.</p>
+    <h3>4.3  Assessment of completeness</h3>
+    <p>The number of matches announced by GitHub is documented as an estimate, so agreement between announced and collected numbers is not by itself proof of completeness. As an independent check, the repositories were counted by month of creation. Every month from January 2008 to December 2025 is represented, and no month falls markedly below both of its neighbours, which would indicate a gap.</p>
+    <p>The monthly counts show one structural break. Among repositories created before August 2012, about 51,300 per month have fewer than five stars, compared with about 17,900 afterwards, while the number with at least ten stars remains stable. The break coincides with the introduction of stars in August 2012, when the earlier practice of “watching” a repository, which included the creator's own, was converted into stars. Counts of one or a few stars are therefore not comparable across that date.</p>
+    <p>Two further constraints of the source cannot be remedied by the procedure. A search that exceeds GitHub's internal time limit returns only the matches found so far; such incomplete answers are recorded, but the missing repositories cannot be recovered. In addition, if more than 1,000 matching repositories were created within the same second, only the first 1,000 by stars can be retrieved.</p>
   </div>
 </section>
 
-<section class="chapter" id="owners">
+<section class="chapter" id="account-information">
   <div class="num">5</div>
   <div class="body">
-    <h2>Owners and their profiles</h2>
-    <p>Every repository has exactly one owner, a user or an organization. The owner is stored in
-    the table of accounts (<code>contributors</code>); an organization is in addition stored in
-    the table <code>organizations</code>. An account is retrieved once; further repositories of
-    the same owner reuse the stored row.</p>
-    <p>The profiles of all user accounts were retrieved again between 2026-08-28 and
-    2026-09-06, which updated the stated location. Whenever a stored location changes, the
-    country derived from it is now cleared and determined again, so that a country always
-    belongs to the location stored next to it.</p>
-    <div class="limit"><strong>The location belongs to the time of retrieval.</strong> It is the
-    place an account holder stated in autumn 2026 (users) or at the first retrieval
-    (organizations), not necessarily the place at the time a repository was created.</div>
+    <h2>Account Information</h2>
+    <p>Every repository has exactly one owner, either a personal account or an organisation. For each owner, the public profile is retrieved, including the self-reported name, website, e-mail address and location. An account is retrieved once and reused for all of its repositories.</p>
+    <p>The profiles of all personal accounts were retrieved again between 28 August and 6 September 2026 in order to update the stated locations. Whenever a stored location changes, the country derived from it is discarded and determined anew, so that every country in the data corresponds to the location stored alongside it. The location therefore reflects the place an account holder stated in autumn 2026 (personal accounts) or at the first retrieval (organisations), which is not necessarily the place at the time a repository was created.</p>
   </div>
 </section>
 
-<section class="chapter" id="geocoding">
+<section class="chapter" id="country-assignment-for-accounts">
   <div class="num">6</div>
   <div class="body">
-    <h2>From a profile location to a country</h2>
-    <p>The only input is the free-text location of a profile, for example
-    <code>Karlsruhe, Germany</code>, <code>Bay Area</code> or <code>Earth</code>. It is optional
-    and self-reported. About a third of the accounts state one: 35.7% of the 9,034,973 user
-    accounts and 33.3% of the 735,242 organizations. Of those that state a location, 95.7% of
-    the users and 93.7% of the organizations receive a country; the remainder are strings that
-    are not a place or that the geocoder cannot match. The result is an ISO 3166-1 country
-    code.</p>
-    <h3>Procedure</h3>
-    <p>A location is resolved in stages; the first stage that gives a result decides.</p>
-    <ol>
-      <li><strong>Curated tables.</strong> A table of special cases (about 290 strings, 150
-      country names and aliases) and a table of 441 corrections, each checked by hand. An entry
-      in these tables always decides, including an entry stating that a string has no country
-      (<code>World</code>, <code>Mars</code>).</li>
-      <li><strong>Earlier geocoder results.</strong> Each distinct string is sent to the
-      geocoder once; its answer is stored and reused.</li>
-      <li><strong>Text rules.</strong> US state names and abbreviations, large US cities, country
-      names, and two-letter country codes at the end of a string. Endings that are both a
-      country code and a state or province abbreviation (<code>IN</code>, <code>CO</code>,
-      <code>PE</code>, <code>PR</code>) decide only after a known US place; otherwise the
-      geocoder decides, so that <code>Recife - PE</code> is placed in Brazil, not in Peru.</li>
-      <li><strong>Geocoder.</strong> The remaining strings go to Nominatim (OpenStreetMap), one
-      request per second; the first match is used.</li>
-    </ol>
-    <p>Territories with their own ISO code keep it whatever the stage: Hong Kong is
-    <code>HK</code>, Puerto Rico <code>PR</code>, Réunion <code>RE</code>. A location that is
-    not a place, or that the geocoder cannot match, receives no country.</p>
-    <details>
-      <summary>Conventions for ambiguous names</summary>
-      <p><code>Georgia</code> alone is read as the US state. A string ending in <code>CA</code>
-      is read as California unless a Canadian city or province precedes it; it is not passed
-      to the geocoder, which reads <code>CA</code> as Canada and placed Californian towns such
-      as <code>Tracy, CA</code> in Canada in a trial. Strings ending in <code>WA</code>
-      (Washington or Western Australia) go to the geocoder unless a known US place precedes
-      them.</p>
-    </details>
-    <h3>Validation against a reference list</h3>
-    <p>A list of 1,068 location strings with the expected country, or the expectation that
-    none applies, serves as a reference. In a run on 2026-10-16 without stored results:</p>
+    <h2>Country Assignment for Accounts</h2>
+    <h3>6.1  Input data</h3>
+    <p>The sole input for the country of an account is the free-text location field of its profile, for example “Karlsruhe, Germany”, “Bay Area” or “Earth”. The field is optional and unverified. About one third of the accounts complete it: 35.7 per cent of the 9,034,973 personal accounts and 33.3 per cent of the 735,242 organisations. Of the accounts that state a location, 95.7 per cent of personal accounts and 93.7 per cent of organisations receive a country; the remainder are entries that do not denote a place or that cannot be matched. The result is a country code according to ISO 3166-1.</p>
+    <h3>6.2  Procedure</h3>
+    <p>Locations are resolved in a sequence of stages, and the first stage that yields a result is decisive. First, curated tables of special cases and of manually reviewed corrections are consulted; an entry there always takes precedence, including entries that assign no country to a non-geographic string such as “World” or “Mars”. Second, results previously obtained for the same string are reused. Third, a set of text rules recognises country names, US states and large US cities. Finally, the remaining strings are submitted to an open geocoding service based on OpenStreetMap data, and the first match is used.</p>
+    <p>Territories with their own ISO code, such as Hong Kong, Puerto Rico or Réunion, retain that code. Ambiguous names are resolved by fixed conventions that are documented in the technical report; for example, “Georgia” without further qualification is read as the US state.</p>
+    <h3>6.3  Validation against a reference list</h3>
+    <p>The accuracy of the procedure was assessed against a reference list of 1,068 location strings, each labelled with the expected country or with the expectation that no country applies. The run reported in Table 2 was carried out on 16 October 2026 without reusing stored results.</p>
     <div class="table-wrap">
-      <table>
+      <table><caption>Table 2. Results of the procedure on the reference list</caption>
         <thead><tr><th>Outcome</th><th class="n">Entries</th><th class="n">Share</th></tr></thead>
         <tbody>
           <tr><td>Result as expected</td><td class="n">1,015 of 1,068</td><td class="n">95.0%</td></tr>
@@ -341,227 +230,108 @@ footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule);
         </tbody>
       </table>
     </div>
-    <p>Of the 963 entries that received a country, 944 (98.0%) received the expected one. Three
-    of the 19 differences are not errors of the procedure: the list still expects France for
-    <code>Nouméa</code> and <code>Réunion</code>, which now keep their own codes, and it
-    expects Brazil for <code>Lima - Perú</code>. Most of the others are strings with several
-    places (<code>Berlin &amp; Graz</code>) or misspellings (<code>Kuala Lampur</code>). The list
-    was not changed after the run.</p>
-    <p>The list is not a random sample of accounts: it over-represents frequent and known
-    difficult strings. During labelling the result of the procedure was shown as a
-    suggestion. The figure therefore describes behaviour on typical and difficult input; it
-    is not an estimate of the share of accounts with a correct country.</p>
-    <h3>Check of stored geocoder results</h3>
-    <p>On 2026-10-15 all stored geocoder results (292,470 strings) were compared with the
-    locations in the database. Three kinds of error were found and corrected:</p>
-    <ul>
-      <li>Strings that name their country were placed in another one:
-      <code>Istanbul/Turkey</code> in Italy (989 accounts), <code>China Beijing</code> in the
-      United States (677). Found by searching for exactly one country name that differs from
-      the stored result; 2,688 strings with 11,027 accounts.</li>
-      <li>Strings that are not a place received a country: <code>Mars</code> in France (1,645
-      accounts), <code>World</code> in Switzerland and the United States, continents in
-      Canada.</li>
-      <li>The rule for two-letter endings read state abbreviations as country codes. Compared
-      with geocoder results for the same strings it was wrong more often than right, for
-      example for <code>PE</code> in 1,089 accounts against 37. The rule was changed as
-      described above.</li>
-    </ul>
-    <p>The frequent cases were reviewed by hand and entered into the table of corrections; a
-    general rule ("a separately written country name decides") was tested and rejected,
-    because it also changed strings with several places such as <code>Hamburg / Tokyo</code>.
-    The affected rows were saved, reset and geocoded again. Together with the reset of
-    countries whose location had changed (chapter 5), the country of 46,023 rows in the table
-    of accounts and 8,055 organizations changed: 29,608 and 5,372 to another country, 16,415 and
-    2,683 to none. Afterwards, apart from three rows, no row remained whose stored country
-    differs from what the curated tables or the current rules give.</p>
+    <p>Of the 963 entries that received a country, 944 (98.0 per cent) received the expected one. Three of the 19 discrepancies reflect outdated expectations in the list rather than errors of the procedure; most of the others concern strings that name several places or contain misspellings.</p>
+    <p>The reference list is not a random sample of accounts. It over-represents frequent and known difficult strings, and the result of the procedure was visible to the annotators as a suggestion during labelling. The figures therefore describe the behaviour of the procedure on typical and difficult input; they are not an estimate of the share of accounts with a correct country.</p>
+    <h3>6.4  Review of stored results</h3>
+    <p>In October 2026 all 292,470 stored geocoding results were compared systematically with the locations in the database. Three types of error were identified: strings that name their country were placed in another one, strings that do not denote a place had received a country, and a rule for two-letter endings had read abbreviations of states and provinces as country codes. The frequent cases were reviewed manually and entered into the table of corrections, and the rule was revised. The affected records were reset and assigned a country anew. In total, the country of 46,023 personal accounts and 8,055 organisations changed: 29,608 and 5,372 respectively to another country, and 16,415 and 2,683 to none. Afterwards, apart from three records, no record remained whose stored country differs from the result of the current procedure.</p>
   </div>
 </section>
 
-<section class="chapter" id="attribution">
+<section class="chapter" id="country-attribution-for-repositories">
   <div class="num">7</div>
   <div class="body">
-    <h2>Country of an account and of a repository</h2>
-    <h3>What is counted</h3>
-    <ul>
-      <li><strong>Persons</strong> are the accounts of type <code>User</code>. Bots are not
-      counted as persons.</li>
-      <li><strong>Organizations</strong> are counted from the table <code>organizations</code>.
-      Their second row in the table of accounts exists only so that every repository can point
-      to its owner, and is not counted.</li>
-      <li>The table of accounts contains owners and, since the contributor lists were
-      collected, accounts that contributed without owning a repository. A statement about
-      "contributors" names which group it means.</li>
-    </ul>
-    <h3>Country of a repository</h3>
-    <p>A repository has no location of its own. It takes the country of its owner: for an
-    organization the country from <code>organizations</code>, otherwise the country of the
-    owning account. A repository whose owner has no country has none.</p>
-    <pre>SELECT r.id,
-       CASE WHEN c.type = 'Organization' THEN o.country_code
-            ELSE c.country_code END AS country_code
-FROM repositories r
-LEFT JOIN contributors c ON c.id = r.owner_id
-LEFT JOIN organizations o ON o.id = r.owner_id;</pre>
-    <p>By this rule 12,558,621 of the 24,547,404 repositories owned by users (51.2%) and
-    1,263,438 of the 2,951,091 repositories owned by organizations (42.8%) have a country.</p>
-    <h3>One source for results</h3>
-    <p>The database holds three country estimates side by side: from the geocoded location,
-    from the web domain (chapter 8), and for organizations from the Orbis company database
-    (chapter 13). Results are based on the geocoded location alone, because it is the only
-    source obtained in the same way for persons and organizations that can yield any
-    country.</p>
+    <h2>Country Attribution for Repositories</h2>
+    <p>Repositories have no location of their own. A repository is therefore attributed the country of its owner: for organisations the country of the organisation, otherwise the country of the owning personal account. A repository whose owner has no country remains without a country. By this rule, 12,558,621 of the 24,547,404 repositories owned by personal accounts (51.2 per cent) and 1,263,438 of the 2,951,091 repositories owned by organisations (42.8 per cent) have a country.</p>
+    <p>Counts of persons refer to personal accounts only, and counts of organisations to the organisation records. Where results refer to contributors, it is stated whether owners, contributors without own repositories, or both are meant.</p>
+    <p>The database holds up to three country estimates side by side: the country inferred from the stated location, the country implied by the web domain (Section 8), and, for organisations, the country of a matched company record (Section 13). Substantive results are based on the stated location alone, because it is the only source that is obtained in the same way for persons and organisations and that can yield any country.</p>
   </div>
 </section>
 
-<section class="chapter" id="cctld">
+<section class="chapter" id="web-domains-as-a-sensitivity-indicator">
   <div class="num">8</div>
   <div class="body">
-    <h2>Web domains as a sensitivity analysis</h2>
-    <p>For accounts without a geocoded country, a country can be read from the country-code
-    domain of their website or e-mail address (<code>.de</code>, <code>.co.uk</code>). This
-    source is used only to test how sensitive results are to missing countries, not to fill
-    them, for a structural reason: generic domains such as <code>.com</code>, <code>.org</code>
-    and <code>.io</code> yield no country, and they dominate in the United States. Filling gaps
-    from domains would add almost only countries other than the United States.</p>
-    <p>Domains that belong to worldwide services (<code>linktr.ee</code>,
-    <code>notion.so</code>, <code>youtu.be</code>), free endings (<code>.tk</code>,
-    <code>.ml</code>) and endings used mostly for word play (<code>.re</code>, <code>.ag</code>)
-    yield no country. Before they were excluded they accounted for about 5% of all
-    assignments, among them most accounts assigned to Estonia.</p>
-    <p>Where an account has both, the two sources agree for 89.3% of the 242,080 accounts and
-    95.6% of the 47,199 organizations (2026-10-16; before the corrections of chapter 6, 88.4% and
-    93.7%). Agreement of two estimates is not the accuracy of either.</p>
+    <h2>Web Domains as a Sensitivity Indicator</h2>
+    <p>For accounts without a location-based country, a country can be read from the country-code top-level domain of their website or e-mail address, such as .de or .co.uk. This information is used only to assess how sensitive results are to missing countries, not to fill the gaps. The reason is structural: generic domains such as .com, .org and .io yield no country and predominate in the United States, so filling gaps from domains would add almost exclusively countries other than the United States and bias the distribution.</p>
+    <p>Domains of global services (for example link-sharing or note-taking platforms), free domain endings and endings used mainly for word play yield no country. Where an account has both a location-based and a domain-based country, the two agree for 89.3 per cent of 242,080 personal accounts and for 95.6 per cent of 47,199 organisations. Agreement between two estimates is not a measure of the accuracy of either.</p>
   </div>
 </section>
 
-<section class="chapter" id="network">
+<section class="chapter" id="contributor-networks">
   <div class="num">9</div>
   <div class="body">
-    <h2>Contributors of a repository</h2>
-    <p>For repositories with at least 500 stars, the accounts that committed to the repository
-    are collected from GitHub's list of contributors, with the number of commits of each. New
-    accounts are added to the table of accounts, their profiles retrieved and geocoded in the
-    same way as owners. Accounts are identified by their numeric GitHub identifier, which stays
-    stable when an account is renamed. If a list cannot be stored as a whole, its rows are
-    stored one at a time; a repository whose list was stored only in part is reported and
-    collected again.</p>
+    <h2>Contributor Networks</h2>
+    <p>For repositories with at least 500 stars, the accounts that committed code to the repository are collected from GitHub's list of contributors, together with the number of commits of each. Newly encountered accounts are added to the account data, and their profiles are retrieved and assigned a country in the same way as those of owners. If a contributor list cannot be stored in full, the affected repository is identified and collected again, so that no repository is counted as complete with contributors missing. Table 3 summarises the coverage.</p>
     <div class="table-wrap">
-      <table>
-        <caption>Coverage on 2026-08-29 (cumulative by star threshold)</caption>
-        <thead><tr><th>Measure</th><th class="n">≥ 5,000 stars</th><th class="n">≥ 1,000</th><th class="n">≥ 500</th></tr></thead>
+      <table><caption>Table 3. Coverage of contributor lists on 29 August 2026 (cumulative by star threshold)</caption>
+        <thead><tr><th>Measure</th><th class="n">≥ 5,000 stars</th><th class="n">≥ 1,000 stars</th><th class="n">≥ 500 stars</th></tr></thead>
         <tbody>
           <tr><td>Repositories with a list / in range</td><td class="n">10,230 / 10,278</td><td class="n">55,182 / 55,493</td><td class="n">105,809 / 106,527</td></tr>
-          <tr><td>Rows (repository and contributor)</td><td class="n">1,863,548</td><td class="n">4,102,819</td><td class="n">5,356,175</td></tr>
-          <tr><td>Rows linked to an account</td><td class="n">62.1%</td><td class="n">67.6%</td><td class="n">68.9%</td></tr>
-          <tr><td>Rows whose account has a country</td><td class="n">39.3%</td><td class="n">42.2%</td><td class="n">40.9%</td></tr>
+          <tr><td>Contributor relations</td><td class="n">1,863,548</td><td class="n">4,102,819</td><td class="n">5,356,175</td></tr>
+          <tr><td>Relations linked to an account</td><td class="n">62.1%</td><td class="n">67.6%</td><td class="n">68.9%</td></tr>
+          <tr><td>Relations whose account has a country</td><td class="n">39.3%</td><td class="n">42.2%</td><td class="n">40.9%</td></tr>
         </tbody>
       </table>
     </div>
-    <div class="limit"><strong>Only the first 500 author e-mail addresses are linked.</strong>
-    GitHub identifies contributors by the e-mail address of the commit author and links only
-    the first 500 addresses of a repository to accounts; the rest appear as anonymous. No
-    repository has 500 or more linked accounts. Anonymous rows (30% of all rows) partly result
-    from this limit, so the country composition of large repositories is known only for their
-    most active contributors.</div>
-    <div class="limit"><strong>Contributions are commits.</strong> Issues, reviews and
-    discussions are not counted. Anonymous authors are counted by e-mail address, so one person
-    with several addresses appears several times.</div>
-    <div class="limit"><strong>Bots are recognised by account type only.</strong> Automated
-    accounts registered as ordinary users are counted as persons.</div>
+    <p class="note">The collection of contributor lists for repositories with 10 to 49 stars was in progress at the time of writing and is not included in Table 3.</p>
+    <p>Three properties of the source limit the interpretation. First, GitHub identifies contributors by the e-mail address of the commit author and links only the first 500 addresses of a repository to accounts; the remaining contributors appear as anonymous. Anonymous relations, which make up 30 per cent of all relations, partly result from this limit, so the country composition of large repositories is known only for their most active contributors. Second, contributions are measured as commits; issues, reviews and discussions are not counted, and an anonymous author with several e-mail addresses is counted several times. Third, automated accounts are recognised only by their account type, so bots registered as ordinary users are counted as persons.</p>
   </div>
 </section>
 
-<section class="chapter" id="statistics">
+<section class="chapter" id="repository-activity-measures">
   <div class="num">10</div>
   <div class="body">
-    <h2>Repository statistics</h2>
-    <p>For 99.9% of the repositories (27,465,002) the number of commits on the
-    default branch and the number of pull requests (open, closed and merged together) were
-    retrieved. The time of retrieval of these counts is not stored. The number of contributors
-    per repository is not a column of its own; it follows from the contributor lists in chapter
-    9.</p>
+    <h2>Repository Activity Measures</h2>
+    <p>For 99.9 per cent of the repositories (27,465,002), the number of commits on the default branch and the number of pull requests were retrieved. The time of retrieval of these counts is not stored. The number of contributors per repository is not recorded as a separate variable; it follows from the contributor lists described in Section 9.</p>
   </div>
 </section>
 
-<section class="chapter" id="limits">
+<section class="chapter" id="quality-assurance-and-reproducibility">
   <div class="num">11</div>
   <div class="body">
-    <h2>Limits that remain</h2>
-    <p>The following limits remain after the corrections described above. They should be
-    stated wherever results by country are reported.</p>
-    <ul>
-      <li><strong>Two thirds of the accounts state no location.</strong> Whether they are
-      distributed across countries like the others is unknown.</li>
-      <li><strong>A location is self-reported and unverified.</strong> It is neither a
-      nationality nor the seat of an employer.</li>
-      <li><strong>Several places in one string</strong> (<code>Berlin / NYC</code>) are resolved
-      as a whole or not at all.</li>
-      <li><strong>Rare geocoder errors remain.</strong> Strings that name a country but were
-      placed in another and occur only once or twice were not reviewed (about 2,300 strings,
-      2,600 accounts). Wrong matches for strings without a recognisable country name cannot be
-      found automatically.</li>
-      <li><strong>The accuracy for accounts as a whole is not measured.</strong> It would need
-      a random sample of accounts labelled without the procedure's suggestion.</li>
-      <li><strong>Small star counts are not comparable across August 2012</strong>, and the
-      star count is a state at retrieval.</li>
-      <li><strong>Contributor lists of large repositories are incomplete</strong> beyond the
-      first 500 author addresses.</li>
-    </ul>
+    <h2>Quality Assurance and Reproducibility</h2>
+    <p>All figures in this report are produced by read-only queries and scripts that are part of the published source code, so that they can be recomputed on the same data. Every correction that changed stored values was preceded by a backup of the affected records, and every corrected location string is listed, together with the assigned country and the reason, in a table that is published with the code.</p>
+    <p>In addition, the complete processing pipeline was executed end to end on a separate database with the same structure as the project database, populated with the 9,083 repositories created on 1 January 2026. The defects revealed by this test interrupted individual processing runs or affected exports and diagnostic tools; none of them altered stored values. They were corrected before this report was finalised, and a database built from the published code now has the same structure as the one from which the figures are taken.</p>
   </div>
 </section>
 
-<section class="chapter" id="reproduce">
+<section class="chapter" id="limitations">
   <div class="num">12</div>
   <div class="body">
-    <h2>Reproducing the figures</h2>
-    <p>The figures in this report come from read-only queries and scripts in the repository:</p>
+    <h2>Limitations</h2>
+    <p>The following limitations remain after the corrections described above and should be stated wherever results by country are reported:</p>
     <ul>
-      <li><code>scripts/diagnostics/methodology_checks.sql</code>: repositories per month,
-      share of accounts with a location and a country, country of repositories by the owner
-      rule, countries from web domains.</li>
-      <li><code>scripts/diagnostics/count_excluded_forks.py</code>: size of the fork
-      exclusion.</li>
-      <li><code>scripts/maintenance/benchmark_geocoding.py</code>: comparison with the reference
-      list.</li>
-      <li><code>scripts/maintenance/reset_stale_countries.py</code> (without
-      <code>--write</code>): rows whose stored country no longer matches the current procedure.</li>
+    <li><strong>Selective disclosure. </strong>About two thirds of the accounts state no location. Whether these accounts are distributed across countries in the same way as the others is unknown.</li>
+    <li><strong>Self-reported information. </strong>A stated location is unverified and denotes neither nationality nor the seat of an employer.</li>
+    <li><strong>Several places in one entry. </strong>Entries naming more than one place are resolved as a whole or not at all.</li>
+    <li><strong>Residual geocoding errors. </strong>Rare strings that name a country but were placed in another one were not reviewed (about 2,300 strings concerning about 2,600 accounts); incorrect matches for strings without a recognisable country name cannot be detected automatically.</li>
+    <li><strong>Unmeasured overall accuracy. </strong>The accuracy for accounts as a whole has not been estimated. This would require a random sample of accounts labelled without knowledge of the procedure's result.</li>
+    <li><strong>Popularity measures. </strong>Small star counts are not comparable across August 2012, and star counts describe the state at retrieval.</li>
+    <li><strong>Contributor coverage. </strong>Contributor lists of large repositories are incomplete beyond the first 500 author addresses.</li>
     </ul>
-    <p>All tables, including the contributor lists, can be exported to CSV files with
-    <code>scripts/export/export_tables_to_csv.py</code>.</p>
-    <p>Every script of the pipeline was also run end to end on a separate database with the
-    same table design, filled with the 9,083 repositories created on 1 January 2026. The
-    defects this revealed stopped a run or affected exports and diagnostics; none of them
-    changed stored values. They were corrected, and a database built from the code now has the
-    same table design as the one the figures come from.</p>
-    <p>Corrections that changed stored data were preceded by a CSV backup of the affected rows.
-    The table of corrections, <code>src/github_collector/geocoding/data/location_corrections.csv</code>,
-    lists every corrected string with the country and the reason.</p>
   </div>
 </section>
 
-<section class="chapter" id="orbis">
+<section class="chapter" id="outlook-firm-level-data">
   <div class="num">13</div>
   <div class="body">
-    <h2>Outlook: company data from Orbis</h2>
-    <p>A separate workstream matches GitHub organizations to companies in the Orbis database
-    (Bureau van Dijk), by web domain and, as a fallback, by exact name, and records the
-    country of the matched entity. This would add a third country estimate for
-    organizations, based on a registered entity rather than a self-reported location,
-    together with company attributes such as size and industry. The matched entity can be a
-    subsidiary, so its country is not necessarily that of the headquarters.</p>
-    <p>The matching has not yet been run on the project database, and there is no accuracy
-    estimate for it. Whenever the first matching step leaves the case open, a candidate is
-    chosen only if its country or website confirms it, also when it is the only one left. A validation protocol with a stratified random sample, blind labelling and
-    an acceptance criterion fixed in advance (<code>manual_validation.md</code>) has to be
-    met before the Orbis country is used. Orbis data are licensed and are not part of the
-    public repository. Results of this report do not use them.</p>
+    <h2>Outlook: Firm-Level Data</h2>
+    <p>A separate workstream links GitHub organisations to company records in the Orbis database (Bureau van Dijk), using the organisation's web domain and, as a fallback, its exact name. This would add a further country estimate for organisations, based on a registered legal entity rather than a self-reported location, together with company attributes such as size and industry. As the matched entity may be a subsidiary, its country does not necessarily correspond to that of the headquarters.</p>
+    <p>The matching has not yet been applied to the project database, and no accuracy estimate is available. Before the firm-level country is used, a validation protocol based on a stratified random sample, blind annotation and an acceptance criterion fixed in advance must be met. Orbis data are subject to licence restrictions and are not part of the public repository. The results presented in this report do not use them.</p>
+  </div>
+</section>
+
+<section class="chapter" id="technical-documentation">
+  <div class="num"></div>
+  <div class="body">
+    <h2>Technical Documentation</h2>
+    <p>The implementation of each step, including the exact search queries, the rules and tables used for country assignment, the database structure and the scripts used to compute the figures, is documented in the technical methodology report:</p>
+    <p><em>[Link to the technical methodology report – to be inserted]</em></p>
+    <p>The source code is available at <a href="https://github.com/maiklovenotwar/ISI-Github-Collector">https://github.com/maiklovenotwar/ISI-Github-Collector</a>.</p>
   </div>
 </section>
 
 <footer>
-  Generated from the code and the documents in <code>docs/methodology/</code>. Figures refer to
-  the project database on 2026-10-16 unless another date is given.
+  Generated from the same text as the Word version of this report, which is authoritative.
 </footer>
 </div>
 </body>
