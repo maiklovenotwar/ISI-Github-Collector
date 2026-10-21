@@ -142,10 +142,14 @@ def test_repository_unknown_to_github_does_not_fail_the_run(script, repos, monke
             return [], [batch]
         return [_stat(r["id"]) for r in batch], []
 
+    log_dir = tmp_path / "logs"  # own directory, so no file of another test can satisfy it
+    log_dir.mkdir()
+    monkeypatch.setattr(script.config, "LOG_DIR", log_dir)
+
     assert _run(script, monkeypatch, tmp_path, behaviour) == 0
     # in LOG_DIR, not in the working directory (functional test 2026-10-20: the file landed in
     # the repository root while all other output was redirected)
-    assert list(Path(script.config.LOG_DIR).glob("failed_repo_ids_*.txt"))
+    assert [p.read_text().split() for p in log_dir.glob("failed_repo_ids_*.txt")] == [["102"]]
     assert not list(tmp_path.glob("failed_repo_ids_*.txt"))
 
 
