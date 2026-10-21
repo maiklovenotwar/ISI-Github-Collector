@@ -129,6 +129,18 @@ class TestLatinName:
             ("Seogang Energy Co.,Ltd", "Seogang Energy"),
             ("Akurando, KK", "Akurando"),
             ("Y.K. Bizgate", "Bizgate"),
+            # only at the start or the end of the name, not inside it (final review, minor)
+            ("Asia Limited Brands Inc.", "Asia Limited Brands"),
+            ("Huawei Technologies Co.", "Huawei Technologies"),
+            # Russian and Japanese forms in Latin script
+            ("OOO Romashka", "Romashka"),
+            ("AO Kaspersky Lab", "Kaspersky Lab"),
+            ("PAO Sberbank", "Sberbank"),
+            ("Toshiba Kabushiki Kaisha", "Toshiba"),
+            ("Kabushiki Kaisha Toshiba", "Toshiba"),
+            # a core of one or two letters is a chance match ("Li" against "lilab")
+            ("Li Co., Ltd.", None),
+            ("BYD Company Limited", "BYD"),
             ("Co., Ltd.", None),
             ("", None),
             (None, None),

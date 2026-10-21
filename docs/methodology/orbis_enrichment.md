@@ -73,11 +73,16 @@ For candidates found by their domain whose original name contains no Latin
 letter, the Latin name that Orbis holds in a second name column is compared
 as well, and the highest of the three values (original name, Latin name,
 transliteration) counts. The Latin name is mostly a romanisation with an
-English legal form ("Co., Ltd."), occasionally a literal translation. English
-legal forms (`co., ltd.`, `company limited`, `limited liability company`,
-`llc`, `ltd`, `limited`, `kk`, `k.k.`, `y.k.`, `inc`, `corp`, `corporation`,
-`jsc`, `pjsc`, `ojsc`, `cjsc`) are removed from it first; unlike the
-transliteration, it has no minimum length. The test whether the complete
+English legal form ("Co., Ltd."), occasionally a literal translation. Legal
+forms in Latin script are removed from its beginning and end first, repeatedly:
+English (`co., ltd.`, `company limited`, `limited liability company`, `llc`,
+`ltd`, `limited`, `inc`, `corp`, `corporation`, `company`, `co`), Russian
+(`ooo`, `oao`, `zao`, `pao`, `ao`, `jsc`, `pjsc`, `ojsc`, `cjsc`) and Japanese
+(`kabushiki kaisha`, `godo kaisha`, `yugen kaisha`, `kk`, `k.k.`, `y.k.`).
+Inside the name such words are kept, because there they are part of the name.
+The remaining core needs at least three letters or digits; a core of one or
+two letters, such as a single surname, would produce chance matches. An
+invalid column name stops a run before the first query. The test whether the complete
 login appears inside a longer company name, used to rank candidates, also
 checks this Latin name. Names
 that mix Latin letters with another script are compared only as they are.

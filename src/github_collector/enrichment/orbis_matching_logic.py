@@ -395,27 +395,43 @@ def _transliteration(orbis_name: str) -> Optional[str]:
     return text
 
 
-# Englische Rechtsformen im lateinischen Namen der zweiten Orbis-Namensspalte (E34). Sie
-# tragen keinen Namensbestandteil und drücken bei langen Namen die Teilstring-Ähnlichkeit
-# unter die Schwelle. Nur als ganzes Wort, Satzzeichen dazwischen erlaubt ("Co.,Ltd").
-_ENGLISH_LEGAL_FORMS = re.compile(
-    r"(?<![a-z0-9])(?:limited\s+liability\s+company|company\s+limited|co\.?\s*,?\s*ltd\.?|"
-    r"ltd\.?|limited|llc|k\.k\.?|kk|y\.k\.?|inc\.?|corporation|corp\.?|[poc]?jsc)"
-    r"(?![a-z0-9])",
-    re.IGNORECASE,
+# Rechtsformen im lateinischen Namen der zweiten Orbis-Namensspalte (E34): englische,
+# russische (OOO, AO, ...) und japanische (Kabushiki Kaisha, ...) in lateinischer Schrift. Sie
+# tragen keinen Namensbestandteil und drücken bei langen Namen die Teilstring-Ähnlichkeit unter
+# die Schwelle. Entfernt werden sie nur am Anfang oder Ende des Namens, wiederholt; mitten im
+# Namen sind "Limited" oder "Co" Teil des Namens. Satzzeichen dazwischen erlaubt ("Co.,Ltd").
+_LATIN_LEGAL_FORM = (
+    r"(?:limited\s+liability\s+company|company\s+limited|co\.?\s*,?\s*ltd\.?|ltd\.?|limited|"
+    r"llc|l\.l\.c\.|incorporated|inc\.?|corporation|corp\.?|company|co\.?|"
+    r"kabushiki\s+kaisha|godo\s+kaisha|yugen\s+kaisha|k\.k\.?|kk|y\.k\.?|"
+    r"[poc]?jsc|ooo|oao|zao|pao|ao)"
 )
+_LEADING_LEGAL_FORM = re.compile(rf"^[\s,.]*{_LATIN_LEGAL_FORM}(?![a-z0-9])[\s,.]*", re.IGNORECASE)
+_TRAILING_LEGAL_FORM = re.compile(
+    rf"[\s,.]*(?<![a-z0-9]){_LATIN_LEGAL_FORM}[\s,.]*$", re.IGNORECASE
+)
+# Ein Kern aus ein oder zwei Buchstaben ist ein Zufallstreffer ("Li Co., Ltd." gegen "lilab").
+_MIN_LATIN_CORE_CHARACTERS = 3
 
 
 def _latin_name_core(latin_name: Optional[str]) -> Optional[str]:
-    """Lateinischer Name ohne englische Rechtsformen, sonst None.
+    """Lateinischer Name ohne Rechtsformen am Anfang und Ende, sonst None.
 
-    None, wenn der Name leer ist, keinen lateinischen Buchstaben enthält oder nur aus
-    Rechtsformen besteht.
+    None, wenn der Name leer ist, keinen lateinischen Buchstaben enthält, nur aus
+    Rechtsformen besteht oder sein Kern weniger als drei Buchstaben oder Ziffern hat.
     """
     if not latin_name or not _LATIN_LETTER.search(latin_name):
         return None
-    core = re.sub(r"\s+", " ", _ENGLISH_LEGAL_FORMS.sub(" ", latin_name)).strip(" ,.")
-    return core if _LATIN_LETTER.search(core) else None
+    core, previous = latin_name, None
+    while core != previous:
+        previous = core
+        core = _TRAILING_LEGAL_FORM.sub("", _LEADING_LEGAL_FORM.sub("", core))
+    core = re.sub(r"\s+", " ", core).strip(" ,.")
+    if not _LATIN_LETTER.search(core):
+        return None
+    if len(re.sub(r"[^A-Za-z0-9]", "", core)) < _MIN_LATIN_CORE_CHARACTERS:
+        return None
+    return core
 
 
 def _usable_latin_name(orbis_name: str, latin_name: Optional[str]) -> Optional[str]:

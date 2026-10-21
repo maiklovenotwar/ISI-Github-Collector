@@ -501,6 +501,7 @@ def run_pipeline(  # noqa: C901
     started_at = datetime.now(timezone.utc).isoformat()
     # Vor jeder Abfrage prüfen, damit ein Lauf nicht erst nach Stunden am Ziel scheitert.
     export_path = export_paths(export_csv)[0] if export_csv else None
+    latin_name_column()  # ein ungültiger Spaltenname bricht hier ab, nicht erst beim Schreiben
     print("=" * 70)
     print("ORBIS MATCHING PIPELINE")
     print("=" * 70)

@@ -423,3 +423,18 @@ class TestApplyHqResolutionToMatchResult:
         apply_hq_resolution_to_match_result(result, None)
 
         assert result.match_type == MatchType.PENDING
+
+
+def test_invalid_latin_name_column_stops_the_run_before_any_query(monkeypatch) -> None:
+    # The invalid value used to raise only when Orbis was queried or, with --export-csv, when
+    # the run metadata were written at the end (final review of the Latin-name plan).
+    import orbis_matching_pipeline as pipeline
+
+    def no_query(*args, **kwargs):
+        raise AssertionError("no organization may be loaded")
+
+    monkeypatch.setenv("ORBIS_LATIN_NAME_COLUMN", "NAME; DROP")
+    monkeypatch.setattr(pipeline, "fetch_organizations", no_query)
+
+    with pytest.raises(ValueError, match="ORBIS_LATIN_NAME_COLUMN"):
+        pipeline.run_pipeline(limit=None, logins=None, dry_run=True, min_name_similarity=None)
