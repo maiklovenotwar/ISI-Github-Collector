@@ -538,14 +538,15 @@ def main():  # noqa: C901
         except Exception as e:
             logger.error(f"Fehler beim Anzeigen der Statistiken: {e}")
             print(f"Fehler beim Anzeigen der Statistiken: {e}")
-        return
+            return 1
+        return 0
 
     # Initialisiere API-Client
     try:
         api_client = setup_api_client()
     except ValueError as e:
         logger.error(f"Fehler beim Einrichten des API-Clients: {e}")
-        return
+        return 1
 
     # Prometheus-Metriken aktivieren (Phase 4.1)
     if getattr(args, "enable_metrics", False):
@@ -562,7 +563,8 @@ def main():  # noqa: C901
         except Exception as e:  # noqa: BLE001
             logger.error("Fehler bei der Datenvolumen-Analyse: %s", e)
             print(f"Fehler bei der Datenvolumen-Analyse: {e}")
-        return
+            return 1
+        return 0
 
     # Führe im interaktiven oder nicht-interaktiven Modus aus
     if args.non_interactive:
