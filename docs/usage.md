@@ -508,7 +508,8 @@ touching the project database. It uses the same MySQL installation, its own data
 
    The script copies every base table with `SHOW CREATE TABLE` (indexes, foreign keys and table
    options included; tables starting with `tmp_` are left out), refuses port 3306 and a target
-   that already has tables, and only reads the source.
+   that already has tables, and only reads the source. If a table cannot be created, the tables
+   created before it are removed again, so that the next run finds an empty target.
 5. Run scripts with all paths redirected. Set every variable, including `CACHE_DIR`; scripts
    that find no value fall back to `.env` and the project directories:
 

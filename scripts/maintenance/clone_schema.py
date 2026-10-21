@@ -25,15 +25,17 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 PRODUCTION_PORT = 3306
+_LOOPBACK = {"localhost", "127.0.0.1", "::1"}
 _TABLE_COUNTER = re.compile(r"\sAUTO_INCREMENT=\d+")
 
 
 def portable_ddl(create_statement: str) -> str:
-    """CREATE TABLE ohne den Zähler `AUTO_INCREMENT=<n>` in den Tabellenoptionen."""
-    head, sep, options = create_statement.rpartition(")")
-    if not sep:
-        return create_statement
-    return head + sep + _TABLE_COUNTER.sub("", options)
+    """CREATE TABLE ohne den Zähler `AUTO_INCREMENT=<n>` in den Tabellenoptionen.
+
+    Spaltendefinitionen enthalten nur `AUTO_INCREMENT` ohne Gleichheitszeichen, daher wird die
+    ganze Anweisung durchsucht (ein Tabellenkommentar kann selbst eine Klammer enthalten).
+    """
+    return _TABLE_COUNTER.sub("", create_statement)
 
 
 def check_target(source_url: str, target_url: str) -> None:
@@ -46,8 +48,12 @@ def check_target(source_url: str, target_url: str) -> None:
     target_port = target.port or PRODUCTION_PORT
     if target_port == PRODUCTION_PORT:
         raise ValueError(f"Ziel auf Port {PRODUCTION_PORT} verweigert: {target.host}")
-    same = (source.host, source.port or PRODUCTION_PORT, source.database) == (
-        target.host,
+
+    def host(url):
+        return "loopback" if url.host in _LOOPBACK else url.host
+
+    same = (host(source), source.port or PRODUCTION_PORT, source.database) == (
+        host(target),
         target_port,
         target.database,
     )
@@ -80,12 +86,29 @@ def clone_schema(
         existing = target.execute(text("SHOW TABLES")).fetchall()
         if existing:
             raise ValueError(f"Ziel hat schon {len(existing)} Tabellen")
-        # Gilt nur für diese Verbindung: Tabellen dürfen sich vor ihrer Anlage referenzieren.
-        target.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-        for statement in statements:
-            target.execute(text(statement))
-        target.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        create_tables(target, tables, statements)
     return tables
+
+
+def create_tables(conn, names: List[str], statements: List[str]) -> None:
+    """Legt die Tabellen an; scheitert eine, werden die schon angelegten wieder entfernt.
+
+    MySQL schreibt jedes CREATE TABLE sofort fest, die Transaktion nimmt es nicht zurück. Ohne
+    das Aufräumen bliebe ein Teil des Schemas stehen und der nächste Lauf verweigerte das Ziel.
+    """
+    # Gilt nur für diese Verbindung: Tabellen dürfen sich vor ihrer Anlage referenzieren.
+    conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+    created = []
+    try:
+        for name, statement in zip(names, statements):
+            conn.execute(text(statement))
+            created.append(name)
+    except Exception:
+        for name in reversed(created):
+            conn.execute(text(f"DROP TABLE `{name}`"))
+        raise
+    finally:
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
