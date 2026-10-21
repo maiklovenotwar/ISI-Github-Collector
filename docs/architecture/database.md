@@ -219,7 +219,8 @@ SQLAlchemy. Selected methods:
 - `insert_organization(org_data)` / `update_organization(organization, org_data)`;
   both update methods set `country_code` and `region` to `NULL` when the new
   data change the location and carry no country code themselves
-- `insert_repository(repo_data)` / `update_repository(repo, repo_data)`
+- `bulk_upsert_repositories(repositories_data)` / `update_repository(repo, repo_data)`;
+  repositories are written in batches only
 - `get_contributors(limit=None)` / `get_all_contributor_logins()`
 - `get_all_organization_logins()`
 - `get_organizations_without_country_code(limit=None)` / `get_contributors_without_country_code(limit=None)`
