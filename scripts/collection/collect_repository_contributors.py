@@ -195,6 +195,12 @@ def upsert_statement(rows: List[Dict[str, Any]]):
     )
 
 
+def _reason(error: Exception) -> str:
+    """Fehlertext ohne die Parameter der Anweisung (sie enthalten Logins und E-Mail-Adressen)."""
+    orig = getattr(error, "orig", None)  # Meldung des Datenbanktreibers, z. B. "Data too long"
+    return str(orig) if orig is not None else type(error).__name__
+
+
 def flush_rows(engine, rows: List[Dict[str, Any]]) -> int:
     """Schreibt die Zeilen und gibt die Anzahl der geschriebenen zurück.
 
@@ -214,22 +220,25 @@ def flush_rows(engine, rows: List[Dict[str, Any]]) -> int:
     except OperationalError:
         raise  # Verbindung weg: _write_batch hat schon wiederholt, einzeln hilft nicht
     except Exception as e:
-        logger.error("Flush von %d Zeilen fehlgeschlagen, schreibe einzeln: %s", len(rows), e)
+        logger.error(
+            "Flush von %d Zeilen fehlgeschlagen, schreibe einzeln: %s", len(rows), _reason(e)
+        )
 
     written = 0
     written_repos, failed_repos = set(), set()
-    for row in rows:
+    for position, row in enumerate(rows, start=1):
         try:
             _write_batch(engine, upsert_statement([row]))
             written += 1
             written_repos.add(row["repository_id"])
         except Exception as e:
             failed_repos.add(row["repository_id"])
+            # Ohne Login: bei anonymen Autoren ist er deren E-Mail-Adresse oder Name.
             logger.error(
-                "Zeile fuer Repo %s / Login %s nicht schreibbar: %s",
+                "Zeile %d fuer Repo %s nicht schreibbar: %s",
+                position,
                 row["repository_id"],
-                row["github_login"],
-                e,
+                _reason(e),
             )
     incomplete = sorted(written_repos & failed_repos)
     if incomplete:

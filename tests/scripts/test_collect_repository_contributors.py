@@ -360,3 +360,23 @@ def test_lost_connection_stops_the_run_instead_of_retrying_each_row(module, monk
     with pytest.raises(OperationalError):
         module.flush_rows(None, _rows("a", "b", "c"))
     assert calls == [3]
+
+
+def test_overlong_type_is_shortened_in_the_rows(module):
+    (row,) = module.contributor_rows(1, [{"login": "a", "id": 1, "type": "x" * 30}], NOW)
+    assert row["github_type"] == "x" * 20
+
+
+def test_unwritable_row_is_logged_without_login_or_email(module, monkeypatch, caplog):
+    # An anonymous login is the author's e-mail address or name; logs are not the place for it.
+    monkeypatch.setattr(module, "upsert_statement", lambda rows: rows)
+
+    def write(engine, rows):
+        # SQLAlchemy errors quote the statement's parameters, i.e. the logins.
+        raise RuntimeError(f"Data too long [parameters: {rows}]")
+
+    monkeypatch.setattr(module, "_write_batch", write)
+    with caplog.at_level("ERROR"):
+        module.flush_rows(None, _rows("anon:jane@example.org", "b"))
+    assert "jane@example.org" not in caplog.text
+    assert "Repo 7" in caplog.text
