@@ -441,3 +441,52 @@ class TestEverySignalNeedsCorroboration:
         )
 
         assert resolution is None
+
+
+# Every signal that needs confirmation by country or domain, with the field that triggers it
+# (final review of the Orbis plan, M9: only HQ_TABLE was tested for these cases).
+CONFIRMED_SIGNALS = {
+    "HQ_TABLE": {"has_hq_entry": True, "hq_subsidiary_count": 9},
+    "CONSOLIDATING_ENTITY": {"consolidation_code": "C1"},
+    "OLDEST_FOUNDING": {"date_incorporation": "2001-01-01"},
+    "HIGHEST_REVENUE": {"operating_revenue": 1_000_000.0},
+    "GUO_SELF": {"is_guo_self": True},
+    "LARGE_CORP_HQ": {"number_of_employees": 5000},
+    "IS_PARENT": {"is_parent": True},
+    "BVDID_FALLBACK": {},
+}
+
+
+class TestEverySignalNeedsConfirmation:
+    @pytest.mark.parametrize("signal", sorted(CONFIRMED_SIGNALS))
+    @pytest.mark.parametrize("github_country", [None, ""])
+    def test_single_candidate_without_country_or_domain_stays_unresolved(
+        self, signal, github_country
+    ) -> None:
+        only = make_orbis_candidate(**CONFIRMED_SIGNALS[signal])
+
+        resolution = resolve_headquarters(
+            [only], github_name="Acme", github_login="acme", github_country=github_country
+        )
+
+        assert resolution is None
+
+    @pytest.mark.parametrize("signal", sorted(CONFIRMED_SIGNALS))
+    def test_single_candidate_confirmed_by_country_is_resolved_by_its_signal(self, signal) -> None:
+        only = make_orbis_candidate(country_iso="DE", **CONFIRMED_SIGNALS[signal])
+
+        resolution = resolve_headquarters(
+            [only], github_name="Acme", github_login="acme", github_country="DE"
+        )
+
+        assert resolution.hq_method == signal
+
+    @pytest.mark.parametrize("signal", sorted(CONFIRMED_SIGNALS))
+    def test_other_country_is_not_a_confirmation(self, signal) -> None:
+        only = make_orbis_candidate(country_iso="FR", **CONFIRMED_SIGNALS[signal])
+
+        resolution = resolve_headquarters(
+            [only], github_name="Acme", github_login="acme", github_country="DE"
+        )
+
+        assert resolution is None
