@@ -36,7 +36,7 @@ def select_list(query: str) -> str:
 
 def test_queries_are_read_only():
     queries = load().build_queries("ORBIS_23J")
-    assert set(queries) == {"non_latin_total", "non_latin_by_country", "latin_name_column_exists"}
+    assert set(queries) == {"non_latin_by_country", "latin_name_column_exists"}
     forbidden = re.compile(r"\b(INSERT|UPDATE|DELETE|MERGE|DROP|ALTER|CREATE|TRUNCATE)\b", re.I)
     for query in queries.values():
         assert query.lstrip().upper().startswith("SELECT")
@@ -52,9 +52,26 @@ def test_queries_return_counts_only():
 
 
 def test_non_latin_means_no_latin_letter():
-    query = load().build_queries("ORBIS_23J")["non_latin_total"]
-    assert "REGEXP_LIKE(NAME_NATIVE, '[A-Za-z]')" in query
+    # A range such as [A-Za-z] depends on NLS_SORT and can include accented letters; the
+    # letters are therefore listed one by one (final review M8).
+    query = load().build_queries("ORBIS_23J")["non_latin_by_country"]
+    letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    assert f"REGEXP_LIKE(NAME_NATIVE, '[{letters}]')" in query
+    assert "A-Z" not in query and "a-z" not in query
     assert "NAME_NATIVE IS NOT NULL" in query
+
+
+def test_the_company_table_is_read_once():
+    # The total used to be a second full scan of the table (final review M8).
+    queries = load().build_queries("ORBIS_23J").values()
+    assert sum(query.count("FROM ORBIS_23J.CONTACT_INFO") for query in queries) == 1
+
+
+def test_total_and_top_countries_come_from_one_result():
+    rows = [("CN", 10, 8), ("DE", 5, 0), ("RU", 4, 3)]
+    total, top = load().summarize(rows, top=2)
+    assert total == (19, 11)
+    assert top == [("CN", 10, 8), ("RU", 4, 3)]
 
 
 def test_help_does_not_connect(monkeypatch, capsys):

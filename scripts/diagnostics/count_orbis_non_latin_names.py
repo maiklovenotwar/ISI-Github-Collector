@@ -17,38 +17,46 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from github_collector.enrichment.orbis_client import OrbisClient  # noqa: E402
 
-_WITHOUT_LATIN = "SUM(CASE WHEN NOT REGEXP_LIKE(NAME_NATIVE, '[A-Za-z]') THEN 1 ELSE 0 END)"
+# Die Buchstaben einzeln statt als Bereich [A-Za-z]: ein Bereich hängt von NLS_SORT ab und
+# kann bei sprachlicher Sortierung auch Buchstaben mit diakritischen Zeichen einschließen.
+_LATIN_LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+_WITHOUT_LATIN = (
+    f"SUM(CASE WHEN NOT REGEXP_LIKE(NAME_NATIVE, '[{_LATIN_LETTERS}]') THEN 1 ELSE 0 END)"
+)
 
 
 def build_queries(schema: str) -> Dict[str, str]:
-    """Die drei lesenden Abfragen; `schema` ist das Orbis-Schema (z. B. ORBIS_23J)."""
+    """Die lesenden Abfragen; `schema` ist das Orbis-Schema (z. B. ORBIS_23J).
+
+    Die Firmentabelle wird nur einmal gelesen: die Summe ergibt sich aus den Ländern.
+    """
     return {
-        "non_latin_total": f"""
-            SELECT COUNT(NAME_NATIVE) AS with_name, {_WITHOUT_LATIN} AS without_latin
-            FROM {schema}.CONTACT_INFO
-            WHERE NAME_NATIVE IS NOT NULL""",
         "non_latin_by_country": f"""
-            SELECT * FROM (
-                SELECT CTRYISO, COUNT(NAME_NATIVE) AS with_name,
-                       {_WITHOUT_LATIN} AS without_latin
-                FROM {schema}.CONTACT_INFO
-                WHERE NAME_NATIVE IS NOT NULL
-                GROUP BY CTRYISO
-                ORDER BY without_latin DESC
-            ) WHERE ROWNUM <= 20""",
+            SELECT CTRYISO, COUNT(NAME_NATIVE) AS with_name, {_WITHOUT_LATIN} AS without_latin
+            FROM {schema}.CONTACT_INFO
+            WHERE NAME_NATIVE IS NOT NULL
+            GROUP BY CTRYISO""",
         "latin_name_column_exists": f"""
             SELECT COUNT(*) AS other_name_columns
             FROM ALL_TAB_COLUMNS
             WHERE OWNER = '{schema}' AND TABLE_NAME = 'CONTACT_INFO'
               AND COLUMN_NAME LIKE '%NAME%' AND COLUMN_NAME <> 'NAME_NATIVE'""",
     }
+
+
+def summarize(
+    rows: List[Tuple[str, int, int]], top: int = 20
+) -> Tuple[Tuple[int, int], List[Tuple[str, int, int]]]:
+    """(Namen insgesamt, davon ohne lateinischen Buchstaben) und die `top` Länder mit den meisten."""
+    total = (sum(row[1] for row in rows), sum(row[2] for row in rows))
+    return total, sorted(rows, key=lambda row: row[2], reverse=True)[:top]
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -60,12 +68,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         # Die Zählungen lesen die ganze Tabelle; die 180 s des Clients reichen dafür nicht.
         client.connection.call_timeout = 30 * 60 * 1000
         cursor = client.connection.cursor()
-        for key, query in build_queries(schema).items():
-            cursor.execute(query)
-            columns = [d[0].lower() for d in cursor.description]
-            print(f"\n{key}: {', '.join(columns)}")
-            for row in cursor.fetchall():
-                print("  " + " | ".join(str(value) for value in row))
+        queries = build_queries(schema)
+        cursor.execute(queries["non_latin_by_country"])
+        (with_name, without_latin), top = summarize(cursor.fetchall())
+        print(f"\nnon_latin_total: with_name, without_latin\n  {with_name} | {without_latin}")
+        print("\nnon_latin_by_country: ctryiso, with_name, without_latin")
+        for row in top:
+            print("  " + " | ".join(str(value) for value in row))
+        cursor.execute(queries["latin_name_column_exists"])
+        print(f"\nlatin_name_column_exists: other_name_columns\n  {cursor.fetchone()[0]}")
     finally:
         client.close()
     return 0
