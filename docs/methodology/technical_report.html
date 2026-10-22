@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Technical Methodology Report</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Public+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* Layout: a single reading column with a narrow margin rail for section numbers; tables and
+   the pipeline figure may run wider inside their own scroll containers. */
+:root {
+  --bg: #fbfbfa;
+  --surface: #f1f3f4;
+  --fg: #1d2327;
+  --muted: #5b6770;
+  --rule: #d5dadd;
+  --accent: #1f5f6b;
+  --pending-bg: #fff2c4;
+  --pending-fg: #5c4300;
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-body: "Public Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+  --measure: 68ch;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14191c; --surface: #1c2327; --fg: #e3e8ea; --muted: #9aa7ae; --rule: #2e383d;
+    --accent: #7cc3cf; --pending-bg: #4a3b10; --pending-fg: #ffe7a3; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14191c; --surface: #1c2327; --fg: #e3e8ea; --muted: #9aa7ae; --rule: #2e383d;
+  --accent: #7cc3cf; --pending-bg: #4a3b10; --pending-fg: #ffe7a3; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.6 var(--font-body);
+}
+.page {
+  max-width: 960px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 48px 96px;
+}
+header.doc { display: grid; gap: 12px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; line-height: 1.2; }
+h1 { font-size: clamp(2rem, 5vw, 2.8rem); margin: 0; }
+.lede { font-size: 1.12rem; max-width: var(--measure); margin: 0; color: var(--fg); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 0.88rem; color: var(--muted); }
+nav.toc { margin-top: 28px; }
+nav.toc ol { columns: 2 260px; column-gap: 32px; padding-left: 1.4em; margin: 0; font-size: 0.95rem; }
+nav.toc a { color: var(--accent); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { text-decoration: underline; }
+section.chapter { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); gap: 0 20px; padding-top: 40px; }
+.num { font-family: var(--font-display); font-size: 1.6rem; color: var(--accent); line-height: 1.2; padding-top: 2px; }
+.body { min-width: 0; }
+.body > * { max-width: var(--measure); }
+.body > .wide { max-width: none; }
+h2 { font-size: 1.6rem; margin: 0 0 12px; }
+h3 { font-size: 1.18rem; margin: 28px 0 8px; }
+p, ul, ol { margin: 0 0 14px; }
+li { margin-bottom: 6px; }
+a { color: var(--accent); }
+code { font-family: var(--font-mono); font-size: 0.88em; background: var(--surface); padding: 1px 4px; border-radius: 3px; overflow-wrap: anywhere; }
+pre { font-family: var(--font-mono); font-size: 0.86rem; background: var(--surface); padding: 12px 14px; border-radius: 4px; overflow-x: auto; }
+.table-wrap { overflow-x: auto; margin: 6px 0 18px; }
+table { border-collapse: collapse; font-size: 0.92rem; min-width: 100%; }
+caption { text-align: left; font-size: 0.88rem; color: var(--muted); padding-bottom: 6px; }
+th, td { text-align: left; padding: 7px 12px 7px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; border-bottom-color: var(--fg); }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; padding-right: 0; padding-left: 12px; white-space: nowrap; }
+.note { font-size: 0.9rem; color: var(--muted); }
+.limit { border-left: 3px solid var(--accent); padding: 2px 0 2px 14px; margin: 0 0 14px; }
+.limit strong { display: block; }
+details { border-top: 1px solid var(--rule); padding: 10px 0; margin: 8px 0 14px; }
+details[open] { padding-bottom: 4px; }
+summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+mark.pending { background: var(--pending-bg); color: var(--pending-fg); padding: 0 3px; border-radius: 2px; }
+/* pipeline figure */
+.pipeline { display: grid; grid-template-columns: repeat(6, minmax(120px, 1fr)); gap: 10px; margin: 10px 0 8px; min-width: 760px; }
+.stage { background: var(--surface); border-radius: 4px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; position: relative; }
+.stage b { font-family: var(--font-display); font-size: 1.02rem; }
+.stage span { font-size: 0.8rem; color: var(--muted); }
+.stage code { font-size: 0.74rem; background: transparent; padding: 0; }
+.stage:not(:last-child)::after {
+  content: ""; position: absolute; right: -9px; top: 50%; width: 8px; height: 8px;
+  border-top: 2px solid var(--accent); border-right: 2px solid var(--accent);
+  transform: translateY(-50%) rotate(45deg);
+}
+footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 0.85rem; color: var(--muted); }
+@media (max-width: 560px) {
+  section.chapter { grid-template-columns: minmax(0, 1fr); }
+  .num { font-size: 1.1rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="doc">
+  <div class="eyebrow">Technical Methodology Report</div>
+  <h1>A Country-Attributed Dataset of Public GitHub Repositories</h1>
+  <p class="lede">Implementation of the collection, enrichment and country attribution, with the scripts, rules and tables involved. This report accompanies the academic methodology report and documents, for each step described there, the scripts, search queries, rules, tables and database columns involved, and the queries from which the reported figures are computed.</p>
+  <div class="meta">
+    <span>Data status: 16 October 2026</span>
+    <span>Version of 22 October 2026</span>
+    <span>Academic report: <a href="report.html">Methodology Report</a></span>
+    <span>Code: <a href="https://github.com/maiklovenotwar/ISI-Github-Collector">ISI-Github-Collector</a></span>
+  </div>
+  <nav class="toc" aria-label="Contents">
+    <ol>
+      <li><a href="#purpose-and-scope">Purpose and Scope</a></li>
+      <li><a href="#system-overview">System Overview</a></li>
+      <li><a href="#data-source-and-units-of-observation">Data Source and Units of Observation</a></li>
+      <li><a href="#definition-of-the-population">Definition of the Population</a></li>
+      <li><a href="#data-collection-and-completeness">Data Collection and Completeness</a></li>
+      <li><a href="#account-information">Account Information</a></li>
+      <li><a href="#country-assignment-for-accounts">Country Assignment for Accounts</a></li>
+      <li><a href="#country-attribution-for-repositories">Country Attribution for Repositories</a></li>
+      <li><a href="#web-domains-as-a-sensitivity-indicator">Web Domains as a Sensitivity Indicator</a></li>
+      <li><a href="#contributor-networks">Contributor Networks</a></li>
+      <li><a href="#repository-activity-measures">Repository Activity Measures</a></li>
+      <li><a href="#database-structure">Database Structure</a></li>
+      <li><a href="#quality-assurance-and-reproducibility">Quality Assurance and Reproducibility</a></li>
+      <li><a href="#limitations">Limitations</a></li>
+      <li><a href="#outlook-orbis-matching">Outlook: Orbis Matching</a></li>
+      <li><a href="#appendix-command-line-options">Appendix: Command-Line Options</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="chapter" id="purpose-and-scope">
+  <div class="num">1</div>
+  <div class="body">
+    <h2>Purpose and Scope</h2>
+    <p>This report documents the implementation of the procedure described in the academic methodology report <em>A Country-Attributed Dataset of Public GitHub Repositories, Their Owners and Contributors</em>. The chapters follow the order of that report, with two additions: chapter 2 gives an overview of the system, and chapter 12 describes the database structure. Each statement of the academic report can thus be traced to the scripts, rules, tables and database columns that produce it. The academic report states what the procedure does and what is known about its accuracy; this report states how it is done.</p>
+    <p>The description refers to the source code published at <a href="https://github.com/maiklovenotwar/ISI-Github-Collector">https://github.com/maiklovenotwar/ISI-Github-Collector</a> (commit <code>6413244</code>). Figures refer to the project database on 16 October 2026 unless another date is given; they are the same figures as in the academic report. Paths are given relative to the root of the repository. The project database is a MySQL 8.0 database; the automated tests use SQLite.</p>
+    <p>The matching of organizations to the Orbis company database is a separate workstream. Chapter 15 summarises its state; its procedure is documented in <code>docs/methodology/orbis_enrichment.md</code>.</p>
+  </div>
+</section>
+
+<section class="chapter" id="system-overview">
+  <div class="num">2</div>
+  <div class="body">
+    <h2>System Overview</h2>
+    <p>The pipeline consists of independent scripts that are run one after another. Each script reads from and writes to the database and writes only its own columns, so that a later step does not overwrite the result of an earlier one. Table 1 lists the steps in the order of execution.</p>
+    <div class="table-wrap wide">
+      <table><caption>Table 1. Steps of the pipeline</caption>
+        <thead><tr><th>Step</th><th>Script</th><th>Source</th><th>Writes</th></tr></thead>
+        <tbody>
+          <tr><td>Repository search</td><td><code>scripts/collection/collect_repositories.py</code></td><td>GitHub REST search API</td><td><code>repositories</code>, owner rows in <code>contributors</code> and <code>organizations</code></td></tr>
+          <tr><td>Organization profiles</td><td><code>scripts/enrichment/enrich_org_data_graphql.py</code></td><td>GitHub GraphQL API</td><td>empty profile columns of <code>organizations</code></td></tr>
+          <tr><td>Account profiles</td><td><code>scripts/enrichment/enrich_contributor_profiles.py</code></td><td>GitHub GraphQL API</td><td>profile columns of <code>contributors</code></td></tr>
+          <tr><td>Geocoding</td><td><code>scripts/enrichment/update_location_geocoding.py</code></td><td>cache, rule tables, Nominatim</td><td><code>country_code</code>, <code>region</code></td></tr>
+          <tr><td>Web domains</td><td><code>scripts/enrichment/enrich_cctld.py</code></td><td><code>blog</code> and <code>email</code> columns</td><td><code>country_code_cctld</code> and related columns</td></tr>
+          <tr><td>Contributor lists</td><td><code>scripts/collection/collect_contributor_network.py</code></td><td>GitHub REST API</td><td><code>repository_contributors</code>, new rows in <code>contributors</code></td></tr>
+          <tr><td>Repository statistics</td><td><code>scripts/enrichment/enrich_repository_stats.py</code></td><td>GitHub GraphQL API</td><td><code>commits_count</code>, <code>pull_requests_count</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The code is organised as the Python package <code>src/github_collector/</code>: <code>api/</code> (REST client with token pool, retries and response cache), <code>repository_collector.py</code> (search and storage of repositories), <code>owners/</code> (owner accounts), <code>enrichment/</code> (profiles, repository statistics, web domains, Orbis), <code>geocoding/</code> (country assignment), <code>database/</code> (models and access layer) and <code>export/</code> (CSV export). Configuration is read from environment variables (<code>.env.template</code> lists them); the database is selected with <code>DATABASE_URL</code>. The scripts log to <code>logs/</code>. The contributor collection and the web-domain step record a run identifier (UUID) with each row they write, so that the rows of one run can be identified and removed.</p>
+  </div>
+</section>
+
+<section class="chapter" id="data-source-and-units-of-observation">
+  <div class="num">3</div>
+  <div class="body">
+    <h2>Data Source and Units of Observation</h2>
+    <p>All data come from the public interfaces of GitHub. Table 2 lists the endpoints used.</p>
+    <div class="table-wrap wide">
+      <table><caption>Table 2. GitHub interfaces used</caption>
+        <thead><tr><th>Interface</th><th>Purpose</th><th>Code</th></tr></thead>
+        <tbody>
+          <tr><td>REST <code>GET /search/repositories</code></td><td>population of repositories</td><td><code>api/github_api.py</code>, <code>repository_collector.py</code></td></tr>
+          <tr><td>REST <code>GET /orgs/{org}</code></td><td>profile of an organization that owns a repository</td><td><code>owners/owner_processor.py</code></td></tr>
+          <tr><td>REST <code>GET /users/{user}</code></td><td>profile of a user that owns a repository</td><td><code>owners/owner_processor.py</code></td></tr>
+          <tr><td>REST <code>GET /repos/{owner}/{repo}/contributors?anon=true</code></td><td>contributor list of a repository</td><td><code>scripts/collection/collect_repository_contributors.py</code></td></tr>
+          <tr><td>GraphQL <code>user(login:)</code>, <code>organization(login:)</code></td><td>profile enrichment, 100 accounts per request</td><td><code>enrichment/contributor_profiles.py</code>, <code>scripts/enrichment/enrich_org_data_graphql.py</code></td></tr>
+          <tr><td>GraphQL <code>repository(owner:, name:)</code></td><td>commit and pull-request counts</td><td><code>enrichment/graphql_handler.py</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The units of observation correspond to the tables of the database (chapter 12):</p>
+    <ul>
+    <li><code>repositories</code>: one row per repository, keyed by the numeric GitHub repository identifier.</li>
+    <li><code>contributors</code>: one row per GitHub account, irrespective of its role, keyed by the numeric GitHub account identifier. The column <code>type</code> holds the account type reported by GitHub (<code>User</code>, <code>Organization</code>, <code>Bot</code>).</li>
+    <li><code>organizations</code>: one row per organization that owns a collected repository, keyed by the same identifier.</li>
+    <li><code>repository_contributors</code>: one row per repository and contributing account, with the number of commits.</li>
+    </ul>
+    <p>Accounts are identified by their numeric identifier, which GitHub keeps when an account is renamed; the login is stored as an attribute. An organization that owns a repository has a row in <code>organizations</code> and a placeholder row in <code>contributors</code>, because <code>repositories.owner_id</code> refers to <code>contributors</code>. Chapter 8 states which of the two rows is used.</p>
+  </div>
+</section>
+
+<section class="chapter" id="definition-of-the-population">
+  <div class="num">4</div>
+  <div class="body">
+    <h2>Definition of the Population</h2>
+    <h3>4.1  Search query</h3>
+    <p>The population is defined by the query that <code>repository_collector.py</code> sends to the repository search. Two modes exist:</p>
+    <pre class="wide">created:&lt;start&gt;..&lt;end&gt; stars:&gt;=&lt;minimum&gt;                  (standard mode, --min-stars)
+created:&lt;start&gt;..&lt;end&gt; stars:&lt;minimum&gt;..&lt;maximum&gt;         (star-range mode, --star-range MIN MAX)</pre>
+    <p>Start and end are timestamps in ISO 8601 format with a resolution of one second. Results are requested with <code>sort=stars</code> and <code>order=desc</code>. The default minimum is 100 stars (<code>--min-stars</code>); the bounds of the star-range mode are inclusive.</p>
+    <h3>4.2  Exclusion of forks</h3>
+    <p>The search returns forks only when the query contains <code>fork:true</code> or <code>fork:only</code>; the query contains neither. The column <code>repositories.fork</code> is therefore <code>False</code> for every collected repository and does not indicate a missing value. <code>scripts/diagnostics/count_excluded_forks.py</code> estimates the size of the exclusion from the totals that the search announces with and without <code>fork:only</code> (Table 3).</p>
+    <div class="table-wrap wide">
+      <table><caption>Table 3. Forks and non-fork repositories announced by the search, 13 October 2026</caption>
+        <thead><tr><th class="n">Stars at least</th><th class="n">Forks</th><th class="n">Non-fork repositories</th><th class="n">Forks per 100 non-forks</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td class="n">7,095,401</td><td class="n">32,534,721</td><td class="n">21.8</td></tr>
+          <tr><td class="n">10</td><td class="n">111,525</td><td class="n">2,902,023</td><td class="n">3.8</td></tr>
+          <tr><td class="n">100</td><td class="n">10,104</td><td class="n">483,785</td><td class="n">2.1</td></tr>
+          <tr><td class="n">1,000</td><td class="n">773</td><td class="n">65,551</td><td class="n">1.2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>4.3  Temporal reference</h3>
+    <p>Each repository row carries the time of its retrieval (<code>collected_at</code>) and the star count at that time (<code>stars_at_collection</code>). A repeated retrieval overwrites both. The repository columns <code>stargazers_count</code>, <code>forks_count</code> and <code>open_issues_count</code> are states at retrieval; their history is not recorded. In the project database the 27,498,495 repositories were retrieved between 28 November 2025 and 18 January 2026; for 5,294,213 (19 per cent) <code>collected_at</code> is <code>NULL</code>, because they were stored before the column was introduced. Query 2 of <code>scripts/diagnostics/methodology_checks.sql</code> counts the retrievals per month.</p>
+  </div>
+</section>
+
+<section class="chapter" id="data-collection-and-completeness">
+  <div class="num">5</div>
+  <div class="body">
+    <h2>Data Collection and Completeness</h2>
+    <h3>5.1  Division of the period</h3>
+    <p>The search returns at most 1,000 results per query (<code>GITHUB_MAX_RESULTS</code>, default 1,000). <code>repository_collector.py</code> divides the requested time range into periods of 30 days (<code>REPOSITORY_INITIAL_PERIOD_DAYS</code>). The first page of each period states the number of matches (<code>total_count</code>). If it exceeds 1,000, the period is divided into <em>n</em> equal parts, where <em>n</em> is the number of matches divided by 1,000 (integer division) plus one, and the parts replace the period in the list of open periods. Each part is processed in the same way, including further division. Periods are closed intervals; two adjacent parts share their boundary second. A repository retrieved twice is stored once, because rows are written by repository identifier (upsert). GitHub resolves creation times to the second, so a period of one second cannot be divided further; if it holds more than 1,000 matches, the first 1,000 by stars are collected and the period is recorded as truncated.</p>
+    <h3>5.2  Pagination and state</h3>
+    <p>Each period is requested in pages of 100 results (<code>GITHUB_PAGE_SIZE</code>). After every page the progress is written to a state file (<code>data/collection_state.json</code> by default): the list of periods, the index of the current period, the current page and the parameters of the collection (mode, star range). An interrupted call with the same arguments resumes at the period and page at which it stopped. A call with other arguments starts a new collection only if the recorded one has finished; otherwise it is refused.</p>
+    <p>Search responses are cached on disk for 24 hours (<code>CACHE_EXPIRY</code>, default 86,400 seconds); a repeated request within that time returns the stored response, including its star counts.</p>
+    <h3>5.3  Error handling</h3>
+    <ul>
+    <li>A search request is attempted up to three times, including after a network error or an exhausted rate limit. If it still fails, the collection ends with an error, the period remains open and the script exits with code 1. Invalid tokens end the collection at once.</li>
+    <li>If the retrieved repositories cannot be written to the database, the collection also ends with exit code 1, and the page is not counted as collected.</li>
+    <li>Text values longer than their column, such as a default branch name of more than 100 characters, are shortened to the column length and logged (<code>_cut_to_column_length</code> in <code>repository_collector.py</code>).</li>
+    <li>A response marked <code>incomplete_results</code> (the search exceeded GitHub's time limit) is logged and recorded in the state file; the missing matches cannot be recovered.</li>
+    </ul>
+    <h3>5.4  Audit log</h3>
+    <p>Each finished period is appended to <code>logs/collection_audit.jsonl</code> with the number of matches announced, the number retrieved, the number written and the difference between announced and retrieved. <code>scripts/diagnostics/summarize_collection_audit.py</code> lists the periods in which fewer repositories arrived than announced or fewer were stored than retrieved. The announced total is documented by GitHub as an approximation; agreement with the collected number is therefore not proof of completeness.</p>
+    <h3>5.5  Check of the result</h3>
+    <p>Query 1 of <code>scripts/diagnostics/methodology_checks.sql</code> counts the repositories per month of creation, together with the counts by star class. On 13 October 2026 every month from January 2008 to December 2025 was present, and no month lay markedly below both of its neighbours. Among repositories created from January to July 2012, about 51,300 per month have fewer than five stars; from August to December 2012, about 17,900. The number with at least ten stars does not change (about 5,300 and 5,500 per month). The break coincides with the introduction of stars on GitHub in August 2012.</p>
+    <h3>5.6  Defects of versions before 13 October 2026</h3>
+    <p>Six defects of earlier versions could lose data without an error: failed searches were recorded as empty periods; the first part of a divided period was skipped in the standard mode; the star-range mode did not divide periods; errors while writing to the database were logged and ignored; a finished state file was resumed by the next call regardless of its arguments; and a collection resumed with <code>--limit</code> closed the open period after one page. In addition, <code>repositories.organization_id</code> was not set when a repository was stored from a search result. The monthly count above shows no gap that would indicate a loss in the project database. The defects are described in <code>docs/methodology/repository_collection.md</code>.</p>
+  </div>
+</section>
+
+<section class="chapter" id="account-information">
+  <div class="num">6</div>
+  <div class="body">
+    <h2>Account Information</h2>
+    <h3>6.1  Owners</h3>
+    <p><code>owners/owner_processor.py</code> stores the owner of each repository. An owner of type <code>Organization</code> is retrieved from <code>GET /orgs/{org}</code> and written to <code>organizations</code>; every owner, including organizations, receives a row in <code>contributors</code>. An owner already present in the database is not retrieved again. If the retrieval of an owner fails, the owner is treated as known for the rest of the run and the repository is stored without a new owner row; on 14 October 2026 no repository was stored without one. Organizations are looked up by login.</p>
+    <h3>6.2  Profile enrichment</h3>
+    <p>Two scripts fill the profile columns through the GraphQL API, each requesting 100 accounts per call.</p>
+    <ul>
+    <li><code>scripts/enrichment/enrich_org_data_graphql.py</code> selects organizations whose <code>name</code>, <code>blog</code>, <code>email</code>, <code>location</code>, <code>created_at</code> and <code>country_code</code> are all <code>NULL</code> and whose <code>enrichment_checked_at</code> is <code>NULL</code>. It fills only columns that are <code>NULL</code> and does not overwrite existing values.</li>
+    <li><code>scripts/enrichment/enrich_contributor_profiles.py</code> selects accounts with <code>enrichment_checked_at</code> <code>NULL</code>, restricted by <code>--scope</code> to accounts that appear in <code>repository_contributors</code> (<code>new</code>), all others (<code>gap</code>) or both (<code>all</code>, default). It overwrites the profile columns with the values reported by GitHub. It starts one process per configured token (<code>--shard-index</code>, <code>--shard-count</code>); accounts are divided among the processes by their identifier.</li>
+    </ul>
+    <p>Both scripts set <code>enrichment_checked_at</code> on every row for which GitHub gave a definite answer, including accounts that no longer exist and profiles without content. A row without a country can thus be attributed either to a profile that was never retrieved (<code>enrichment_checked_at</code> <code>NULL</code>) or to a profile without a usable location. If a request fails, the column remains <code>NULL</code> and the row is selected again by the next run.</p>
+    <h3>6.3  Consistency of location and country</h3>
+    <p>When a profile or an owner is stored again and the location differs from the stored one after normalisation, <code>country_code</code> and <code>region</code> are set to <code>NULL</code> (<code>update_contributor</code> and <code>update_organization</code> in <code>database/database.py</code>), so that the next geocoding run determines them anew. Rows affected before this rule was introduced were reset on 14 and 15 October 2026 with <code>scripts/maintenance/reset_stale_countries.py</code>, after a CSV backup to <code>data/backups/</code>, and geocoded again by 16 October 2026. The profiles of all user accounts were retrieved again between 28 August and 6 September 2026. No column records when a location or a country was determined.</p>
+  </div>
+</section>
+
+<section class="chapter" id="country-assignment-for-accounts">
+  <div class="num">7</div>
+  <div class="body">
+    <h2>Country Assignment for Accounts</h2>
+    <h3>7.1  Input and output</h3>
+    <p>The input is the profile column <code>location</code>. <code>scripts/enrichment/update_location_geocoding.py</code> (implemented in <code>cli/geocoding_command.py</code>) selects the rows of <code>contributors</code> and <code>organizations</code> with a location and without a country code (all rows with <code>--force</code>) and writes <code>country_code</code> (ISO 3166-1 alpha-2) and <code>region</code>. A location that is not a place, or for which the geocoder returns no match, receives an empty string in <code>country_code</code>, so that it is not requested again; in analyses the empty string is treated as a missing value. On 16 October 2026, 35.7 per cent of the 9,034,973 user accounts and 33.3 per cent of the 735,242 organizations stated a location; of these, 95.7 and 93.7 per cent had a country (queries 3 and 4 of <code>scripts/diagnostics/methodology_checks.sql</code>).</p>
+    <h3>7.2  Order of resolution</h3>
+    <p><code>geocoding/geocoding_service.py</code> resolves a location string in the following order. The first step that yields a result ends the procedure.</p>
+    <ol>
+    <li><strong>Cleaning and normalisation</strong> (<code>geocoding/normalization.py</code>, <code>preprocess_location</code>). Additions without geographic meaning (<code>remote</code>, <code>home office</code>, <code>anywhere</code> and similar), URLs, e-mail addresses and brackets are removed; the string is lower-cased and whitespace is unified. A string that is empty afterwards has no country.</li>
+    <li><strong>Curated tables before the cache.</strong> If the table of special cases or the table of corrections assigns the string to a country, that entry is used and replaces a cache entry with another country. An explicit entry stating that a string has no country (for example <code>World</code>, <code>Mars</code>) also takes precedence over the cache.</li>
+    <li><strong>Cache.</strong> Otherwise a cached result for the same string is used. Cache entries written by a text rule or a table carry no coordinates; they are not used but determined again, so that a change of the rules also reaches strings that are already cached.</li>
+    <li><strong>Patterns for non-places.</strong> Strings that are a URL, a time zone, or consist only of emoji, digits or two letters are treated as not a place.</li>
+    <li><strong>Text rules</strong> (<code>geocoding/heuristics.py</code>, section 7.4).</li>
+    <li><strong>Nominatim</strong> (section 7.6).</li>
+    </ol>
+    <p>Every result passes through the territory rule (section 7.5) before it is stored. The result is written to the cache together with its source (<code>mapping</code>, <code>heuristic</code>, <code>nominatim</code>, <code>no_result</code>) and the time (<code>cached_at</code>).</p>
+    <h3>7.3  Curated tables</h3>
+    <div class="table-wrap wide">
+      <table><caption>Table 4. Curated tables of the geocoding</caption>
+        <thead><tr><th>Table</th><th>Location in the code</th><th class="n">Entries</th><th>Content</th></tr></thead>
+        <tbody>
+          <tr><td>Special cases</td><td><code>HeuristicResolver._problematic_location_map</code> in <code>geocoding/heuristics.py</code></td><td class="n">291</td><td>frequent or problematic strings with a country or without one</td></tr>
+          <tr><td>Country aliases</td><td><code>HeuristicResolver._country_aliases</code></td><td class="n">149</td><td>country names and common aliases with their code</td></tr>
+          <tr><td>Corrections</td><td><code>geocoding/data/location_corrections.csv</code></td><td class="n">441</td><td>strings for which the geocoder had returned a wrong country, each checked by hand, with the correct country or none and the reason</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>7.4  Text rules</h3>
+    <p>The text rules are applied in this order: the name of a US state as the whole string, after a comma or as a separate word (60 names); a two-letter US state abbreviation at the end (55 abbreviations, including territories); one of 56 large US cities at the beginning; a country alias as the whole string; a two-letter country code at the end. Ambiguous endings are treated as follows (Table 5).</p>
+    <div class="table-wrap wide">
+      <table><caption>Table 5. Conventions for ambiguous names</caption>
+        <thead><tr><th>Case</th><th>Rule</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Ending that is both a US state abbreviation and a country code (18 endings: <code>AL</code>, <code>AR</code>, <code>CO</code>, <code>DE</code>, <code>GA</code>, <code>ID</code>, <code>IN</code>, <code>LA</code>, <code>MD</code>, <code>ME</code>, <code>MN</code>, <code>MS</code>, <code>MT</code>, <code>PA</code>, <code>PR</code>, <code>SC</code>, <code>SD</code>, <code>VA</code>) or the abbreviation of a Brazilian or Australian state or a Canadian province (14 further endings such as <code>PE</code>, <code>SA</code>, <code>SE</code>)</td><td>United States only if the preceding text is a known US city or state; otherwise Nominatim decides</td><td><code>Recife - PE</code>: Brazil</td></tr>
+          <tr><td>Ending <code>CA</code></td><td>California, unless the preceding text names one of 25 Canadian cities or provinces or a Canadian province abbreviation; never passed to Nominatim</td><td><code>Tracy, CA</code>: United States; <code>Toronto, CA</code>: Canada</td></tr>
+          <tr><td>Ending <code>WA</code></td><td>Washington only if the preceding text is a known US city or state; otherwise Nominatim decides</td><td><code>Perth, WA</code>: Nominatim</td></tr>
+          <tr><td>Ending <code>Georgia</code></td><td>US state only if the preceding text is a known US city or state; otherwise Nominatim decides</td><td><code>Tbilisi, Georgia</code>: Nominatim</td></tr>
+          <tr><td><code>Georgia</code> as the whole string</td><td>US state</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The <code>CA</code> ending is not passed to Nominatim because Nominatim reads it as the country code of Canada; in a trial it placed <code>Tracy, CA</code> in Canada and <code>Valencia, CA</code> in Venezuela.</p>
+    <h3>7.5  Territories</h3>
+    <p>Nominatim reports Taiwan, Jersey or Greenland under their own code, but Hong Kong and Macau under China, Puerto Rico and Guam under the United States, and the French overseas regions under France. <code>geocoding/territories.py</code> assigns the territory's own ISO code whenever the region or a part of the address of a result carries the exact name of such a territory. The table covers 26 territories of China, the United States, France, the Netherlands, Australia and Norway, among them <code>HK</code>, <code>MO</code>, <code>PR</code>, <code>GU</code>, <code>VI</code>, <code>RE</code>, <code>GP</code>, <code>MQ</code>, <code>NC</code>, <code>AW</code>, <code>CW</code> and <code>SJ</code>. The rule is applied to results of every stage.</p>
+    <h3>7.6  Nominatim</h3>
+    <p>The remaining strings are sent to the Nominatim service of OpenStreetMap through the <code>geopy</code> library (<code>geocoding/nominatim_client.py</code>), with English output and address details, one request per second (<code>geocoding/rate_limiter.py</code>). The first result is used; its country code and region are stored. If the service does not answer (timeout, rate limit, service error), the request is repeated once after five seconds. If it still fails, nothing is stored, the row remains open, and the run ends with exit code 1.</p>
+    <h3>7.7  Cache</h3>
+    <p>The cache (<code>data/cache/geocoding_cache.json</code>) holds one entry per normalised location string, without an expiry date. <code>scripts/diagnostics/inspect_geocoding_cache.py</code> summarises it without sending requests. <code>update_location_geocoding.py --retry-empty</code> removes all entries without a country and processes the rows marked as not geocodable again; this option was not used on the project database. A random sample of 500 of the 74,032 entries without a country was sent to Nominatim again on 13 October 2026; 17 (3.4 per cent) then yielded a country, about five of them evidently wrong.</p>
+    <h3>7.8  Validation against a reference list</h3>
+    <p>The reference list <code>tests/resources/geocoding_gold_standard.json</code> contains 1,068 location strings with the expected country or the expectation that none applies. It was assembled from the most frequent strings (30 per cent), strings stratified by country (30 per cent), known problematic cases and a random remainder; during labelling the result of the procedure was shown as a suggestion. <code>scripts/maintenance/benchmark_geocoding.py --no-cache</code> runs the procedure on the list without the cache. Table 6 shows the run of 16 October 2026; Nominatim answered every request.</p>
+    <div class="table-wrap wide">
+      <table><caption>Table 6. Results on the reference list, 16 October 2026</caption>
+        <thead><tr><th>Outcome</th><th class="n">Entries</th><th class="n">Share</th></tr></thead>
+        <tbody>
+          <tr><td>Result as expected</td><td class="n">1,015 of 1,068</td><td class="n">95.0%</td></tr>
+          <tr><td>Expected country assigned</td><td class="n">944 of 997</td><td class="n">94.7%</td></tr>
+          <tr><td>No country although one was expected</td><td class="n">34 of 997</td><td class="n">3.4%</td></tr>
+          <tr><td>A different country assigned</td><td class="n">19 of 997</td><td class="n">1.9%</td></tr>
+          <tr><td>Correctly without a country</td><td class="n">71 of 71</td><td class="n">100%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>By stage, the curated tables resolved 86 entries (85 as expected), the text rules 147 (145) and Nominatim 730 (714). Three of the 19 differences follow from the list rather than the procedure: it expects France for <code>Nouméa</code> and <code>Réunion</code>, which keep their own codes, and Brazil for <code>Lima - Perú</code>.</p>
+    <h3>7.9  Review of stored results</h3>
+    <p>On 15 October 2026 the cache (292,470 strings, 193,576 with a geocoder match) was compared with the stored locations, read-only. Three kinds of error were found:</p>
+    <ul>
+    <li>Strings that name exactly one country were placed in another (2,688 strings, 11,027 rows; for example <code>Istanbul/Turkey</code> in Italy). They were found by searching each string for country names; strings in which a country name is part of a place name (<code>New Jersey</code>, <code>London, Ontario</code>; 543 strings) were excluded.</li>
+    <li>Strings that are not a single place received a country (continents, jokes, abbreviations matched to an unrelated place). The most frequent strings whose words do not occur in the geocoder's address were reviewed by hand.</li>
+    <li>The former rule for two-letter endings read state abbreviations as country codes. Compared with Nominatim results for the same strings it was wrong more often than right for several endings (<code>PE</code> in 1,089 rows against 37). The rule was changed as described in Table 5.</li>
+    </ul>
+    <p>Strings of the first kind with at least three rows (377) and the most frequent strings of the second kind were reviewed by hand, which gave 399 entries in the table of corrections; a second pass over strings whose stored country differed from the cached one added 42. A general rule ("a separately written country name decides") was tested and rejected, because it also changed strings with several places. The affected rows were reset with <code>scripts/maintenance/reset_stale_countries.py --write</code> after a CSV backup and geocoded again. Without <code>--write</code>, the script reports the rows whose stored country no longer agrees with the current tables and rules; on 16 October 2026 three such rows remained. In total the country of 46,023 rows of <code>contributors</code> and 8,055 organizations changed: 29,608 and 5,372 to another country, 16,415 and 2,683 to none.</p>
+  </div>
+</section>
+
+<section class="chapter" id="country-attribution-for-repositories">
+  <div class="num">8</div>
+  <div class="body">
+    <h2>Country Attribution for Repositories</h2>
+    <h3>8.1  Counting rules</h3>
+    <ul>
+    <li>Organizations are counted and analysed through the table <code>organizations</code>.</li>
+    <li>Persons are the rows of <code>contributors</code> with <code>type = 'User'</code>.</li>
+    <li>Rows of <code>contributors</code> with <code>type = 'Organization'</code> are placeholders; they are not counted and their country is not used. On 16 October 2026, 735,205 organizations had both rows; for 118,490 of them only the row in <code>organizations</code> carried a country, for 398 only the placeholder, and for 64 the two differed (query 5 of <code>scripts/diagnostics/methodology_checks.sql</code>).</li>
+    <li>Rows with <code>type = 'Bot'</code> are not counted as persons.</li>
+    </ul>
+    <h3>8.2  Country of a repository</h3>
+    <p>The country of a repository is the country of its owner, read from <code>organizations</code> when the owner's account type is <code>Organization</code> and from <code>contributors</code> otherwise:</p>
+    <pre class="wide">SELECT r.id,
+       CASE WHEN c.type = 'Organization' THEN o.country_code
+            ELSE c.country_code END AS country_code
+FROM repositories r
+LEFT JOIN contributors c ON c.id = r.owner_id
+LEFT JOIN organizations o ON o.id = r.owner_id;</pre>
+    <p>The rule uses the account type rather than <code>repositories.organization_id</code>, which versions before 13 October 2026 did not set; on 16 October 2026 it was set for 1,271,265 of the 2,951,091 repositories owned by an organization (query 6). By this rule 12,558,621 of 24,547,404 repositories owned by users (51.2 per cent) and 1,263,438 of 2,951,091 repositories owned by organizations (42.8 per cent) had a country. The CSV export writes each table separately and does not apply the rule; it has to be applied in the analysis.</p>
+    <h3>8.3  Sources of a country</h3>
+    <div class="table-wrap wide">
+      <table><caption>Table 7. Country columns</caption>
+        <thead><tr><th>Column</th><th>Source</th><th>Written by</th><th>Available for</th></tr></thead>
+        <tbody>
+          <tr><td><code>country_code</code></td><td>profile location, geocoded</td><td><code>update_location_geocoding.py</code></td><td>persons and organizations</td></tr>
+          <tr><td><code>country_code_cctld</code></td><td>country-code top-level domain of website or e-mail address</td><td><code>enrich_cctld.py</code></td><td>persons and organizations</td></tr>
+          <tr><td><code>country_code_orbis</code></td><td>country of the matched Orbis entity</td><td><code>orbis_matching_pipeline.py</code></td><td>organizations</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>No script writes the column of another source. Results are based on <code>country_code</code> alone.</p>
+  </div>
+</section>
+
+<section class="chapter" id="web-domains-as-a-sensitivity-indicator">
+  <div class="num">9</div>
+  <div class="body">
+    <h2>Web Domains as a Sensitivity Indicator</h2>
+    <h3>9.1  Derivation</h3>
+    <p><code>enrichment/cctld.py</code> derives a country from the column <code>blog</code> and from the column <code>email</code>. From the website, scheme, path, query, user information, port and a leading <code>www.</code> are removed; IP addresses yield no domain. From the e-mail address the part after <code>@</code> is used; addresses of the form <code>users.noreply.github.com</code> and addresses with more than one <code>@</code> are discarded. A domain is then evaluated by four rules, in this order (<code>domain_to_country_code</code>):</p>
+    <ol>
+    <li><strong>Service domains.</strong> Domains of services used worldwide and their subdomains yield no country: <code>linktr.ee</code>, <code>buymeacoff.ee</code>, <code>coff.ee</code>, <code>lin.ee</code>, <code>notion.so</code>, <code>youtu.be</code>, the link shorteners <code>rb.gy</code>, <code>short.gy</code> and <code>surl.li</code>, and the hosting services <code>sr.ht</code>, <code>self.so</code>, <code>free.nf</code> and <code>co.nf</code>. A different domain that merely ends in the same letters, such as <code>mynotion.so</code>, is evaluated normally.</li>
+    <li><strong>Second-level country domains.</strong> 44 combinations such as <code>co.uk</code>, <code>com.br</code> or <code>co.jp</code> are mapped to their country.</li>
+    <li><strong>Generic and filtered endings.</strong> Generic endings (<code>com</code>, <code>org</code>, <code>net</code>, <code>dev</code>, <code>app</code> and others) yield no country, and so do 52 country-code endings that are used mainly without reference to the country: endings commonly used as generic (<code>io</code>, <code>co</code>, <code>ai</code>, <code>me</code>, <code>tv</code> and others), free or very cheap endings (<code>tk</code>, <code>ml</code>, <code>ga</code>, <code>cf</code>, <code>gq</code>, <code>pw</code>) and endings used mostly for word play (<code>re</code>, <code>pm</code>, <code>tf</code>, <code>st</code>, <code>cx</code>, <code>ax</code>, <code>gs</code>, <code>yt</code>, <code>wf</code>, <code>tl</code>, <code>lc</code>, <code>ag</code>).</li>
+    <li><strong>ISO validation.</strong> <code>uk</code> is mapped to <code>GB</code>; any other ending counts only if it is a valid ISO 3166-1 alpha-2 code.</li>
+    </ol>
+    <p>If both columns yield a country and they agree, the source is recorded as <code>both</code>; if they differ, the website takes precedence (<code>blog</code>). The endings <code>.rs</code> and <code>.is</code> remain in use although they are frequent in word play; results for these countries should be read with caution.</p>
+    <h3>9.2  Selection and validation</h3>
+    <p><code>scripts/enrichment/enrich_cctld.py</code> processes <code>organizations</code> by default and <code>contributors</code> with <code>--entity contributors</code>. It selects rows whose <code>country_code</code> and <code>country_code_cctld</code> are empty and which have a website or e-mail address; for organizations, <code>country_code_orbis</code> must also be empty. It writes <code>country_code_cctld</code>, <code>cctld_source</code>, <code>cctld_enriched_at</code> and <code>cctld_run_id</code>. Before writing, the script compares its result with <code>country_code</code> for all rows that have both, and stops if fewer than 80 per cent agree; it also lists the fifteen countries with the lowest agreement among those with at least 20 compared rows. With <code>--recheck</code> it recomputes all stored assignments with the current rules and writes only those that change. On 16 October 2026 the agreement was 95.6 per cent for 47,199 organizations and 89.3 per cent for 242,080 accounts. Queries 7 to 9 of <code>scripts/diagnostics/methodology_checks.sql</code> list the countries assigned by each source.</p>
+  </div>
+</section>
+
+<section class="chapter" id="contributor-networks">
+  <div class="num">10</div>
+  <div class="body">
+    <h2>Contributor Networks</h2>
+    <h3>10.1  Procedure</h3>
+    <p><code>scripts/collection/collect_contributor_network.py</code> runs four steps for one range of star counts; each step is a separate script and can be run on its own (Table 8).</p>
+    <div class="table-wrap wide">
+      <table><caption>Table 8. Steps of the contributor collection</caption>
+        <thead><tr><th>Step</th><th>Script</th><th>Source</th><th>Writes</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>scripts/collection/collect_repository_contributors.py</code></td><td><code>GET /repos/{owner}/{repo}/contributors</code> with <code>anon=true</code></td><td><code>repository_contributors</code></td></tr>
+          <tr><td>2</td><td><code>scripts/collection/add_missing_contributors.py</code></td><td><code>repository_contributors</code></td><td>new rows in <code>contributors</code> (<code>id</code>, <code>login</code>, <code>type</code>); <code>repository_contributors.contributor_id</code></td></tr>
+          <tr><td>3</td><td><code>scripts/enrichment/enrich_contributor_profiles.py --scope new</code></td><td>GraphQL API</td><td>profile columns of <code>contributors</code></td></tr>
+          <tr><td>4</td><td><code>scripts/enrichment/update_location_geocoding.py --contributors</code></td><td>geocoding</td><td><code>contributors.country_code</code>, <code>region</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Step 1 selects the repositories with <code>stargazers_count</code> in the half-open range from <code>--min-stars</code> (inclusive, default 5,000) to <code>--max-stars</code> (exclusive) that have no row in <code>repository_contributors</code> yet; <code>--force</code> selects all of them. It requests up to <code>--max-pages</code> pages (default 20) of 100 entries. Rows are written with an upsert on the unique key (<code>repository_id</code>, <code>github_login</code>) in blocks of 500 (<code>--flush-size</code>) and carry the identifier of the run (<code>run_id</code>). Values longer than their column are shortened and logged. If a block cannot be written, its rows are written one at a time; a repository of which only some rows were written is listed in the log and completed with <code>--force</code>. Repositories for which GitHub returned an error are written to <code>failed_repos_&lt;run&gt;.txt</code> in the log directory. A lost database connection ends the run. Steps 1 and 2 use MySQL-specific statements and run on other databases only with <code>--dry-run</code>.</p>
+    <h3>10.2  Identification of accounts</h3>
+    <p>Entries returned with a login are matched to <code>contributors</code> by the numeric identifier (<code>github_user_id</code> equals <code>contributors.id</code>). Anonymous entries (commits whose author e-mail address is not linked to an account) are stored with <code>is_anonymous</code> set, without <code>github_user_id</code>, and with the substitute login <code>anon:&lt;e-mail or name&gt;</code>. Accounts of type <code>Bot</code> are stored in <code>repository_contributors</code> but receive no row in <code>contributors</code> in step 2.</p>
+    <h3>10.3  Coverage and limits</h3>
+    <div class="table-wrap wide">
+      <table><caption>Table 9. Coverage on 29 August 2026 (cumulative by star threshold)</caption>
+        <thead><tr><th>Measure</th><th class="n">≥ 5,000 stars</th><th class="n">≥ 1,000 stars</th><th class="n">≥ 500 stars</th></tr></thead>
+        <tbody>
+          <tr><td>Repositories with a list / in range</td><td class="n">10,230 / 10,278</td><td class="n">55,182 / 55,493</td><td class="n">105,809 / 106,527</td></tr>
+          <tr><td>Rows in <code>repository_contributors</code></td><td class="n">1,863,548</td><td class="n">4,102,819</td><td class="n">5,356,175</td></tr>
+          <tr><td>Rows linked to an account</td><td class="n">62.1%</td><td class="n">67.6%</td><td class="n">68.9%</td></tr>
+          <tr><td>Rows whose account has a country</td><td class="n">39.3%</td><td class="n">42.2%</td><td class="n">40.9%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>GitHub links only the first 500 author e-mail addresses of a repository to accounts; the rest appear as anonymous. A count on 14 October 2026 found no repository with 500 or more linked accounts (maximum 490). The 4,131,585 anonymous rows (30 per cent) partly result from this limit. The page limit of 2,000 entries was reached by three repositories. For some very large repositories GitHub does not return the list (HTTP 403). A deleted repository (HTTP 404) and a repository without commits (HTTP 204) both yield an empty list, are not recorded as failed, and are requested again in every run that covers their star count. Contributions are commit counts as reported by the endpoint. 195,412 rows have the type <code>Bot</code>; automated accounts registered as users are not recognised.</p>
+  </div>
+</section>
+
+<section class="chapter" id="repository-activity-measures">
+  <div class="num">11</div>
+  <div class="body">
+    <h2>Repository Activity Measures</h2>
+    <p><code>scripts/enrichment/enrich_repository_stats.py</code> selects repositories whose <code>commits_count</code> or <code>pull_requests_count</code> is <code>NULL</code> and requests, through <code>enrichment/graphql_handler.py</code>, the fields <code>pullRequests { totalCount }</code> and <code>defaultBranchRef { target { history { totalCount } } }</code> for several repositories per GraphQL request. <code>commits_count</code> is the number of commits on the default branch; <code>pull_requests_count</code> counts open, closed and merged pull requests together. The counts are written after each batch; a failed item is logged and does not abort the batch. The time of retrieval is not stored.</p>
+    <p>On 14 October 2026, 27,465,002 of 27,498,495 repositories (99.9 per cent) had both counts. For the other 33,493 GitHub returned no data, which the GraphQL API does when no repository exists under the stored owner and name (after deletion, renaming or a change to private). They are listed in the file of failed identifiers and selected again in every run. <code>repositories.contributors_count</code> is not collected and is <code>NULL</code>; until 14 October 2026 the script wrote 0 into it.</p>
+  </div>
+</section>
+
+<section class="chapter" id="database-structure">
+  <div class="num">12</div>
+  <div class="body">
+    <h2>Database Structure</h2>
+    <h3>12.1  Tables</h3>
+    <p>The models are defined in <code>src/github_collector/database/models.py</code> and documented column by column in <code>docs/architecture/database.md</code>. Table 10 summarises the tables.</p>
+    <div class="table-wrap wide">
+      <table><caption>Table 10. Tables of the database</caption>
+        <thead><tr><th>Table</th><th>Key</th><th>Content</th></tr></thead>
+        <tbody>
+          <tr><td><code>repositories</code></td><td>GitHub repository ID; <code>full_name</code> unique</td><td>descriptive fields, star, fork and issue counts, timestamps, <code>collected_at</code>, <code>stars_at_collection</code>, <code>owner_id</code> (→ <code>contributors</code>), <code>organization_id</code> (→ <code>organizations</code>), <code>commits_count</code>, <code>pull_requests_count</code></td></tr>
+          <tr><td><code>contributors</code></td><td>GitHub account ID; <code>login</code> unique</td><td>account type, profile fields, <code>location</code>, <code>country_code</code>, <code>region</code>, ccTLD columns, <code>enrichment_checked_at</code></td></tr>
+          <tr><td><code>organizations</code></td><td>GitHub account ID; <code>login</code> unique</td><td>profile fields, <code>location</code>, <code>country_code</code>, <code>region</code>, ccTLD columns, Orbis result columns, <code>enrichment_checked_at</code></td></tr>
+          <tr><td><code>repository_contributors</code></td><td>surrogate ID; unique (<code>repository_id</code>, <code>github_login</code>)</td><td><code>contributor_id</code>, <code>github_user_id</code>, <code>github_type</code>, <code>contributions</code>, <code>is_anonymous</code>, <code>collected_at</code>, <code>run_id</code></td></tr>
+          <tr><td><code>orbis_enrichments</code></td><td>surrogate ID; unique (<code>organization_id</code>, <code>run_id</code>)</td><td>history of Orbis matches with rollback (not used in the results)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>12.2  Schema changes</h3>
+    <p>Schema changes are SQL scripts in <code>scripts/migrations/</code> that are applied by hand; there is no automatic revision tracking. A comparison on 20 October 2026 showed that the project database and a database created from the models had drifted apart; <code>align_schema_with_models.sql</code> and corresponding changes to the models removed the differences. Since then a database initialised from the models has the same columns, types, defaults, indexes and foreign keys as the project database, except for <code>repositories.country_code_inf</code>, a column that exists only in the project database and is not used by the code. <code>scripts/maintenance/clone_schema.py</code> copies the table design of a database to another instance without data.</p>
+    <h3>12.3  Write paths</h3>
+    <p><code>docs/architecture/database.md</code> (section "Write Paths of the Enrichment Scripts") lists for every script the rows it selects and the columns it writes. Three properties follow: country codes are stored per source; profile retrievals are recorded in <code>enrichment_checked_at</code> separately from their result; and the organization enrichment fills empty columns only, while the account enrichment overwrites them with the values reported by GitHub.</p>
+  </div>
+</section>
+
+<section class="chapter" id="quality-assurance-and-reproducibility">
+  <div class="num">13</div>
+  <div class="body">
+    <h2>Quality Assurance and Reproducibility</h2>
+    <h3>13.1  Automated tests</h3>
+    <p>The test suite in <code>tests/</code> runs with <code>pytest</code> on a temporary SQLite database, which <code>tests/conftest.py</code> sets before any module of the package is imported. Tests that need the GitHub API or the Orbis database are marked (<code>external</code>, <code>orbis_integration</code>) and excluded by default. The continuous integration (<code>.github/workflows/ci.yml</code>) runs the pre-commit hooks (<code>ruff</code>, <code>black</code>, <code>detect-secrets</code>) and the test suite on Python 3.9 for every change.</p>
+    <h3>13.2  End-to-end test</h3>
+    <p>Every script of the pipeline was run end to end on a separate MySQL instance with the table design of the project database, filled with the 9,083 repositories created on 1 January 2026. The defects found stopped a run or affected exports and diagnostics; none changed stored values. They were corrected before the figures of this report were final.</p>
+    <h3>13.3  Backups and corrections</h3>
+    <p>Every correction that changed stored values was preceded by a CSV backup of the affected rows. Every corrected location string is listed in <code>src/github_collector/geocoding/data/location_corrections.csv</code> with the country and the reason.</p>
+    <h3>13.4  Sources of the figures</h3>
+    <div class="table-wrap wide">
+      <table><caption>Table 11. Scripts and queries behind the figures</caption>
+        <thead><tr><th>Figures</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>Repositories per month of creation, star classes, forks, fields not collected</td><td><code>scripts/diagnostics/methodology_checks.sql</code>, query 1</td></tr>
+          <tr><td>Retrievals per month</td><td>query 2</td></tr>
+          <tr><td>Accounts and organizations with a location and a country</td><td>queries 3 and 4</td></tr>
+          <tr><td>Organizations and their placeholder rows</td><td>query 5</td></tr>
+          <tr><td>Country of repositories by the owner rule</td><td>query 6</td></tr>
+          <tr><td>Countries from web domains and from geocoding</td><td>queries 7 to 9; <code>enrich_cctld.py --validate-only</code></td></tr>
+          <tr><td>Size of the fork exclusion</td><td><code>scripts/diagnostics/count_excluded_forks.py</code></td></tr>
+          <tr><td>Periods with fewer repositories than announced</td><td><code>scripts/diagnostics/summarize_collection_audit.py</code></td></tr>
+          <tr><td>Results on the reference list</td><td><code>scripts/maintenance/benchmark_geocoding.py --no-cache</code></td></tr>
+          <tr><td>Rows whose country no longer agrees with the procedure</td><td><code>scripts/maintenance/reset_stale_countries.py</code> (without <code>--write</code>)</td></tr>
+          <tr><td>Content of the geocoding cache</td><td><code>scripts/diagnostics/inspect_geocoding_cache.py</code></td></tr>
+          <tr><td>Export of all tables to CSV</td><td><code>scripts/export/export_tables_to_csv.py --tables all</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>All statements in <code>methodology_checks.sql</code> are <code>SELECT</code> statements. The queries 1 and 6 read the table <code>repositories</code> in full and take minutes to hours on the project database.</p>
+  </div>
+</section>
+
+<section class="chapter" id="limitations">
+  <div class="num">14</div>
+  <div class="body">
+    <h2>Limitations</h2>
+    <p>The limitations stated in the academic report have the following technical causes.</p>
+    <ul>
+    <li><strong>Missing locations.</strong> About two thirds of the accounts leave <code>location</code> empty; such rows have no <code>country_code</code>.</li>
+    <li><strong>Several places in one string.</strong> The procedure does not split a string; <code>Berlin / NYC</code> is resolved as a whole by Nominatim or not at all.</li>
+    <li><strong>Residual geocoding errors.</strong> Strings that name a country but were placed in another and occur only once or twice (about 2,300 strings, 2,600 rows) were not reviewed. Wrong matches for strings without a recognisable country name cannot be found automatically. Of the 289,920 distinct strings in the cache on 13 October 2026, 74,032 had no country, among them 19,276 that contain a country name as a word but have no match as a whole.</li>
+    <li><strong>No random accuracy sample.</strong> The reference list is not a random sample of accounts, and its labels were made with the result of the procedure visible.</li>
+    <li><strong>States at retrieval.</strong> Star counts, fork counts and locations describe the time of retrieval; no history is stored, and no column records when a location was geocoded or when activity counts were retrieved.</li>
+    <li><strong>Contributor lists.</strong> Only the first 500 author e-mail addresses are linked, at most 2,000 entries per repository are requested, and bots are recognised by account type only.</li>
+    <li><strong>Search totals.</strong> The totals announced by the search are approximations, and incomplete search answers cannot be recovered.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="chapter" id="outlook-orbis-matching">
+  <div class="num">15</div>
+  <div class="body">
+    <h2>Outlook: Orbis Matching</h2>
+    <p><code>scripts/enrichment/orbis_matching_pipeline.py</code> matches organizations to entities in the Orbis database (Bureau van Dijk) by web domain and, as a fallback, by name, and writes the country of the matched entity to <code>organizations.country_code_orbis</code> together with a row in <code>orbis_enrichments</code>. When several candidates remain, an entity is chosen only if its country or its website corroborates it. The matching has not been run on the project database, and no accuracy estimate is available. A validation protocol with a stratified random sample, blind annotation and an acceptance criterion fixed in advance (<code>docs/methodology/manual_validation.md</code>) must be met before the Orbis country is used. Orbis data are licensed and not part of the public repository. The procedure and its terminology are documented in <code>docs/methodology/orbis_enrichment.md</code> and <code>CONTEXT.md</code>.</p>
+  </div>
+</section>
+
+<section class="chapter" id="appendix-command-line-options">
+  <div class="num">A</div>
+  <div class="body">
+    <h2>Appendix: Command-Line Options</h2>
+    <div class="table-wrap wide">
+      <table><caption>Table 12. Options of the main scripts</caption>
+        <thead><tr><th>Script</th><th>Options</th></tr></thead>
+        <tbody>
+          <tr><td><code>collect_repositories.py</code></td><td><code>--time-range {week,month,year,custom}</code>, <code>--start-date</code>, <code>--end-date</code>, <code>--min-stars</code> (default 100), <code>--star-range MIN MAX</code>, <code>--limit</code>, <code>--all</code>, <code>--non-interactive</code>, <code>--analyze</code>, <code>--stats</code>, <code>--db-path</code>, <code>--enable-metrics</code>, <code>--metrics-port</code></td></tr>
+          <tr><td><code>update_location_geocoding.py</code></td><td><code>--contributors</code>, <code>--organizations</code>, <code>--limit</code>, <code>--contributor-limit</code>, <code>--organization-limit</code>, <code>--created-since</code>, <code>--created-until</code>, <code>--min-stars</code>, <code>--max-stars</code>, <code>--no-interactive-filters</code>, <code>--force</code>, <code>--retry-empty</code>, <code>--clear-cache</code>, <code>--cache-file</code>, <code>--show-missing</code>, <code>--user-agent</code>, <code>--yes</code>, <code>--db-path</code></td></tr>
+          <tr><td><code>collect_contributor_network.py</code></td><td><code>--min-stars</code>, <code>--max-stars</code>, <code>--max-pages</code>, <code>--limit</code>, <code>--dry-run</code>, <code>--skip-collect</code>, <code>--skip-stubs</code>, <code>--skip-enrich</code>, <code>--skip-geocode</code></td></tr>
+          <tr><td><code>collect_repository_contributors.py</code></td><td><code>--min-stars</code> (default 5,000), <code>--max-stars</code>, <code>--max-pages</code> (default 20), <code>--flush-size</code> (default 500), <code>--limit</code>, <code>--force</code>, <code>--dry-run</code></td></tr>
+          <tr><td><code>enrich_cctld.py</code></td><td><code>--entity {organizations,contributors}</code>, <code>--dry-run</code>, <code>--write</code>, <code>--validate-only</code>, <code>--recheck</code>, <code>--limit</code>, <code>--run-id</code></td></tr>
+          <tr><td><code>reset_stale_countries.py</code></td><td><code>--write</code>, <code>--table</code>, <code>--cache-file</code></td></tr>
+          <tr><td><code>benchmark_geocoding.py</code></td><td><code>--no-cache</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The full reference, including the remaining scripts, is <code>docs/usage.md</code>.</p>
+  </div>
+</section>
+
+<footer>
+  Generated from the same text as the Word version of this report, which is authoritative.
+</footer>
+</div>
+</body>
+</html>

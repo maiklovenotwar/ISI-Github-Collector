@@ -20,7 +20,17 @@ firmographic data; see `CONTEXT.md` for the terminology used throughout that
 component and `docs/methodology/orbis_enrichment.md` for the matching and
 headquarters-resolution methodology.
 
-The methodology of the collection pipeline is documented in three files:
+The methodology of the collection pipeline is summarised in two reports:
+
+- [Methodology Report](https://maiklovenotwar.github.io/ISI-Github-Collector/docs/methodology/report.html)
+  (`docs/methodology/report.html`), an academic report that describes the procedure, its
+  validation and its limitations without reference to the code;
+- [Technical Methodology Report](https://maiklovenotwar.github.io/ISI-Github-Collector/docs/methodology/technical_report.html)
+  (`docs/methodology/technical_report.html`), which documents, for each step, the scripts,
+  search queries, rules, tables and database columns involved and the queries from which the
+  reported figures are computed.
+
+The detailed sources of both reports are three files:
 `docs/methodology/repository_collection.md` (population, procedure, completeness),
 `docs/methodology/geocoding.md` (derivation of a country from the profile location, limits,
 validation), and `docs/methodology/country_attribution.md` (unit of analysis, country of a
