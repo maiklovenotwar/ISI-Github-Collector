@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "GitHub Data Collector"
+abstract: >-
+  An ETL system for collecting GitHub data on repositories, contributors, and
+  organizations, deriving a country from the free-text location of accounts,
+  and storing the results in a SQLite or MySQL database for downstream analysis.
+authors:
+  - family-names: "Müller"
+    given-names: "Maik"
+    orcid: "https://orcid.org/0009-0009-8771-1094"
+    affiliation: "Fraunhofer Institute for Systems and Innovation Research ISI"
+version: "3.0.0"
+date-released: "2026-10-23"
+license: MIT
+repository-code: "https://github.com/maiklovenotwar/ISI-Github-Collector"
+url: "https://maiklovenotwar.github.io/ISI-Github-Collector/docs/methodology/report.html"
+keywords:
+  - GitHub
+  - open source software
+  - geocoding
+  - data collection
+  - ETL

@@ -241,6 +241,11 @@ Prerequisites for the Orbis tests:
 style, and the data policy. Changes are recorded in `CHANGELOG.md`. Defects
 and proposals are tracked as issues in the repository.
 
+## Citation
+
+Citation metadata (author, version, release date) are given in
+[`CITATION.cff`](CITATION.cff); GitHub offers them under "Cite this repository".
+
 ## License
 
 This project is licensed under the MIT License — see [LICENSE](LICENSE) for

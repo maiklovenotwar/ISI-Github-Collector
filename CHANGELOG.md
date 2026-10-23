@@ -6,6 +6,10 @@ Notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+## 3.0.0 - 2026-10-23
+
+First public release.
+
 ### Added
 
 - Orbis matching: domain candidates whose company name has no Latin letter are also
