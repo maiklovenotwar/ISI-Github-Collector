@@ -1,5 +1,7 @@
 # GitHub Data Collector
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23592783.svg)](https://doi.org/10.5281/zenodo.23592783)
+
 An ETL system for collecting GitHub data on repositories, contributors, and
 organizations, and storing it in a SQLite or MySQL database for downstream
 analysis.
@@ -244,7 +246,9 @@ and proposals are tracked as issues in the repository.
 ## Citation
 
 Citation metadata (author, version, release date) are given in
-[`CITATION.cff`](CITATION.cff); GitHub offers them under "Cite this repository".
+[`CITATION.cff`](CITATION.cff); GitHub offers them under "Cite this repository". Each release
+is archived on Zenodo; the DOI [10.5281/zenodo.23592783](https://doi.org/10.5281/zenodo.23592783)
+refers to all versions and resolves to the latest one.
 
 ## License
 
